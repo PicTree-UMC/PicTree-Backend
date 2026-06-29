@@ -1,7 +1,7 @@
 ---
 name: "♻️ Refactor"
 title: "♻️ [Refactor] 간단한 요약"
-description: "기능은 그대로, 코드 개선 요청"
+about: "기능은 그대로, 코드 개선 요청"
 labels: ""
 assignees: ""
 ---

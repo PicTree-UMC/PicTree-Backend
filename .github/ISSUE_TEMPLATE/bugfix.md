@@ -1,7 +1,7 @@
 ---
 name: "🐞 Fix"
 title: "🐞 [Fix] 간단한 요약"
-description: "버그 제보 및 수정 요청"
+about: "버그 제보 및 수정 요청"
 labels: ""
 assignees: ""
 ---
