@@ -4,10 +4,10 @@
 
 ## 👤 백엔드 팀원 소개
 
-|                                   Backend                                   |                                    Backend                                    |                            Backend                            |                            Backend                            |
-| :-------------------------------------------------------------------------: | :---------------------------------------------------------------------------: | :-----------------------------------------------------------: | :-----------------------------------------------------------: |
-|          <img src="https://github.com/HeejuKo.png" width="150" />           |        <img src="https://github.com/kim-seungbeom.png" width="150" />         |   <img src="https://github.com/02junho.png" width="150" />    |       <img src="https://github.com/.png" width="150" />       |
-| [고희주](https://github.com/HeejuKo)<br/>AI 블로그 초안 작성<br/>마이페이지 | [김승범](https://github.com/kim-seungbeom)<br/>소셜 로그인<br/>유료 구독 결제 | [신준호](https://github.com/02junho)<br/>지도 페이지<br/>배포 | [정수영](https://github.com/)<br/>타임라인<br/>근처 나무 알림 |
+|                                   Backend                                   |                                    Backend                                    |                            Backend                            |                               Backend                                |
+| :-------------------------------------------------------------------------: | :---------------------------------------------------------------------------: | :-----------------------------------------------------------: | :------------------------------------------------------------------: |
+|          <img src="https://github.com/HeejuKo.png" width="150" />           |        <img src="https://github.com/kim-seungbeom.png" width="150" />         |   <img src="https://github.com/02junho.png" width="150" />    |       <img src="https://github.com/sooowii.png" width="150" />       |
+| [고희주](https://github.com/HeejuKo)<br/>AI 블로그 초안 작성<br/>마이페이지 | [김승범](https://github.com/kim-seungbeom)<br/>소셜 로그인<br/>유료 구독 결제 | [신준호](https://github.com/02junho)<br/>지도 페이지<br/>배포 | [정수영](https://github.com/sooowii)<br/>타임라인<br/>근처 나무 알림 |
 
 ## 📋 Github Workflow
 
