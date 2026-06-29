@@ -1,5 +1,5 @@
 ---
-name: "🛠️ [Chore] 간단한 요약"
+name: "🛠️ Chore"
 title: "🛠️ [Chore] 간단한 요약"
 about: "설정 변경, 의존성 관리 등 기타 작업"
 labels: ""
