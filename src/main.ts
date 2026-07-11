@@ -30,6 +30,7 @@ async function bootstrap() {
     .setDescription('PicTree API 문서입니다.')
     .setVersion('1.0')
     .addBearerAuth()
+    .addCookieAuth('refreshToken')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

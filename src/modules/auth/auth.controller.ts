@@ -1,9 +1,10 @@
 import { Body, Controller, Post, Req, Res } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { ApiResponse } from '../../common/responses/api.response';
 import { SuccessCode } from '../../common/responses/success-code';
 import { AuthCookie } from './auth.constant';
+import { ApiLogout, ApiSocialLogin, ApiTokenRefresh } from './auth.swagger';
 import { AuthTokenService } from './auth-token.service';
 import { AuthService } from './auth.service';
 import { SocialLoginRequestDto } from './dto/social-login-request.dto';
@@ -19,7 +20,7 @@ export class AuthController {
   ) {}
 
   @Post('social-login')
-  @ApiOperation({ summary: '소셜 로그인/회원가입' })
+  @ApiSocialLogin()
   async socialLogin(
     @Body() socialLoginRequestDto: SocialLoginRequestDto,
     @Res({ passthrough: true }) response: Response,
@@ -44,7 +45,7 @@ export class AuthController {
   }
 
   @Post('token/refresh')
-  @ApiOperation({ summary: 'Access Token 재발급' })
+  @ApiTokenRefresh()
   async refreshToken(
     @Req() request: Request,
   ): Promise<ApiResponse<TokenRefreshResponseDto>> {
@@ -56,7 +57,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  @ApiOperation({ summary: '로그아웃' })
+  @ApiLogout()
   async logout(
     @Res({ passthrough: true }) response: Response,
   ): Promise<ApiResponse<null>> {
