@@ -11,6 +11,14 @@ import {
 export class AuthRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  findUserById = async (userId: number): Promise<AuthUserRecord | null> => {
+    return this.prisma.user.findUnique({
+      where: {
+        id: BigInt(userId),
+      },
+    });
+  };
+
   findSocialAccountWithUser = async (
     provider: SocialProvider,
     providerUserId: string,

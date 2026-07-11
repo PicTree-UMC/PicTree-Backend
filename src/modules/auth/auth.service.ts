@@ -57,12 +57,31 @@ export class AuthService {
     };
   };
 
-  refreshToken = (): Promise<TokenRefreshResponseDto> => {
-    throw new AppException(ErrorCode.AUTH_NOT_IMPLEMENTED);
+  refreshToken = async (
+    refreshToken?: string,
+  ): Promise<TokenRefreshResponseDto> => {
+    if (!refreshToken) {
+      throw new AppException(ErrorCode.AUTH_INVALID_REFRESH_TOKEN);
+    }
+
+    const payload =
+      await this.authTokenService.verifyRefreshToken(refreshToken);
+    const user = await this.authRepository.findUserById(payload.userId);
+
+    if (!user) {
+      throw new AppException(ErrorCode.AUTH_INVALID_REFRESH_TOKEN);
+    }
+
+    this.validateAvailableUser(user);
+
+    return this.authTokenService.issueAccessToken({
+      userId: Number(user.id),
+      role: user.role,
+    });
   };
 
   logout = (): Promise<null> => {
-    throw new AppException(ErrorCode.AUTH_NOT_IMPLEMENTED);
+    return Promise.resolve(null);
   };
 
   private validateAvailableUser = (user: AuthUserRecord): void => {

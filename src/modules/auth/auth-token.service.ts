@@ -5,6 +5,7 @@ import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import { AuthCookie, AuthEnv, AuthTokenExpiresIn } from './auth.constant';
 import {
+  AccessToken,
   AuthTokens,
   JwtPayload,
   RefreshTokenCookieOptions,
@@ -30,6 +31,25 @@ export class AuthTokenService {
     };
   };
 
+  issueAccessToken = async (payload: JwtPayload): Promise<AccessToken> => {
+    const accessToken = await this.signAccessToken(payload);
+
+    return {
+      accessToken,
+      expiresIn: this.getAccessTokenExpiresIn(),
+    };
+  };
+
+  verifyRefreshToken = async (refreshToken: string): Promise<JwtPayload> => {
+    try {
+      return await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {
+        secret: this.getRequiredSecret(AuthEnv.REFRESH_TOKEN_SECRET),
+      });
+    } catch {
+      throw new AppException(ErrorCode.AUTH_INVALID_REFRESH_TOKEN);
+    }
+  };
+
   getRefreshTokenCookieOptions = (): RefreshTokenCookieOptions => {
     const maxAge = this.getRefreshTokenExpiresIn() * 1000;
 
@@ -46,10 +66,6 @@ export class AuthTokenService {
     ...this.getRefreshTokenCookieOptions(),
     maxAge: 0,
   });
-
-  getRefreshTokenExpiresAt = (): Date => {
-    return new Date(Date.now() + this.getRefreshTokenExpiresIn() * 1000);
-  };
 
   private signAccessToken = async (payload: JwtPayload): Promise<string> => {
     return this.jwtService.signAsync(payload, {

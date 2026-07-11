@@ -14,6 +14,11 @@ export interface AuthTokens {
   expiresIn: number;
 }
 
+export interface AccessToken {
+  accessToken: string;
+  expiresIn: number;
+}
+
 export interface AuthUserRecord {
   id: bigint;
   email: string | null;

@@ -54,6 +54,11 @@ export const ErrorCode = {
     code: 'AUTH500',
     message: '소셜 로그인 설정이 누락되었습니다.',
   },
+  AUTH_INVALID_REFRESH_TOKEN: {
+    status: HttpStatus.UNAUTHORIZED,
+    code: 'AUTH401',
+    message: '유효하지 않은 Refresh Token입니다.',
+  },
 
   // User
   USER_UNAVAILABLE: {

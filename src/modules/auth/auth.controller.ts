@@ -1,6 +1,6 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { ApiResponse } from '../../common/responses/api.response';
 import { SuccessCode } from '../../common/responses/success-code';
 import { AuthCookie } from './auth.constant';
@@ -45,17 +45,43 @@ export class AuthController {
 
   @Post('token/refresh')
   @ApiOperation({ summary: 'Access Token 재발급' })
-  async refreshToken(): Promise<ApiResponse<TokenRefreshResponseDto>> {
-    const data = await this.authService.refreshToken();
+  async refreshToken(
+    @Req() request: Request,
+  ): Promise<ApiResponse<TokenRefreshResponseDto>> {
+    const data = await this.authService.refreshToken(
+      this.getRefreshTokenFromCookie(request.headers.cookie),
+    );
 
     return ApiResponse.success(SuccessCode.OK, data);
   }
 
   @Post('logout')
   @ApiOperation({ summary: '로그아웃' })
-  async logout(): Promise<ApiResponse<null>> {
+  async logout(
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<ApiResponse<null>> {
     await this.authService.logout();
+    response.cookie(
+      AuthCookie.REFRESH_TOKEN,
+      '',
+      this.authTokenService.getClearRefreshTokenCookieOptions(),
+    );
 
     return ApiResponse.success(SuccessCode.OK, null);
   }
+
+  private getRefreshTokenFromCookie = (
+    cookieHeader?: string,
+  ): string | undefined => {
+    if (!cookieHeader) {
+      return undefined;
+    }
+
+    const cookies = cookieHeader.split(';').map((cookie) => cookie.trim());
+    const refreshTokenCookie = cookies.find((cookie) =>
+      cookie.startsWith(`${AuthCookie.REFRESH_TOKEN}=`),
+    );
+
+    return refreshTokenCookie?.slice(`${AuthCookie.REFRESH_TOKEN}=`.length);
+  };
 }
