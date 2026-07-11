@@ -8,6 +8,20 @@ export interface JwtPayload {
   role: string;
 }
 
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+}
+
+export interface RefreshTokenCookieOptions {
+  httpOnly: boolean;
+  secure: boolean;
+  sameSite: 'lax' | 'none';
+  path: string;
+  maxAge: number;
+}
+
 export interface SocialUserInfo {
   provider: SocialProvider;
   providerUserId: string;

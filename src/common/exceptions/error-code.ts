@@ -19,6 +19,16 @@ export const ErrorCode = {
     code: 'AUTH501',
     message: '인증 API가 아직 구현되지 않았습니다.',
   },
+  AUTH_TOKEN_SECRET_MISSING: {
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    code: 'AUTH500',
+    message: 'JWT Secret 설정이 누락되었습니다.',
+  },
+  AUTH_INVALID_TOKEN_EXPIRES_IN: {
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    code: 'AUTH500',
+    message: 'JWT 만료 시간 설정이 올바르지 않습니다.',
+  },
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
