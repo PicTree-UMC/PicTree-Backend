@@ -11,3 +11,35 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id              BigInt          @id @default(autoincrement()) @db.BigInt
+  email           String?         @db.VarChar(255)
+  nickname        String          @db.VarChar(50)
+  profileImageUrl String?         @map("profile_image_url") @db.VarChar(500)
+  role            String          @default("USER") @db.VarChar(20)
+  status          String          @default("ACTIVE") @db.VarChar(20)
+  currentPlan     String          @default("FREE") @map("current_plan") @db.VarChar(20)
+  notification    Boolean         @default(true)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  deletedAt       DateTime?       @map("deleted_at")
+  socialAccounts  SocialAccount[]
+
+  @@map("users")
+}
+
+model SocialAccount {
+  id             BigInt   @id @default(autoincrement()) @db.BigInt
+  userId         BigInt   @map("user_id") @db.BigInt
+  provider       String   @db.VarChar(30)
+  providerUserId String   @map("provider_user_id") @db.VarChar(255)
+  providerEmail  String?  @map("provider_email") @db.VarChar(255)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("social_accounts")
+}

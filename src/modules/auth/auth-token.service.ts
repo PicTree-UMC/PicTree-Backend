@@ -47,6 +47,10 @@ export class AuthTokenService {
     maxAge: 0,
   });
 
+  getRefreshTokenExpiresAt = (): Date => {
+    return new Date(Date.now() + this.getRefreshTokenExpiresIn() * 1000);
+  };
+
   private signAccessToken = async (payload: JwtPayload): Promise<string> => {
     return this.jwtService.signAsync(payload, {
       secret: this.getRequiredSecret(AuthEnv.ACCESS_TOKEN_SECRET),

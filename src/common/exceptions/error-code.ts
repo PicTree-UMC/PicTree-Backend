@@ -54,6 +54,13 @@ export const ErrorCode = {
     code: 'AUTH500',
     message: '소셜 로그인 설정이 누락되었습니다.',
   },
+
+  // User
+  USER_UNAVAILABLE: {
+    status: HttpStatus.FORBIDDEN,
+    code: 'USER403',
+    message: '이용할 수 없는 계정입니다.',
+  },
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
