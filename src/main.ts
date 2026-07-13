@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { parseCorsOrigins } from './common/utils/cors-origin.util';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,7 +12,7 @@ async function bootstrap() {
 
   // CORS 설정
   app.enableCors({
-    origin: ['http://localhost:5173'], // React 포트 허용
+    origin: parseCorsOrigins(process.env.CORS_ORIGINS),
     credentials: true,
   });
 
@@ -29,11 +30,12 @@ async function bootstrap() {
     .setDescription('PicTree API 문서입니다.')
     .setVersion('1.0')
     .addBearerAuth()
+    .addCookieAuth('refreshToken')
     .build();
-    
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('swagger', app, document);
 
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap();
+void bootstrap();
