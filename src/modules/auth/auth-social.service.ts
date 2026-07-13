@@ -55,11 +55,11 @@ export class AuthSocialService {
     authorizationCode: string,
     redirectUri: string,
   ): Promise<SocialUserInfo> => {
-    const { access_token: accessToken } =
-      await this.postForm<KakaoTokenResponse>(
-        AuthEndpoint.KAKAO_TOKEN,
-        this.createKakaoTokenBody(authorizationCode, redirectUri),
-      );
+    const kakaoToken = await this.postForm<KakaoTokenResponse>(
+      AuthEndpoint.KAKAO_TOKEN,
+      this.createKakaoTokenBody(authorizationCode, redirectUri),
+    );
+    const accessToken = this.getAccessToken(kakaoToken);
 
     if (!accessToken) {
       throw new AppException(ErrorCode.AUTH_SOCIAL_AUTHENTICATION_FAILED);
@@ -70,7 +70,7 @@ export class AuthSocialService {
       accessToken,
     );
 
-    if (!kakaoUser.id) {
+    if (typeof kakaoUser.id !== 'number') {
       throw new AppException(ErrorCode.AUTH_SOCIAL_USER_INFO_FAILED);
     }
 
@@ -88,11 +88,11 @@ export class AuthSocialService {
     authorizationCode: string,
     redirectUri: string,
   ): Promise<SocialUserInfo> => {
-    const { access_token: accessToken } =
-      await this.postForm<GoogleTokenResponse>(
-        AuthEndpoint.GOOGLE_TOKEN,
-        this.createGoogleTokenBody(authorizationCode, redirectUri),
-      );
+    const googleToken = await this.postForm<GoogleTokenResponse>(
+      AuthEndpoint.GOOGLE_TOKEN,
+      this.createGoogleTokenBody(authorizationCode, redirectUri),
+    );
+    const accessToken = this.getAccessToken(googleToken);
 
     if (!accessToken) {
       throw new AppException(ErrorCode.AUTH_SOCIAL_AUTHENTICATION_FAILED);
@@ -103,7 +103,7 @@ export class AuthSocialService {
       accessToken,
     );
 
-    if (!googleUser.sub) {
+    if (typeof googleUser.sub !== 'string' || !googleUser.sub) {
       throw new AppException(ErrorCode.AUTH_SOCIAL_USER_INFO_FAILED);
     }
 
@@ -203,10 +203,28 @@ export class AuthSocialService {
     }
 
     try {
-      return (await response.json()) as T;
+      const data: unknown = await response.json();
+
+      if (!this.isRecord(data)) {
+        throw new AppException(ErrorCode.AUTH_SOCIAL_PROVIDER_REQUEST_FAILED);
+      }
+
+      return data as T;
     } catch {
       throw new AppException(ErrorCode.AUTH_SOCIAL_PROVIDER_REQUEST_FAILED);
     }
+  };
+
+  private getAccessToken = (
+    tokenResponse: KakaoTokenResponse | GoogleTokenResponse,
+  ): string | null => {
+    return typeof tokenResponse.access_token === 'string'
+      ? tokenResponse.access_token
+      : null;
+  };
+
+  private isRecord = (data: unknown): data is Record<string, unknown> => {
+    return typeof data === 'object' && data !== null && !Array.isArray(data);
   };
 
   private getRequiredEnv = (key: string): string => {
