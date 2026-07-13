@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
-import { AuthEndpoint, AuthEnv } from './auth.constant';
+import { AuthEndpoint, AuthEnv, AuthProviderRequest } from './auth.constant';
 import { SocialLoginRequestDto } from './dto/social-login-request.dto';
 import { SocialProvider, SocialUserInfo } from './auth.types';
 
@@ -36,7 +36,7 @@ interface GoogleUserResponse {
 export class AuthSocialService {
   constructor(private readonly configService: ConfigService) {}
 
-  getSocialUserInfo = async (
+  getSocialUserInfo = (
     socialLoginRequestDto: SocialLoginRequestDto,
   ): Promise<SocialUserInfo> => {
     const { provider, authorizationCode, redirectUri } = socialLoginRequestDto;
@@ -184,7 +184,10 @@ export class AuthSocialService {
     init: RequestInit,
   ): Promise<Response> => {
     try {
-      return await fetch(url, init);
+      return await fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(AuthProviderRequest.TIMEOUT_MS),
+      });
     } catch {
       throw new AppException(ErrorCode.AUTH_SOCIAL_PROVIDER_REQUEST_FAILED);
     }
@@ -192,6 +195,10 @@ export class AuthSocialService {
 
   private parseProviderResponse = async <T>(response: Response): Promise<T> => {
     if (!response.ok) {
+      if (response.status === 429 || response.status >= 500) {
+        throw new AppException(ErrorCode.AUTH_SOCIAL_PROVIDER_REQUEST_FAILED);
+      }
+
       throw new AppException(ErrorCode.AUTH_SOCIAL_AUTHENTICATION_FAILED);
     }
 

@@ -25,3 +25,7 @@ export const AuthEndpoint = {
   GOOGLE_TOKEN: 'https://oauth2.googleapis.com/token',
   GOOGLE_USER_INFO: 'https://openidconnect.googleapis.com/v1/userinfo',
 } as const;
+
+export const AuthProviderRequest = {
+  TIMEOUT_MS: 5000,
+} as const;

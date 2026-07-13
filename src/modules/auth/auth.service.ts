@@ -31,13 +31,16 @@ export class AuthService {
       socialUserInfo.provider,
       socialUserInfo.providerUserId,
     );
-    const isNewUser = !socialAccount;
-    const user =
-      socialAccount?.user ??
-      (await this.authRepository.createUserWithSocialAccount(
-        socialUserInfo,
-        this.createNickname(socialUserInfo),
-      ));
+    const socialUserResult = socialAccount
+      ? {
+          user: socialAccount.user,
+          isNewUser: false,
+        }
+      : await this.authRepository.createUserWithSocialAccount(
+          socialUserInfo,
+          this.createNickname(socialUserInfo),
+        );
+    const { user, isNewUser } = socialUserResult;
 
     this.validateAvailableUser(user);
 

@@ -38,6 +38,11 @@ export interface SocialAccountWithUser {
   user: AuthUserRecord;
 }
 
+export interface CreateSocialUserResult {
+  user: AuthUserRecord;
+  isNewUser: boolean;
+}
+
 export interface SocialLoginResult {
   isNewUser: boolean;
   needTermsAgreement: boolean;
