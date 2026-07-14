@@ -107,6 +107,6 @@ export class AuthService {
     email: user.email,
     nickname: user.nickname,
     profileImageUrl: user.profileImageUrl,
-    currentPlan: user.currentPlan,
+    currentPlan: user.currentSubscription?.subscriptionPlan.code ?? 'FREE',
   });
 }
