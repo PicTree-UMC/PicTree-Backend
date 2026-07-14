@@ -26,7 +26,11 @@ export interface AuthUserRecord {
   profileImageUrl: string | null;
   role: string;
   status: string;
-  currentPlan: string;
+  currentSubscription: {
+    subscriptionPlan: {
+      code: string;
+    };
+  } | null;
 }
 
 export interface SocialAccountWithUser {

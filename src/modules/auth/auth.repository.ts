@@ -18,6 +18,13 @@ export class AuthRepository {
       where: {
         id: BigInt(userId),
       },
+      include: {
+        currentSubscription: {
+          include: {
+            subscriptionPlan: true,
+          },
+        },
+      },
     });
   };
 
@@ -33,7 +40,15 @@ export class AuthRepository {
         },
       },
       include: {
-        user: true,
+        user: {
+          include: {
+            currentSubscription: {
+              include: {
+                subscriptionPlan: true,
+              },
+            },
+          },
+        },
       },
     });
   };
@@ -49,6 +64,13 @@ export class AuthRepository {
             email: socialUserInfo.email,
             nickname,
             profileImageUrl: socialUserInfo.profileImageUrl,
+          },
+          include: {
+            currentSubscription: {
+              include: {
+                subscriptionPlan: true,
+              },
+            },
           },
         });
 

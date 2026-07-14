@@ -13,23 +13,25 @@ datasource db {
 }
 
 model User {
-  id              BigInt               @id @default(autoincrement()) @db.BigInt
-  email           String?              @db.VarChar(255)
-  nickname        String               @db.VarChar(50)
-  profileImageUrl String?              @map("profile_image_url") @db.VarChar(500)
-  role            String               @default("USER") @db.VarChar(20)
-  status          String               @default("ACTIVE") @db.VarChar(20)
-  currentPlan     String               @default("FREE") @map("current_plan") @db.VarChar(20)
-  notification    Boolean              @default(true)
-  createdAt       DateTime             @default(now()) @map("created_at")
-  updatedAt       DateTime             @updatedAt @map("updated_at")
-  deletedAt       DateTime?            @map("deleted_at")
-  socialAccounts  SocialAccount[]
-  termAgreements  UserTermsAgreement[]
-  subscriptions   UserSubscription[]
-  billingKeys     BillingKey[]
-  payments        Payment[]
+  id                    BigInt               @id @default(autoincrement()) @db.BigInt
+  email                 String?              @db.VarChar(255)
+  nickname              String               @db.VarChar(50)
+  profileImageUrl       String?              @map("profile_image_url") @db.VarChar(500)
+  role                  String               @default("USER") @db.VarChar(20)
+  status                String               @default("ACTIVE") @db.VarChar(20)
+  currentSubscriptionId BigInt?              @map("current_subscription_id") @db.BigInt
+  notification          Boolean              @default(true)
+  createdAt             DateTime             @default(now()) @map("created_at")
+  updatedAt             DateTime             @updatedAt @map("updated_at")
+  deletedAt             DateTime?            @map("deleted_at")
+  socialAccounts        SocialAccount[]
+  termAgreements        UserTermsAgreement[]
+  currentSubscription   UserSubscription?    @relation("CurrentUserSubscription", fields: [currentSubscriptionId, id], references: [id, userId])
+  subscriptions         UserSubscription[]   @relation("UserSubscriptions")
+  billingKeys           BillingKey[]
+  payments              Payment[]
 
+  @@unique([currentSubscriptionId, id])
   @@map("users")
 }
 
@@ -66,18 +68,19 @@ model Term {
 }
 
 model UserTermsAgreement {
-  id        BigInt   @id @default(autoincrement()) @db.BigInt
-  termId    BigInt   @map("term_id") @db.BigInt
-  userId    BigInt   @map("user_id") @db.BigInt
-  isAgreed  Boolean  @map("is_agreed")
-  agreedAt  DateTime @map("agreed_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  term      Term     @relation(fields: [termId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  id          BigInt    @id @default(autoincrement()) @db.BigInt
+  termId      BigInt    @map("term_id") @db.BigInt
+  userId      BigInt    @map("user_id") @db.BigInt
+  isAgreed    Boolean   @map("is_agreed")
+  agreedAt    DateTime? @map("agreed_at")
+  withdrawnAt DateTime? @map("withdrawn_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  term        Term      @relation(fields: [termId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
 
-  @@unique([userId, termId])
   @@index([termId])
+  @@index([userId, termId, createdAt])
   @@map("users_terms_agreements")
 }
 
@@ -132,17 +135,18 @@ model UserSubscription {
   id                 BigInt           @id @default(autoincrement()) @db.BigInt
   userId             BigInt           @map("user_id") @db.BigInt
   subscriptionPlanId BigInt           @map("subscription_plan_id") @db.BigInt
-  status             String           @db.VarChar(20)
   startedAt          DateTime         @map("started_at")
   expiresAt          DateTime         @map("expires_at")
   canceledAt         DateTime?        @map("canceled_at")
   autoRenew          Boolean          @default(true) @map("auto_renew")
   createdAt          DateTime         @default(now()) @map("created_at")
   updatedAt          DateTime         @updatedAt @map("updated_at")
-  user               User             @relation(fields: [userId], references: [id])
+  user               User             @relation("UserSubscriptions", fields: [userId], references: [id])
+  currentForUser     User?            @relation("CurrentUserSubscription")
   subscriptionPlan   SubscriptionPlan @relation(fields: [subscriptionPlanId], references: [id])
   payments           Payment[]
 
+  @@unique([id, userId])
   @@index([userId])
   @@index([subscriptionPlanId])
   @@map("users_subscriptions")
@@ -164,6 +168,7 @@ model BillingKey {
   user             User      @relation(fields: [userId], references: [id])
   payments         Payment[]
 
+  @@unique([id, userId])
   @@index([userId])
   @@map("billing_keys")
 }
@@ -186,8 +191,8 @@ model Payment {
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime          @updatedAt @map("updated_at")
   user                User              @relation(fields: [userId], references: [id])
-  usersSubscription   UserSubscription? @relation(fields: [usersSubscriptionId], references: [id])
-  billingKey          BillingKey?       @relation(fields: [billingKeyId], references: [id])
+  usersSubscription   UserSubscription? @relation(fields: [usersSubscriptionId, userId], references: [id, userId])
+  billingKey          BillingKey?       @relation(fields: [billingKeyId, userId], references: [id, userId])
   receipt             PaymentReceipt?
 
   @@unique([paymentProvider, providerPaymentId])
