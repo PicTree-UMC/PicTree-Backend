@@ -5,11 +5,18 @@ import { AuthSocialService } from './auth-social.service';
 import { AuthTokenService } from './auth-token.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AccessTokenGuard } from './access-token.guard';
 
 @Module({
   imports: [JwtModule.register({})],
   controllers: [AuthController],
-  providers: [AuthService, AuthTokenService, AuthSocialService, AuthRepository],
-  exports: [AuthTokenService, AuthSocialService],
+  providers: [
+    AuthService,
+    AuthTokenService,
+    AuthSocialService,
+    AuthRepository,
+    AccessTokenGuard,
+  ],
+  exports: [AuthTokenService, AuthSocialService, AccessTokenGuard],
 })
 export class AuthModule {}

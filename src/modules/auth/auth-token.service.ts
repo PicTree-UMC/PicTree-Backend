@@ -50,6 +50,16 @@ export class AuthTokenService {
     }
   };
 
+  verifyAccessToken = async (accessToken: string): Promise<JwtPayload> => {
+    try {
+      return await this.jwtService.verifyAsync<JwtPayload>(accessToken, {
+        secret: this.getRequiredSecret(AuthEnv.ACCESS_TOKEN_SECRET),
+      });
+    } catch {
+      throw new AppException(ErrorCode.AUTH_INVALID_ACCESS_TOKEN);
+    }
+  };
+
   getRefreshTokenCookieOptions = (): RefreshTokenCookieOptions => {
     const maxAge = this.getRefreshTokenExpiresIn() * 1000;
 
