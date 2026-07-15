@@ -6,6 +6,7 @@ import {
   IsString,
   IsUrl,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class UpdateUserRequestDto {
@@ -14,7 +15,7 @@ export class UpdateUserRequestDto {
     maxLength: 50,
     description: '변경할 닉네임',
   })
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
@@ -36,7 +37,7 @@ export class UpdateUserRequestDto {
     example: true,
     description: '알림 수신 여부',
   })
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsBoolean()
   notification?: boolean;
 }

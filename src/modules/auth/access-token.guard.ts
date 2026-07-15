@@ -23,7 +23,7 @@ export class AccessTokenGuard implements CanActivate {
   private extractBearerToken = (authorization?: string): string => {
     const [scheme, token, ...rest] = authorization?.trim().split(/\s+/) ?? [];
 
-    if (scheme !== 'Bearer' || !token || rest.length > 0) {
+    if (scheme?.toLowerCase() !== 'bearer' || !token || rest.length > 0) {
       throw new AppException(ErrorCode.AUTH_INVALID_ACCESS_TOKEN);
     }
 
