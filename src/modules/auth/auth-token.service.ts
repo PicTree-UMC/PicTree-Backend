@@ -41,12 +41,26 @@ export class AuthTokenService {
   };
 
   verifyRefreshToken = async (refreshToken: string): Promise<JwtPayload> => {
+    const secret = this.getRequiredSecret(AuthEnv.REFRESH_TOKEN_SECRET);
+
     try {
       return await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {
-        secret: this.getRequiredSecret(AuthEnv.REFRESH_TOKEN_SECRET),
+        secret,
       });
     } catch {
       throw new AppException(ErrorCode.AUTH_INVALID_REFRESH_TOKEN);
+    }
+  };
+
+  verifyAccessToken = async (accessToken: string): Promise<JwtPayload> => {
+    const secret = this.getRequiredSecret(AuthEnv.ACCESS_TOKEN_SECRET);
+
+    try {
+      return await this.jwtService.verifyAsync<JwtPayload>(accessToken, {
+        secret,
+      });
+    } catch {
+      throw new AppException(ErrorCode.AUTH_INVALID_ACCESS_TOKEN);
     }
   };
 

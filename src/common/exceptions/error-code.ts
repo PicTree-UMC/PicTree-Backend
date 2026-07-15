@@ -59,12 +59,32 @@ export const ErrorCode = {
     code: 'AUTH401',
     message: '유효하지 않은 Refresh Token입니다.',
   },
+  AUTH_INVALID_ACCESS_TOKEN: {
+    status: HttpStatus.UNAUTHORIZED,
+    code: 'AUTH401',
+    message: '유효하지 않은 Access Token입니다.',
+  },
 
   // User
+  USER_INVALID_UPDATE_REQUEST: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'USER400',
+    message: '회원 수정 요청 값이 올바르지 않습니다.',
+  },
   USER_UNAVAILABLE: {
     status: HttpStatus.FORBIDDEN,
     code: 'USER403',
     message: '이용할 수 없는 계정입니다.',
+  },
+  USER_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'USER404',
+    message: '사용자를 찾을 수 없습니다.',
+  },
+  USER_ALREADY_WITHDRAWN: {
+    status: HttpStatus.CONFLICT,
+    code: 'USER409',
+    message: '이미 탈퇴한 회원입니다.',
   },
 } as const;
 
