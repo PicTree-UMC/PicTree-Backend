@@ -86,6 +86,23 @@ export const ErrorCode = {
     code: 'USER409',
     message: '이미 탈퇴한 회원입니다.',
   },
+
+  // Terms
+  TERMS_INVALID_AGREEMENT_REQUEST: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'TERMS400',
+    message: '약관 동의 요청 값이 올바르지 않습니다.',
+  },
+  TERMS_REQUIRED_AGREEMENT_MISSING: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'TERMS400',
+    message: '필수 약관에 모두 동의해야 합니다.',
+  },
+  TERMS_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'TERMS404',
+    message: '약관을 찾을 수 없습니다.',
+  },
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
