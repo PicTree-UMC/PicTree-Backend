@@ -14,7 +14,12 @@ import {
 } from './payments.constant';
 import { PaymentsRepository } from './payments.repository';
 import { PaymentRecord } from './payments.types';
+import {
+  TossPaymentRejectedError,
+  TossPaymentResultUnknownError,
+} from './toss-payments.exception';
 import { TossPaymentsService } from './toss-payments.service';
+import { TossPaymentConfirmResult } from './toss-payments.types';
 
 @Injectable()
 export class PaymentsService {
@@ -72,19 +77,11 @@ export class PaymentsService {
       payment,
       confirmPaymentRequestDto,
     );
-    const paidAt =
-      tossPayment.status === PaymentStatus.DONE
-        ? new Date(tossPayment.approvedAt as string)
-        : null;
-    const confirmedPayment =
-      await this.paymentsRepository.updatePaymentAfterConfirm({
-        paymentId: payment.id,
-        providerPaymentId: tossPayment.paymentKey,
-        paymentMethod: tossPayment.method,
-        status: tossPayment.status,
-        paidAt,
-        receiptUrl: tossPayment.receipt?.url ?? null,
-      });
+    const confirmedPayment = await this.saveConfirmedPaymentWithRecovery(
+      payment,
+      confirmPaymentRequestDto,
+      tossPayment,
+    );
 
     return this.toPaymentResponseDto(confirmedPayment);
   };
@@ -141,13 +138,83 @@ export class PaymentsService {
         throw error;
       }
 
-      await this.paymentsRepository.failPayment(
-        payment.id,
-        confirmPaymentRequestDto.paymentKey,
-        new Date(),
+      if (error instanceof TossPaymentRejectedError) {
+        await this.paymentsRepository.failPayment(
+          payment.id,
+          confirmPaymentRequestDto.paymentKey,
+          new Date(),
+        );
+
+        throw new AppException(ErrorCode.PAYMENT_PROVIDER_REQUEST_FAILED);
+      }
+
+      if (error instanceof TossPaymentResultUnknownError) {
+        return this.reconcileTossPayment(confirmPaymentRequestDto);
+      }
+
+      throw error;
+    }
+  };
+
+  private saveConfirmedPaymentWithRecovery = async (
+    payment: PaymentRecord,
+    confirmPaymentRequestDto: ConfirmPaymentRequestDto,
+    tossPayment: TossPaymentConfirmResult,
+  ): Promise<PaymentRecord> => {
+    try {
+      return await this.saveConfirmedPayment(payment, tossPayment);
+    } catch (saveError) {
+      const reconciledPayment = await this.reconcileTossPayment(
+        confirmPaymentRequestDto,
       );
 
-      if (error instanceof AppException) {
+      try {
+        return await this.saveConfirmedPayment(payment, reconciledPayment);
+      } catch {
+        throw saveError;
+      }
+    }
+  };
+
+  private saveConfirmedPayment = (
+    payment: PaymentRecord,
+    tossPayment: TossPaymentConfirmResult,
+  ): Promise<PaymentRecord> => {
+    const paidAt =
+      tossPayment.status === PaymentStatus.DONE
+        ? new Date(tossPayment.approvedAt as string)
+        : null;
+
+    return this.paymentsRepository.updatePaymentAfterConfirm({
+      paymentId: payment.id,
+      providerPaymentId: tossPayment.paymentKey,
+      paymentMethod: tossPayment.method,
+      status: tossPayment.status,
+      paidAt,
+      receiptUrl: tossPayment.receipt?.url ?? null,
+    });
+  };
+
+  private reconcileTossPayment = async (
+    confirmPaymentRequestDto: ConfirmPaymentRequestDto,
+  ): Promise<TossPaymentConfirmResult> => {
+    try {
+      const tossPayment =
+        await this.tossPaymentsService.getPaymentForReconciliation(
+          confirmPaymentRequestDto.orderId,
+          confirmPaymentRequestDto.paymentKey,
+        );
+
+      if (
+        tossPayment.orderId !== confirmPaymentRequestDto.orderId ||
+        tossPayment.paymentKey !== confirmPaymentRequestDto.paymentKey
+      ) {
+        throw new TossPaymentResultUnknownError();
+      }
+
+      return tossPayment;
+    } catch (error) {
+      if (this.isPaymentConfigMissingError(error)) {
         throw error;
       }
 

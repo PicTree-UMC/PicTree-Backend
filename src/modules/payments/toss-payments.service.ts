@@ -5,13 +5,17 @@ import { ErrorCode } from '../../common/exceptions/error-code';
 import { ConfirmPaymentRequestDto } from './dto/confirm-payment-request.dto';
 import { PaymentStatus, PaymentStatusType } from './payments.constant';
 import {
+  TossPaymentRejectedError,
+  TossPaymentResultUnknownError,
+} from './toss-payments.exception';
+import {
   TossPaymentConfirmResult,
   TossPaymentResponse,
 } from './toss-payments.types';
 
 const TOSS_PAYMENTS_BASE_URL = 'https://api.tosspayments.com';
 const TOSS_PAYMENTS_CONFIRM_PATH = '/v1/payments/confirm';
-const TOSS_PAYMENTS_REQUEST_TIMEOUT_MS = 5000;
+const TOSS_PAYMENTS_REQUEST_TIMEOUT_MS = 60_000;
 
 @Injectable()
 export class TossPaymentsService {
@@ -20,7 +24,7 @@ export class TossPaymentsService {
   confirmPayment = async (
     confirmPaymentRequestDto: ConfirmPaymentRequestDto,
   ): Promise<TossPaymentConfirmResult> => {
-    const response = await fetch(
+    const response = await this.request(
       `${this.getBaseUrl()}${TOSS_PAYMENTS_CONFIRM_PATH}`,
       {
         method: 'POST',
@@ -29,17 +33,59 @@ export class TossPaymentsService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(confirmPaymentRequestDto),
-        signal: AbortSignal.timeout(TOSS_PAYMENTS_REQUEST_TIMEOUT_MS),
       },
     );
 
-    const responseBody: unknown = await response.json();
+    if (!response.ok) {
+      const providerErrorCode = await this.getProviderErrorCode(response);
 
-    if (!response.ok || !this.isTossPaymentResponse(responseBody)) {
-      throw new AppException(ErrorCode.PAYMENT_PROVIDER_REQUEST_FAILED);
+      if (this.isExplicitRejection(response.status, providerErrorCode)) {
+        throw new TossPaymentRejectedError();
+      }
+
+      throw new TossPaymentResultUnknownError();
     }
 
-    return this.toConfirmResult(responseBody);
+    return this.parsePaymentResponse(response);
+  };
+
+  getPaymentForReconciliation = async (
+    orderId: string,
+    paymentKey: string,
+  ): Promise<TossPaymentConfirmResult> => {
+    const orderResponse = await this.request(
+      `${this.getBaseUrl()}/v1/payments/orders/${encodeURIComponent(orderId)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: this.createAuthorizationHeader(),
+        },
+      },
+    );
+
+    if (orderResponse.ok) {
+      return this.parsePaymentResponse(orderResponse);
+    }
+
+    if (orderResponse.status !== 404) {
+      throw new TossPaymentResultUnknownError();
+    }
+
+    const paymentKeyResponse = await this.request(
+      `${this.getBaseUrl()}/v1/payments/${encodeURIComponent(paymentKey)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: this.createAuthorizationHeader(),
+        },
+      },
+    );
+
+    if (!paymentKeyResponse.ok) {
+      throw new TossPaymentResultUnknownError();
+    }
+
+    return this.parsePaymentResponse(paymentKeyResponse);
   };
 
   private createAuthorizationHeader = (): string => {
@@ -59,6 +105,70 @@ export class TossPaymentsService {
       this.configService.get<string>('TOSS_PAYMENTS_BASE_URL') ??
       TOSS_PAYMENTS_BASE_URL
     ).replace(/\/$/, '');
+  };
+
+  private request = async (
+    url: string,
+    init: RequestInit,
+  ): Promise<Response> => {
+    try {
+      return await fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(TOSS_PAYMENTS_REQUEST_TIMEOUT_MS),
+      });
+    } catch {
+      throw new TossPaymentResultUnknownError();
+    }
+  };
+
+  private parsePaymentResponse = async (
+    response: Response,
+  ): Promise<TossPaymentConfirmResult> => {
+    let responseBody: unknown;
+
+    try {
+      responseBody = await response.json();
+    } catch {
+      throw new TossPaymentResultUnknownError();
+    }
+
+    if (!this.isTossPaymentResponse(responseBody)) {
+      throw new TossPaymentResultUnknownError();
+    }
+
+    return this.toConfirmResult(responseBody);
+  };
+
+  private getProviderErrorCode = async (
+    response: Response,
+  ): Promise<string | null> => {
+    try {
+      const responseBody: unknown = await response.json();
+
+      if (!responseBody || typeof responseBody !== 'object') {
+        return null;
+      }
+
+      const providerError = responseBody as Record<string, unknown>;
+
+      return typeof providerError.code === 'string' ? providerError.code : null;
+    } catch {
+      return null;
+    }
+  };
+
+  private isExplicitRejection = (
+    status: number,
+    providerErrorCode: string | null,
+  ): boolean => {
+    const uncertainStatuses = [401, 403, 408, 409, 429];
+
+    return (
+      status >= 400 &&
+      status < 500 &&
+      !uncertainStatuses.includes(status) &&
+      !providerErrorCode?.startsWith('ALREADY_')
+    );
   };
 
   private isTossPaymentResponse = (
@@ -87,7 +197,7 @@ export class TossPaymentsService {
     const status = this.mapPaymentStatus(tossPayment.status);
 
     if (status === PaymentStatus.DONE && !tossPayment.approvedAt) {
-      throw new AppException(ErrorCode.PAYMENT_PROVIDER_REQUEST_FAILED);
+      throw new TossPaymentResultUnknownError();
     }
 
     return {
@@ -109,7 +219,7 @@ export class TossPaymentsService {
       case 'EXPIRED':
         return PaymentStatus.FAILED;
       default:
-        throw new AppException(ErrorCode.PAYMENT_PROVIDER_REQUEST_FAILED);
+        throw new TossPaymentResultUnknownError();
     }
   };
 }

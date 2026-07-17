@@ -84,6 +84,7 @@ export class PaymentsRepository {
           paymentMethod: updatePaymentAfterConfirmData.paymentMethod,
           status: updatePaymentAfterConfirmData.status,
           paidAt: updatePaymentAfterConfirmData.paidAt,
+          failedAt: null,
         },
         include: {
           receipt: true,
@@ -122,18 +123,16 @@ export class PaymentsRepository {
     paymentId: bigint,
     providerPaymentId: string,
     failedAt: Date,
-  ): Promise<PaymentRecord> => {
-    return this.prisma.payment.update({
+  ): Promise<Prisma.BatchPayload> => {
+    return this.prisma.payment.updateMany({
       where: {
         id: paymentId,
+        status: PaymentStatus.READY,
       },
       data: {
         providerPaymentId,
         status: PaymentStatus.FAILED,
         failedAt,
-      },
-      include: {
-        receipt: true,
       },
     });
   };
