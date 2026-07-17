@@ -3,6 +3,8 @@ import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import { ConfirmPaymentRequestDto } from './dto/confirm-payment-request.dto';
 import { CreatePaymentOrderRequestDto } from './dto/create-payment-order-request.dto';
+import { GetPaymentsQueryDto } from './dto/get-payments-query.dto';
+import { PaymentListResponseDto } from './dto/payment-list-response.dto';
 import { PaymentOrderResponseDto } from './dto/payment-order-response.dto';
 import { PaymentResponseDto } from './dto/payment-response.dto';
 import {
@@ -83,6 +85,45 @@ export class PaymentsService {
     });
 
     return this.toPaymentResponseDto(completedPayment);
+  };
+
+  getMyPayments = async (
+    userId: number,
+    getPaymentsQueryDto: GetPaymentsQueryDto,
+  ): Promise<PaymentListResponseDto> => {
+    const page = getPaymentsQueryDto.page ?? 1;
+    const size = getPaymentsQueryDto.size ?? 20;
+    const [payments, total] =
+      await this.paymentsRepository.findPaymentsByUserId(
+        userId,
+        page,
+        size,
+        getPaymentsQueryDto.status,
+      );
+
+    return {
+      items: payments.map(this.toPaymentResponseDto),
+      page,
+      size,
+      total,
+      totalPages: Math.ceil(total / size),
+    };
+  };
+
+  getMyPayment = async (
+    userId: number,
+    paymentId: number,
+  ): Promise<PaymentResponseDto> => {
+    const payment = await this.paymentsRepository.findPaymentByIdAndUserId(
+      paymentId,
+      userId,
+    );
+
+    if (!payment) {
+      throw new AppException(ErrorCode.PAYMENT_NOT_FOUND);
+    }
+
+    return this.toPaymentResponseDto(payment);
   };
 
   private confirmTossPaymentOrFail = async (

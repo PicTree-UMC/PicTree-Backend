@@ -125,6 +125,11 @@ export const ErrorCode = {
     code: 'PAYMENT404',
     message: '결제 주문을 찾을 수 없습니다.',
   },
+  PAYMENT_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'PAYMENT404',
+    message: '결제 내역을 찾을 수 없습니다.',
+  },
   PAYMENT_AMOUNT_MISMATCH: {
     status: HttpStatus.BAD_REQUEST,
     code: 'PAYMENT400',

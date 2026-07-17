@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentRecord, PaymentSubscriptionPlanRecord } from './payments.types';
 
@@ -129,6 +130,48 @@ export class PaymentsRepository {
         providerPaymentId,
         status: 'FAILED',
         failedAt,
+      },
+      include: {
+        receipt: true,
+      },
+    });
+  };
+
+  findPaymentsByUserId = async (
+    userId: number,
+    page: number,
+    size: number,
+    status?: string,
+  ): Promise<[PaymentRecord[], number]> => {
+    const where: Prisma.PaymentWhereInput = {
+      userId: BigInt(userId),
+      ...(status ? { status } : {}),
+    };
+
+    return Promise.all([
+      this.prisma.payment.findMany({
+        where,
+        include: {
+          receipt: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip: (page - 1) * size,
+        take: size,
+      }),
+      this.prisma.payment.count({ where }),
+    ]);
+  };
+
+  findPaymentByIdAndUserId = (
+    paymentId: number,
+    userId: number,
+  ): Promise<PaymentRecord | null> => {
+    return this.prisma.payment.findFirst({
+      where: {
+        id: BigInt(paymentId),
+        userId: BigInt(userId),
       },
       include: {
         receipt: true,
