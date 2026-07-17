@@ -12,27 +12,27 @@ import { SuccessCode } from '../../common/responses/success-code';
 import { AccessTokenGuard } from '../auth/access-token.guard';
 import type { JwtPayload } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { ConfirmPaymentRequestDto } from './dto/confirm-payment-request.dto';
-import { PaymentResponseDto } from './dto/payment-response.dto';
-import { ApiConfirmPayment } from './payments.swagger';
+import { CreatePaymentOrderRequestDto } from './dto/create-payment-order-request.dto';
+import { PaymentOrderResponseDto } from './dto/payment-order-response.dto';
+import { ApiCreatePaymentOrder } from './payments.swagger';
 import { PaymentsService } from './payments.service';
 
 @ApiTags('Payments')
-@Controller('payments')
+@Controller('payment-orders')
 @UseGuards(AccessTokenGuard)
-export class PaymentsController {
+export class PaymentOrdersController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
-  @Post('confirm')
+  @Post()
   @HttpCode(HttpStatus.OK)
-  @ApiConfirmPayment()
-  async confirmPayment(
+  @ApiCreatePaymentOrder()
+  async createPaymentOrder(
     @CurrentUser() currentUser: JwtPayload,
-    @Body() confirmPaymentRequestDto: ConfirmPaymentRequestDto,
-  ): Promise<ApiResponse<PaymentResponseDto>> {
-    const data = await this.paymentsService.confirmPayment(
+    @Body() createPaymentOrderRequestDto: CreatePaymentOrderRequestDto,
+  ): Promise<ApiResponse<PaymentOrderResponseDto>> {
+    const data = await this.paymentsService.createPaymentOrder(
       currentUser.userId,
-      confirmPaymentRequestDto,
+      createPaymentOrderRequestDto,
     );
 
     return ApiResponse.success(SuccessCode.OK, data);
