@@ -103,6 +103,13 @@ export const ErrorCode = {
     code: 'TERMS404',
     message: '약관을 찾을 수 없습니다.',
   },
+
+  // Payment
+  PAYMENT_SUBSCRIPTION_PLAN_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'PAYMENT404',
+    message: '구독 요금제를 찾을 수 없습니다.',
+  },
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
