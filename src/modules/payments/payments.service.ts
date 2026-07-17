@@ -72,19 +72,21 @@ export class PaymentsService {
       payment,
       confirmPaymentRequestDto,
     );
-    const paidAt = tossPayment.approvedAt
-      ? new Date(tossPayment.approvedAt)
-      : new Date();
-    const completedPayment = await this.paymentsRepository.completePayment({
-      paymentId: payment.id,
-      providerPaymentId: tossPayment.paymentKey,
-      paymentMethod: tossPayment.method,
-      status: tossPayment.status,
-      paidAt,
-      receiptUrl: tossPayment.receipt?.url ?? null,
-    });
+    const paidAt =
+      tossPayment.status === PaymentStatus.DONE
+        ? new Date(tossPayment.approvedAt as string)
+        : null;
+    const confirmedPayment =
+      await this.paymentsRepository.updatePaymentAfterConfirm({
+        paymentId: payment.id,
+        providerPaymentId: tossPayment.paymentKey,
+        paymentMethod: tossPayment.method,
+        status: tossPayment.status,
+        paidAt,
+        receiptUrl: tossPayment.receipt?.url ?? null,
+      });
 
-    return this.toPaymentResponseDto(completedPayment);
+    return this.toPaymentResponseDto(confirmedPayment);
   };
 
   getMyPayments = async (

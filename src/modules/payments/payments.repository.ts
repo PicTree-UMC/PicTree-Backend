@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PaymentStatus } from './payments.constant';
 import { PaymentRecord, PaymentSubscriptionPlanRecord } from './payments.types';
 
 type CreatePaymentData = {
@@ -12,12 +13,12 @@ type CreatePaymentData = {
   status: string;
 };
 
-type CompletePaymentData = {
+type UpdatePaymentAfterConfirmData = {
   paymentId: bigint;
   providerPaymentId: string;
   paymentMethod: string | null;
   status: string;
-  paidAt: Date;
+  paidAt: Date | null;
   receiptUrl: string | null;
 };
 
@@ -70,38 +71,38 @@ export class PaymentsRepository {
     });
   };
 
-  completePayment = async (
-    completePaymentData: CompletePaymentData,
+  updatePaymentAfterConfirm = async (
+    updatePaymentAfterConfirmData: UpdatePaymentAfterConfirmData,
   ): Promise<PaymentRecord> => {
     return this.prisma.$transaction(async (tx) => {
       const updatedPayment = await tx.payment.update({
         where: {
-          id: completePaymentData.paymentId,
+          id: updatePaymentAfterConfirmData.paymentId,
         },
         data: {
-          providerPaymentId: completePaymentData.providerPaymentId,
-          paymentMethod: completePaymentData.paymentMethod,
-          status: completePaymentData.status,
-          paidAt: completePaymentData.paidAt,
+          providerPaymentId: updatePaymentAfterConfirmData.providerPaymentId,
+          paymentMethod: updatePaymentAfterConfirmData.paymentMethod,
+          status: updatePaymentAfterConfirmData.status,
+          paidAt: updatePaymentAfterConfirmData.paidAt,
         },
         include: {
           receipt: true,
         },
       });
 
-      if (completePaymentData.receiptUrl) {
+      if (updatePaymentAfterConfirmData.receiptUrl) {
         await tx.paymentReceipt.upsert({
           where: {
-            paymentId: completePaymentData.paymentId,
+            paymentId: updatePaymentAfterConfirmData.paymentId,
           },
           update: {
-            receiptUrl: completePaymentData.receiptUrl,
-            issuedAt: completePaymentData.paidAt,
+            receiptUrl: updatePaymentAfterConfirmData.receiptUrl,
+            issuedAt: updatePaymentAfterConfirmData.paidAt,
           },
           create: {
-            paymentId: completePaymentData.paymentId,
-            receiptUrl: completePaymentData.receiptUrl,
-            issuedAt: completePaymentData.paidAt,
+            paymentId: updatePaymentAfterConfirmData.paymentId,
+            receiptUrl: updatePaymentAfterConfirmData.receiptUrl,
+            issuedAt: updatePaymentAfterConfirmData.paidAt,
           },
         });
       }
@@ -128,7 +129,7 @@ export class PaymentsRepository {
       },
       data: {
         providerPaymentId,
-        status: 'FAILED',
+        status: PaymentStatus.FAILED,
         failedAt,
       },
       include: {

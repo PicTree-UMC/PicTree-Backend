@@ -3,7 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import { ConfirmPaymentRequestDto } from './dto/confirm-payment-request.dto';
-import { TossPaymentResponse } from './toss-payments.types';
+import { PaymentStatus, PaymentStatusType } from './payments.constant';
+import {
+  TossPaymentConfirmResult,
+  TossPaymentResponse,
+} from './toss-payments.types';
 
 const TOSS_PAYMENTS_BASE_URL = 'https://api.tosspayments.com';
 const TOSS_PAYMENTS_CONFIRM_PATH = '/v1/payments/confirm';
@@ -15,7 +19,7 @@ export class TossPaymentsService {
 
   confirmPayment = async (
     confirmPaymentRequestDto: ConfirmPaymentRequestDto,
-  ): Promise<TossPaymentResponse> => {
+  ): Promise<TossPaymentConfirmResult> => {
     const response = await fetch(
       `${this.getBaseUrl()}${TOSS_PAYMENTS_CONFIRM_PATH}`,
       {
@@ -35,7 +39,7 @@ export class TossPaymentsService {
       throw new AppException(ErrorCode.PAYMENT_PROVIDER_REQUEST_FAILED);
     }
 
-    return responseBody;
+    return this.toConfirmResult(responseBody);
   };
 
   private createAuthorizationHeader = (): string => {
@@ -75,5 +79,37 @@ export class TossPaymentsService {
       (payment.receipt === null ||
         (typeof payment.receipt === 'object' && payment.receipt !== null))
     );
+  };
+
+  private toConfirmResult = (
+    tossPayment: TossPaymentResponse,
+  ): TossPaymentConfirmResult => {
+    const status = this.mapPaymentStatus(tossPayment.status);
+
+    if (status === PaymentStatus.DONE && !tossPayment.approvedAt) {
+      throw new AppException(ErrorCode.PAYMENT_PROVIDER_REQUEST_FAILED);
+    }
+
+    return {
+      ...tossPayment,
+      status,
+    };
+  };
+
+  private mapPaymentStatus = (providerStatus: string): PaymentStatusType => {
+    switch (providerStatus) {
+      case 'DONE':
+        return PaymentStatus.DONE;
+      case 'WAITING_FOR_DEPOSIT':
+        return PaymentStatus.WAITING_FOR_DEPOSIT;
+      case 'CANCELED':
+      case 'PARTIAL_CANCELED':
+        return PaymentStatus.CANCELED;
+      case 'ABORTED':
+      case 'EXPIRED':
+        return PaymentStatus.FAILED;
+      default:
+        throw new AppException(ErrorCode.PAYMENT_PROVIDER_REQUEST_FAILED);
+    }
   };
 }

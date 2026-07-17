@@ -4,10 +4,14 @@ export const PaymentProvider = {
 
 export const PaymentStatus = {
   READY: 'READY',
+  WAITING_FOR_DEPOSIT: 'WAITING_FOR_DEPOSIT',
   DONE: 'DONE',
   FAILED: 'FAILED',
   CANCELED: 'CANCELED',
 } as const;
+
+export type PaymentStatusType =
+  (typeof PaymentStatus)[keyof typeof PaymentStatus];
 
 export const PaymentOrder = {
   ORDER_ID_PREFIX: 'ORDER',
