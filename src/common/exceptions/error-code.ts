@@ -103,6 +103,43 @@ export const ErrorCode = {
     code: 'TERMS404',
     message: '약관을 찾을 수 없습니다.',
   },
+
+  // Payment
+  PAYMENT_SUBSCRIPTION_PLAN_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'PAYMENT404',
+    message: '구독 요금제를 찾을 수 없습니다.',
+  },
+  PAYMENT_CONFIG_MISSING: {
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    code: 'PAYMENT500',
+    message: '결제 설정이 누락되었습니다.',
+  },
+  PAYMENT_PROVIDER_REQUEST_FAILED: {
+    status: HttpStatus.BAD_GATEWAY,
+    code: 'PAYMENT502',
+    message: '결제 제공자와 통신하는 중 오류가 발생했습니다.',
+  },
+  PAYMENT_ORDER_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'PAYMENT404',
+    message: '결제 주문을 찾을 수 없습니다.',
+  },
+  PAYMENT_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'PAYMENT404',
+    message: '결제 내역을 찾을 수 없습니다.',
+  },
+  PAYMENT_AMOUNT_MISMATCH: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'PAYMENT400',
+    message: '결제 금액이 주문 금액과 일치하지 않습니다.',
+  },
+  PAYMENT_INVALID_STATUS: {
+    status: HttpStatus.CONFLICT,
+    code: 'PAYMENT409',
+    message: '결제를 승인할 수 없는 상태입니다.',
+  },
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
