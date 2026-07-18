@@ -71,7 +71,7 @@ export class PaymentsRepository {
     });
   };
 
-  updatePaymentAfterConfirm = async (
+  updatePaymentAfterConfirm = (
     updatePaymentAfterConfirmData: UpdatePaymentAfterConfirmData,
   ): Promise<PaymentRecord> => {
     return this.prisma.$transaction(async (tx) => {
