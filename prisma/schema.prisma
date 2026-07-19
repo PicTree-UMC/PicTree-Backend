@@ -30,6 +30,8 @@ model User {
   subscriptions         UserSubscription[]   @relation("UserSubscriptions")
   billingKeys           BillingKey[]
   payments              Payment[]
+  trees                 Tree[]
+  routes                Route[]
 
   @@unique([currentSubscriptionId, id])
   @@map("users")
@@ -211,4 +213,70 @@ model PaymentReceipt {
   payment    Payment   @relation(fields: [paymentId], references: [id])
 
   @@map("payment_receipts")
+}
+
+model Tree {
+  id           BigInt      @id @default(autoincrement()) @db.BigInt
+  userId       BigInt      @map("user_id") @db.BigInt
+  name         String      @db.VarChar(100)
+  description  String?     @db.VarChar(500)
+  latitude     Decimal     @db.Decimal(10, 7)
+  longitude    Decimal     @db.Decimal(10, 7)
+  address      String?     @db.VarChar(255)
+  isFavorite   Boolean     @default(false) @map("is_favorite")
+  mood         String      @db.VarChar(20)
+  defaultImage String      @map("default_image") @db.VarChar(20)
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  deletedAt    DateTime?   @map("deleted_at")
+  user         User        @relation(fields: [userId], references: [id])
+  images       TreeImage[]
+
+  @@index([userId])
+  @@map("trees")
+}
+
+model TreeImage {
+  id               BigInt   @id @default(autoincrement()) @db.BigInt
+  treeId           BigInt   @map("tree_id") @db.BigInt
+  timelineRecordId BigInt?  @map("timeline_record_id") @db.BigInt
+  imageUrl         String   @map("image_url") @db.VarChar(500)
+  s3Key            String   @map("s3_key") @db.VarChar(500)
+  fileSize         BigInt   @map("file_size") @db.BigInt
+  sortOrder        Int      @map("sort_order")
+  createdAt        DateTime @default(now()) @map("created_at")
+  tree             Tree     @relation(fields: [treeId], references: [id])
+
+  @@index([treeId])
+  @@index([timelineRecordId])
+  @@map("tree_images")
+}
+
+model Route {
+  id             BigInt       @id @default(autoincrement()) @db.BigInt
+  userId         BigInt       @map("user_id") @db.BigInt
+  routeName      String       @map("route_name") @db.VarChar(100)
+  totalDistanceM Int?         @map("total_distance_m")
+  startedAt      DateTime     @map("started_at")
+  endedAt        DateTime?    @map("ended_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  user           User         @relation(fields: [userId], references: [id])
+  points         RoutePoint[]
+
+  @@index([userId])
+  @@map("routes")
+}
+
+model RoutePoint {
+  id         BigInt   @id @default(autoincrement()) @db.BigInt
+  routeId    BigInt   @map("route_id") @db.BigInt
+  latitude   Decimal  @db.Decimal(10, 7)
+  longitude  Decimal  @db.Decimal(10, 7)
+  sequence   Int
+  recordedAt DateTime @map("recorded_at")
+  route      Route    @relation(fields: [routeId], references: [id])
+
+  @@index([routeId])
+  @@map("route_points")
 }
