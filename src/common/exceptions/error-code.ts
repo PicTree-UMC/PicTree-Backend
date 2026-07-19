@@ -140,6 +140,23 @@ export const ErrorCode = {
     code: 'PAYMENT409',
     message: '결제를 승인할 수 없는 상태입니다.',
   },
+
+  // Tree
+  TREE_INVALID_REQUEST: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'TREE400',
+    message: '나무 요청 값이 올바르지 않습니다.',
+  },
+  TREE_FORBIDDEN: {
+    status: HttpStatus.FORBIDDEN,
+    code: 'TREE403',
+    message: '접근 권한이 없습니다.',
+  },
+  TREE_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'TREE404',
+    message: '존재하지 않는 나무입니다.',
+  },
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
