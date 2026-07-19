@@ -105,7 +105,11 @@ export class TreesService {
       this.treesRepository.findUserPlanCode(userId),
     ]);
 
-    return treeCount % AD_INTERVAL === 0 && planCode === FREE_PLAN_CODE;
+    return (
+      treeCount > 0 &&
+      treeCount % AD_INTERVAL === 0 &&
+      planCode === FREE_PLAN_CODE
+    );
   };
 
   private getOwnedTreeOrThrow = async (

@@ -8,6 +8,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { TreeMood } from '../trees.constant';
+import type { TreeMoodType } from '../trees.constant';
 
 export class UpdateTreeRequestDto {
   @ApiPropertyOptional({
@@ -50,7 +51,7 @@ export class UpdateTreeRequestDto {
   })
   @ValidateIf((_, value) => value !== undefined)
   @IsIn(Object.values(TreeMood))
-  mood?: string;
+  mood?: TreeMoodType;
 
   @ApiPropertyOptional({
     example: 'DEFAULT_2',

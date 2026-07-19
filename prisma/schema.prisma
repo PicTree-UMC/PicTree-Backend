@@ -245,7 +245,7 @@ model TreeImage {
   fileSize         BigInt   @map("file_size") @db.BigInt
   sortOrder        Int      @map("sort_order")
   createdAt        DateTime @default(now()) @map("created_at")
-  tree             Tree     @relation(fields: [treeId], references: [id])
+  tree             Tree     @relation(fields: [treeId], references: [id], onDelete: Cascade)
 
   @@index([treeId])
   @@index([timelineRecordId])
@@ -275,7 +275,7 @@ model RoutePoint {
   longitude  Decimal  @db.Decimal(10, 7)
   sequence   Int
   recordedAt DateTime @map("recorded_at")
-  route      Route    @relation(fields: [routeId], references: [id])
+  route      Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
 
   @@index([routeId])
   @@map("route_points")

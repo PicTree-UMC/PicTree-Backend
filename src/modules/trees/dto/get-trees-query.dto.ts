@@ -1,17 +1,18 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { TreePagination } from '../trees.constant';
 
 export class GetTreesQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(1)
-  page?: number = 1;
+  @Min(TreePagination.MIN_PAGE)
+  page?: number = TreePagination.DEFAULT_PAGE;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(1)
-  @Max(100)
-  size?: number = 20;
+  @Min(TreePagination.MIN_SIZE)
+  @Max(TreePagination.MAX_SIZE)
+  size?: number = TreePagination.DEFAULT_SIZE;
 }

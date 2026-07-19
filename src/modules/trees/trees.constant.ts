@@ -13,7 +13,9 @@ export const FREE_PLAN_CODE = 'FREE';
 export const AD_INTERVAL = 2;
 
 export const TreePagination = {
+  MIN_PAGE: 1,
   DEFAULT_PAGE: 1,
+  MIN_SIZE: 1,
   DEFAULT_SIZE: 20,
   MAX_SIZE: 100,
 } as const;

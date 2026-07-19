@@ -10,6 +10,7 @@ import {
   Min,
 } from 'class-validator';
 import { Coordinate, TreeMood } from '../trees.constant';
+import type { TreeMoodType } from '../trees.constant';
 
 export class CreateTreeRequestDto {
   @ApiProperty({
@@ -56,7 +57,7 @@ export class CreateTreeRequestDto {
 
   @ApiProperty({ example: 'HAPPY', enum: TreeMood, description: '기분 이모지' })
   @IsIn(Object.values(TreeMood))
-  mood!: string;
+  mood!: TreeMoodType;
 
   @ApiProperty({
     example: 'DEFAULT_1',
