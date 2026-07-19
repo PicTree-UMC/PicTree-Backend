@@ -157,6 +157,23 @@ export const ErrorCode = {
     code: 'TREE404',
     message: '존재하지 않는 나무입니다.',
   },
+
+  // Route
+  ROUTE_INVALID_REQUEST: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'ROUTE400',
+    message: '동선 요청 값이 올바르지 않습니다.',
+  },
+  ROUTE_FORBIDDEN: {
+    status: HttpStatus.FORBIDDEN,
+    code: 'ROUTE403',
+    message: '접근 권한이 없습니다.',
+  },
+  ROUTE_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'ROUTE404',
+    message: '존재하지 않는 동선입니다.',
+  },
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];

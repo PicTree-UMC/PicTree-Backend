@@ -19,10 +19,3 @@ export const TreePagination = {
   DEFAULT_SIZE: 20,
   MAX_SIZE: 100,
 } as const;
-
-export const Coordinate = {
-  MIN_LATITUDE: -90,
-  MAX_LATITUDE: 90,
-  MIN_LONGITUDE: -180,
-  MAX_LONGITUDE: 180,
-} as const;
