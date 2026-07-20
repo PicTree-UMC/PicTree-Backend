@@ -140,6 +140,11 @@ export const ErrorCode = {
     code: 'PAYMENT409',
     message: '결제를 승인할 수 없는 상태입니다.',
   },
+  PAYMENT_CANCEL_NOT_ALLOWED: {
+    status: HttpStatus.CONFLICT,
+    code: 'PAYMENT409',
+    message: '취소할 수 없는 결제 상태입니다.',
+  },
 
   // Tree
   TREE_INVALID_REQUEST: {

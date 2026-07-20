@@ -17,3 +17,7 @@ export const PaymentOrder = {
   ORDER_ID_PREFIX: 'ORDER',
   CUSTOMER_KEY_PREFIX: 'USER',
 } as const;
+
+export const PaymentIdempotencyKey = {
+  CANCEL_PREFIX: 'CANCEL_PAYMENT',
+} as const;

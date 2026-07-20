@@ -27,11 +27,14 @@ describe('PaymentsService', () => {
   beforeEach(() => {
     paymentsRepository = {
       findPaymentByOrderId: jest.fn(),
+      findPaymentByIdAndUserId: jest.fn(),
       failPayment: jest.fn(),
       updatePaymentAfterConfirm: jest.fn(),
+      updatePaymentAfterCancel: jest.fn(),
     } as unknown as jest.Mocked<PaymentsRepository>;
     tossPaymentsService = {
       confirmPayment: jest.fn(),
+      cancelPayment: jest.fn(),
       getPaymentForReconciliation: jest.fn(),
     } as unknown as jest.Mocked<TossPaymentsService>;
     paymentsService = new PaymentsService(
@@ -122,6 +125,113 @@ describe('PaymentsService', () => {
       }),
     );
   });
+
+  describe('cancelPayment', () => {
+    const cancelRequest = {
+      cancelReason: '사용자 요청으로 인한 결제 취소',
+    };
+
+    it('완료된 결제를 전액 취소한다', async () => {
+      const donePayment = createPaymentRecord(PaymentStatus.DONE);
+      const canceledPayment = createPaymentRecord(PaymentStatus.CANCELED);
+      const canceledTossPayment = createTossPayment(PaymentStatus.CANCELED);
+
+      paymentsRepository.findPaymentByIdAndUserId.mockResolvedValue(
+        donePayment,
+      );
+      tossPaymentsService.cancelPayment.mockResolvedValue(canceledTossPayment);
+      paymentsRepository.updatePaymentAfterCancel.mockResolvedValue(
+        canceledPayment,
+      );
+
+      const result = await paymentsService.cancelPayment(1, 1, cancelRequest);
+
+      expect(tossPaymentsService.cancelPayment).toHaveBeenCalledWith(
+        'payment-key',
+        cancelRequest.cancelReason,
+        'CANCEL_PAYMENT_1',
+      );
+      expect(result.status).toBe(PaymentStatus.CANCELED);
+    });
+
+    it('이미 취소된 결제는 토스에 중복 요청하지 않는다', async () => {
+      const canceledPayment = createPaymentRecord(PaymentStatus.CANCELED);
+
+      paymentsRepository.findPaymentByIdAndUserId.mockResolvedValue(
+        canceledPayment,
+      );
+
+      const result = await paymentsService.cancelPayment(1, 1, cancelRequest);
+
+      expect(tossPaymentsService.cancelPayment).not.toHaveBeenCalled();
+      expect(result.status).toBe(PaymentStatus.CANCELED);
+    });
+
+    it('완료 상태가 아닌 결제는 취소하지 않는다', async () => {
+      paymentsRepository.findPaymentByIdAndUserId.mockResolvedValue(
+        readyPayment,
+      );
+
+      await expect(
+        paymentsService.cancelPayment(1, 1, cancelRequest),
+      ).rejects.toBeInstanceOf(AppException);
+
+      expect(tossPaymentsService.cancelPayment).not.toHaveBeenCalled();
+    });
+
+    it('취소 결과가 불확실하면 토스 조회 결과로 복구한다', async () => {
+      const donePayment = createPaymentRecord(PaymentStatus.DONE);
+      const canceledPayment = createPaymentRecord(PaymentStatus.CANCELED);
+      const canceledTossPayment = createTossPayment(PaymentStatus.CANCELED);
+
+      paymentsRepository.findPaymentByIdAndUserId.mockResolvedValue(
+        donePayment,
+      );
+      tossPaymentsService.cancelPayment.mockRejectedValue(
+        new TossPaymentResultUnknownError(),
+      );
+      tossPaymentsService.getPaymentForReconciliation.mockResolvedValue(
+        canceledTossPayment,
+      );
+      paymentsRepository.updatePaymentAfterCancel.mockResolvedValue(
+        canceledPayment,
+      );
+
+      const result = await paymentsService.cancelPayment(1, 1, cancelRequest);
+
+      expect(
+        tossPaymentsService.getPaymentForReconciliation,
+      ).toHaveBeenCalledWith(donePayment.orderId, 'payment-key');
+      expect(result.status).toBe(PaymentStatus.CANCELED);
+    });
+
+    it('취소 후 저장에 실패하면 토스 조회 후 다시 저장한다', async () => {
+      const donePayment = createPaymentRecord(PaymentStatus.DONE);
+      const canceledPayment = createPaymentRecord(PaymentStatus.CANCELED);
+      const canceledTossPayment = createTossPayment(PaymentStatus.CANCELED);
+
+      paymentsRepository.findPaymentByIdAndUserId.mockResolvedValue(
+        donePayment,
+      );
+      tossPaymentsService.cancelPayment.mockResolvedValue(canceledTossPayment);
+      tossPaymentsService.getPaymentForReconciliation.mockResolvedValue(
+        canceledTossPayment,
+      );
+      paymentsRepository.updatePaymentAfterCancel
+        .mockRejectedValueOnce(new Error('temporary database error'))
+        .mockResolvedValueOnce(canceledPayment);
+
+      const result = await paymentsService.cancelPayment(1, 1, cancelRequest);
+
+      expect(
+        tossPaymentsService.getPaymentForReconciliation,
+      ).toHaveBeenCalledWith(donePayment.orderId, 'payment-key');
+      expect(paymentsRepository.updatePaymentAfterCancel).toHaveBeenCalledTimes(
+        2,
+      );
+      expect(result.status).toBe(PaymentStatus.CANCELED);
+    });
+  });
 });
 
 function createPaymentRecord(status: string): PaymentRecord {
@@ -139,7 +249,7 @@ function createPaymentRecord(status: string): PaymentRecord {
     status,
     paidAt: status === PaymentStatus.DONE ? new Date() : null,
     failedAt: null,
-    canceledAt: null,
+    canceledAt: status === PaymentStatus.CANCELED ? new Date() : null,
     createdAt: new Date(),
     updatedAt: new Date(),
     receipt: null,
@@ -155,5 +265,15 @@ function createTossPayment(status: string): TossPaymentConfirmResult {
     approvedAt:
       status === PaymentStatus.DONE ? '2026-07-18T01:00:00+09:00' : null,
     receipt: null,
+    cancels:
+      status === PaymentStatus.CANCELED
+        ? [
+            {
+              cancelAmount: 2900,
+              canceledAt: '2026-07-20T10:00:00+09:00',
+              cancelStatus: PaymentStatus.DONE,
+            },
+          ]
+        : null,
   } as TossPaymentConfirmResult;
 }
