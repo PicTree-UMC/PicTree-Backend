@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { RoutesModule } from './modules/routes/routes.module';
 import { SubscriptionPlansModule } from './modules/subscription-plans/subscription-plans.module';
 import { TermsModule } from './modules/terms/terms.module';
 import { TreesModule } from './modules/trees/trees.module';
@@ -18,6 +19,7 @@ import { PrismaModule } from './prisma/prisma.module';
     SubscriptionPlansModule,
     PaymentsModule,
     TreesModule,
+    RoutesModule,
   ],
   controllers: [],
   providers: [],

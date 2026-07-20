@@ -9,7 +9,8 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { Coordinate, TreeMood } from '../trees.constant';
+import { Coordinate } from '../../../common/constants/coordinate.constant';
+import { TreeMood } from '../trees.constant';
 import type { TreeMoodType } from '../trees.constant';
 
 export class CreateTreeRequestDto {
