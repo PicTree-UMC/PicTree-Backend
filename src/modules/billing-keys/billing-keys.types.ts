@@ -12,3 +12,8 @@ export type CreateBillingKeyData = {
   status: string;
   issuedAt: Date;
 };
+
+export type FindOrCreateBillingKeyResult = {
+  billingKey: BillingKeyRecord;
+  created: boolean;
+};

@@ -1,26 +1,61 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BillingKeyStatus } from './billing-keys.constant';
-import { BillingKeyRecord, CreateBillingKeyData } from './billing-keys.types';
+import {
+  BillingKeyRecord,
+  CreateBillingKeyData,
+  FindOrCreateBillingKeyResult,
+} from './billing-keys.types';
 
 @Injectable()
 export class BillingKeysRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  createBillingKey = (
+  findOrCreateActiveBillingKey = (
     createBillingKeyData: CreateBillingKeyData,
-  ): Promise<BillingKeyRecord> => {
-    return this.prisma.billingKey.create({
-      data: {
-        userId: BigInt(createBillingKeyData.userId),
-        paymentProvider: createBillingKeyData.paymentProvider,
-        billingKey: createBillingKeyData.billingKey,
-        customerKey: createBillingKeyData.customerKey,
-        cardCompany: createBillingKeyData.cardCompany,
-        cardNumberMasked: createBillingKeyData.cardNumberMasked,
-        status: createBillingKeyData.status,
-        issuedAt: createBillingKeyData.issuedAt,
-      },
+  ): Promise<FindOrCreateBillingKeyResult> => {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        SELECT id
+        FROM users
+        WHERE id = ${BigInt(createBillingKeyData.userId)}
+        FOR UPDATE
+      `;
+
+      const existingBillingKey = await tx.billingKey.findFirst({
+        where: {
+          userId: BigInt(createBillingKeyData.userId),
+          paymentProvider: createBillingKeyData.paymentProvider,
+          cardCompany: createBillingKeyData.cardCompany,
+          cardNumberMasked: createBillingKeyData.cardNumberMasked,
+          status: BillingKeyStatus.ACTIVE,
+        },
+      });
+
+      if (existingBillingKey) {
+        return {
+          billingKey: existingBillingKey,
+          created: false,
+        };
+      }
+
+      const billingKey = await tx.billingKey.create({
+        data: {
+          userId: BigInt(createBillingKeyData.userId),
+          paymentProvider: createBillingKeyData.paymentProvider,
+          billingKey: createBillingKeyData.billingKey,
+          customerKey: createBillingKeyData.customerKey,
+          cardCompany: createBillingKeyData.cardCompany,
+          cardNumberMasked: createBillingKeyData.cardNumberMasked,
+          status: createBillingKeyData.status,
+          issuedAt: createBillingKeyData.issuedAt,
+        },
+      });
+
+      return {
+        billingKey,
+        created: true,
+      };
     });
   };
 
@@ -34,23 +69,6 @@ export class BillingKeysRepository {
       },
       orderBy: {
         createdAt: 'desc',
-      },
-    });
-  };
-
-  findActiveBillingKeyByCard = (
-    userId: number,
-    paymentProvider: string,
-    cardCompany: string | null,
-    cardNumberMasked: string,
-  ): Promise<BillingKeyRecord | null> => {
-    return this.prisma.billingKey.findFirst({
-      where: {
-        userId: BigInt(userId),
-        paymentProvider,
-        cardCompany,
-        cardNumberMasked,
-        status: BillingKeyStatus.ACTIVE,
       },
     });
   };

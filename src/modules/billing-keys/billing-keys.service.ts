@@ -57,32 +57,23 @@ export class BillingKeysService {
 
     this.validateTossBillingKey(tossBillingKey, expectedCustomerKey);
 
-    const existingBillingKey =
-      await this.billingKeysRepository.findActiveBillingKeyByCard(
+    const billingKeyResult =
+      await this.billingKeysRepository.findOrCreateActiveBillingKey({
         userId,
-        BillingKeyProvider.TOSS,
-        tossBillingKey.card.issuerCode,
-        tossBillingKey.card.number,
-      );
+        paymentProvider: BillingKeyProvider.TOSS,
+        billingKey: tossBillingKey.billingKey,
+        customerKey: expectedCustomerKey,
+        cardCompany: tossBillingKey.card.issuerCode,
+        cardNumberMasked: tossBillingKey.card.number,
+        status: BillingKeyStatus.ACTIVE,
+        issuedAt: new Date(tossBillingKey.authenticatedAt),
+      });
 
-    if (existingBillingKey) {
-      await this.deleteTossBillingKey(tossBillingKey.billingKey);
-
-      return this.toBillingKeyResponseDto(existingBillingKey);
+    if (!billingKeyResult.created) {
+      await this.cleanupDuplicateTossBillingKey(tossBillingKey.billingKey);
     }
 
-    const billingKey = await this.billingKeysRepository.createBillingKey({
-      userId,
-      paymentProvider: BillingKeyProvider.TOSS,
-      billingKey: tossBillingKey.billingKey,
-      customerKey: expectedCustomerKey,
-      cardCompany: tossBillingKey.card.issuerCode,
-      cardNumberMasked: tossBillingKey.card.number,
-      status: BillingKeyStatus.ACTIVE,
-      issuedAt: new Date(tossBillingKey.authenticatedAt),
-    });
-
-    return this.toBillingKeyResponseDto(billingKey);
+    return this.toBillingKeyResponseDto(billingKeyResult.billingKey);
   };
 
   getMyBillingKeys = async (
@@ -155,6 +146,23 @@ export class BillingKeysService {
       await this.tossBillingService.deleteBillingKey(billingKey);
     } catch (error) {
       this.handleTossBillingError(error);
+    }
+  };
+
+  private cleanupDuplicateTossBillingKey = async (
+    billingKey: string,
+  ): Promise<void> => {
+    try {
+      await this.tossBillingService.deleteBillingKey(billingKey);
+    } catch (error) {
+      if (
+        error instanceof TossBillingRejectedError ||
+        error instanceof TossBillingResultUnknownError
+      ) {
+        return;
+      }
+
+      throw error;
     }
   };
 

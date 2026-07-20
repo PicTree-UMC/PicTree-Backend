@@ -11,9 +11,8 @@ import { TossBillingKeyResponse } from './toss-billing.types';
 describe('BillingKeysService', () => {
   let billingKeysService: BillingKeysService;
   let billingKeysRepository: {
-    createBillingKey: jest.Mock;
+    findOrCreateActiveBillingKey: jest.Mock;
     findActiveBillingKeysByUserId: jest.Mock;
-    findActiveBillingKeyByCard: jest.Mock;
     findBillingKeyByIdAndUserId: jest.Mock;
     deactivateBillingKey: jest.Mock;
   };
@@ -55,9 +54,8 @@ describe('BillingKeysService', () => {
 
   beforeEach(() => {
     billingKeysRepository = {
-      createBillingKey: jest.fn(),
+      findOrCreateActiveBillingKey: jest.fn(),
       findActiveBillingKeysByUserId: jest.fn(),
-      findActiveBillingKeyByCard: jest.fn(),
       findBillingKeyByIdAndUserId: jest.fn(),
       deactivateBillingKey: jest.fn(),
     };
@@ -99,7 +97,9 @@ describe('BillingKeysService', () => {
     ).rejects.toBeInstanceOf(AppException);
 
     expect(tossBillingService.issueBillingKey).not.toHaveBeenCalled();
-    expect(billingKeysRepository.createBillingKey).not.toHaveBeenCalled();
+    expect(
+      billingKeysRepository.findOrCreateActiveBillingKey,
+    ).not.toHaveBeenCalled();
   });
 
   it('발급한 빌링키를 저장하고 응답에는 원본 키를 노출하지 않는다', async () => {
@@ -109,15 +109,19 @@ describe('BillingKeysService', () => {
     tossBillingService.issueBillingKey.mockResolvedValue(
       createTossBillingKey(customerKey),
     );
-    billingKeysRepository.findActiveBillingKeyByCard.mockResolvedValue(null);
-    billingKeysRepository.createBillingKey.mockResolvedValue(billingKeyRecord);
+    billingKeysRepository.findOrCreateActiveBillingKey.mockResolvedValue({
+      billingKey: billingKeyRecord,
+      created: true,
+    });
 
     const result = await billingKeysService.createBillingKey(1, {
       authKey: 'auth-key',
       customerKey,
     });
 
-    expect(billingKeysRepository.createBillingKey).toHaveBeenCalledWith(
+    expect(
+      billingKeysRepository.findOrCreateActiveBillingKey,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 1,
         billingKey: 'secret-billing-key',
@@ -131,14 +135,18 @@ describe('BillingKeysService', () => {
 
   it('같은 활성 카드가 있으면 새 빌링키를 삭제하고 기존 수단을 반환한다', async () => {
     const customerKey = billingKeysService.getCustomerKey(1).customerKey;
-    const existingBillingKey = createBillingKeyRecord({ customerKey });
+    const existingBillingKey = createBillingKeyRecord({
+      billingKey: 'existing-billing-key',
+      customerKey,
+    });
 
     tossBillingService.issueBillingKey.mockResolvedValue(
       createTossBillingKey(customerKey),
     );
-    billingKeysRepository.findActiveBillingKeyByCard.mockResolvedValue(
-      existingBillingKey,
-    );
+    billingKeysRepository.findOrCreateActiveBillingKey.mockResolvedValue({
+      billingKey: existingBillingKey,
+      created: false,
+    });
     tossBillingService.deleteBillingKey.mockResolvedValue(undefined);
 
     const result = await billingKeysService.createBillingKey(1, {
@@ -149,8 +157,54 @@ describe('BillingKeysService', () => {
     expect(tossBillingService.deleteBillingKey).toHaveBeenCalledWith(
       'secret-billing-key',
     );
-    expect(billingKeysRepository.createBillingKey).not.toHaveBeenCalled();
     expect(result.billingKeyId).toBe(1);
+  });
+
+  it('중복 빌링키 정리에 실패해도 기존 수단을 반환한다', async () => {
+    const customerKey = billingKeysService.getCustomerKey(1).customerKey;
+    const existingBillingKey = createBillingKeyRecord({
+      billingKey: 'existing-billing-key',
+      customerKey,
+    });
+
+    tossBillingService.issueBillingKey.mockResolvedValue(
+      createTossBillingKey(customerKey),
+    );
+    billingKeysRepository.findOrCreateActiveBillingKey.mockResolvedValue({
+      billingKey: existingBillingKey,
+      created: false,
+    });
+    tossBillingService.deleteBillingKey.mockRejectedValue(
+      new TossBillingResultUnknownError(),
+    );
+
+    await expect(
+      billingKeysService.createBillingKey(1, {
+        authKey: 'auth-key',
+        customerKey,
+      }),
+    ).resolves.toMatchObject({ billingKeyId: 1 });
+  });
+
+  it('중복 빌링키 정리의 예상하지 못한 오류는 전파한다', async () => {
+    const customerKey = billingKeysService.getCustomerKey(1).customerKey;
+    const unexpectedError = new Error('unexpected error');
+
+    tossBillingService.issueBillingKey.mockResolvedValue(
+      createTossBillingKey(customerKey),
+    );
+    billingKeysRepository.findOrCreateActiveBillingKey.mockResolvedValue({
+      billingKey: createBillingKeyRecord({ customerKey }),
+      created: false,
+    });
+    tossBillingService.deleteBillingKey.mockRejectedValue(unexpectedError);
+
+    await expect(
+      billingKeysService.createBillingKey(1, {
+        authKey: 'auth-key',
+        customerKey,
+      }),
+    ).rejects.toBe(unexpectedError);
   });
 
   it('다른 사용자의 결제 수단은 삭제할 수 없다', async () => {
