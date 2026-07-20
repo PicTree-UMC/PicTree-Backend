@@ -16,11 +16,14 @@ import { SuccessCode } from '../../common/responses/success-code';
 import { AccessTokenGuard } from '../auth/access-token.guard';
 import type { JwtPayload } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { CancelPaymentRequestDto } from './dto/cancel-payment-request.dto';
+import { CancelPaymentResponseDto } from './dto/cancel-payment-response.dto';
 import { ConfirmPaymentRequestDto } from './dto/confirm-payment-request.dto';
 import { GetPaymentsQueryDto } from './dto/get-payments-query.dto';
 import { PaymentListResponseDto } from './dto/payment-list-response.dto';
 import { PaymentResponseDto } from './dto/payment-response.dto';
 import {
+  ApiCancelPayment,
   ApiConfirmPayment,
   ApiGetPayment,
   ApiGetPayments,
@@ -74,5 +77,22 @@ export class PaymentsController {
     );
 
     return ApiResponse.success(SuccessCode.OK, data);
+  }
+
+  @Post(':paymentId/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiCancelPayment()
+  async cancelPayment(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('paymentId', ParseIntPipe) paymentId: number,
+    @Body() cancelPaymentRequestDto: CancelPaymentRequestDto,
+  ): Promise<ApiResponse<CancelPaymentResponseDto>> {
+    const data = await this.paymentsService.cancelPayment(
+      currentUser.userId,
+      paymentId,
+      cancelPaymentRequestDto,
+    );
+
+    return ApiResponse.success(SuccessCode.PAYMENT_CANCELED, data);
   }
 }

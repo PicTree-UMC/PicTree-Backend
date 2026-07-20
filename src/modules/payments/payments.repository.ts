@@ -137,6 +137,33 @@ export class PaymentsRepository {
     });
   };
 
+  updatePaymentAfterCancel = (
+    paymentId: bigint,
+    canceledAt: Date,
+  ): Promise<PaymentRecord> => {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.payment.updateMany({
+        where: {
+          id: paymentId,
+          status: PaymentStatus.DONE,
+        },
+        data: {
+          status: PaymentStatus.CANCELED,
+          canceledAt,
+        },
+      });
+
+      return tx.payment.findUniqueOrThrow({
+        where: {
+          id: paymentId,
+        },
+        include: {
+          receipt: true,
+        },
+      });
+    });
+  };
+
   findPaymentsByUserId = async (
     userId: number,
     page: number,

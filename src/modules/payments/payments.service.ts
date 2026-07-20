@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
+import { CancelPaymentRequestDto } from './dto/cancel-payment-request.dto';
+import { CancelPaymentResponseDto } from './dto/cancel-payment-response.dto';
 import { ConfirmPaymentRequestDto } from './dto/confirm-payment-request.dto';
 import { CreatePaymentOrderRequestDto } from './dto/create-payment-order-request.dto';
 import { GetPaymentsQueryDto } from './dto/get-payments-query.dto';
@@ -8,6 +10,7 @@ import { PaymentListResponseDto } from './dto/payment-list-response.dto';
 import { PaymentOrderResponseDto } from './dto/payment-order-response.dto';
 import { PaymentResponseDto } from './dto/payment-response.dto';
 import {
+  PaymentIdempotencyKey,
   PaymentOrder,
   PaymentProvider,
   PaymentStatus,
@@ -125,6 +128,38 @@ export class PaymentsService {
     return this.toPaymentResponseDto(payment);
   };
 
+  cancelPayment = async (
+    userId: number,
+    paymentId: number,
+    cancelPaymentRequestDto: CancelPaymentRequestDto,
+  ): Promise<CancelPaymentResponseDto> => {
+    const payment = await this.paymentsRepository.findPaymentByIdAndUserId(
+      paymentId,
+      userId,
+    );
+
+    if (!payment) {
+      throw new AppException(ErrorCode.PAYMENT_NOT_FOUND);
+    }
+
+    if (payment.status === PaymentStatus.CANCELED && payment.canceledAt) {
+      return this.toCancelPaymentResponseDto(payment);
+    }
+
+    this.validateCancelablePayment(payment);
+
+    const cancellation = await this.cancelTossPaymentOrReconcile(
+      payment,
+      cancelPaymentRequestDto.cancelReason,
+    );
+    const canceledPayment = await this.saveCanceledPaymentWithRecovery(
+      payment,
+      cancellation.canceledAt,
+    );
+
+    return this.toCancelPaymentResponseDto(canceledPayment);
+  };
+
   private confirmTossPaymentOrFail = async (
     payment: PaymentRecord,
     confirmPaymentRequestDto: ConfirmPaymentRequestDto,
@@ -149,7 +184,10 @@ export class PaymentsService {
       }
 
       if (error instanceof TossPaymentResultUnknownError) {
-        return this.reconcileTossPayment(confirmPaymentRequestDto);
+        return this.reconcileTossPayment(
+          confirmPaymentRequestDto.orderId,
+          confirmPaymentRequestDto.paymentKey,
+        );
       }
 
       throw error;
@@ -165,7 +203,8 @@ export class PaymentsService {
       return await this.saveConfirmedPayment(payment, tossPayment);
     } catch (saveError) {
       const reconciledPayment = await this.reconcileTossPayment(
-        confirmPaymentRequestDto,
+        confirmPaymentRequestDto.orderId,
+        confirmPaymentRequestDto.paymentKey,
       );
 
       try {
@@ -196,18 +235,19 @@ export class PaymentsService {
   };
 
   private reconcileTossPayment = async (
-    confirmPaymentRequestDto: ConfirmPaymentRequestDto,
+    orderId: string,
+    paymentKey: string,
   ): Promise<TossPaymentConfirmResult> => {
     try {
       const tossPayment =
         await this.tossPaymentsService.getPaymentForReconciliation(
-          confirmPaymentRequestDto.orderId,
-          confirmPaymentRequestDto.paymentKey,
+          orderId,
+          paymentKey,
         );
 
       if (
-        tossPayment.orderId !== confirmPaymentRequestDto.orderId ||
-        tossPayment.paymentKey !== confirmPaymentRequestDto.paymentKey
+        tossPayment.orderId !== orderId ||
+        tossPayment.paymentKey !== paymentKey
       ) {
         throw new TossPaymentResultUnknownError();
       }
@@ -220,6 +260,129 @@ export class PaymentsService {
 
       throw new AppException(ErrorCode.PAYMENT_PROVIDER_REQUEST_FAILED);
     }
+  };
+
+  private cancelTossPaymentOrReconcile = async (
+    payment: PaymentRecord,
+    cancelReason: string,
+  ): Promise<{ canceledAt: Date }> => {
+    const paymentKey = payment.providerPaymentId as string;
+
+    try {
+      const tossPayment = await this.tossPaymentsService.cancelPayment(
+        paymentKey,
+        cancelReason,
+        this.createCancelIdempotencyKey(payment.id),
+      );
+
+      return {
+        canceledAt: this.getCanceledAtOrThrow(tossPayment, payment.amount),
+      };
+    } catch (error) {
+      if (this.isPaymentConfigMissingError(error)) {
+        throw error;
+      }
+
+      if (error instanceof TossPaymentRejectedError) {
+        throw new AppException(ErrorCode.PAYMENT_PROVIDER_REQUEST_FAILED);
+      }
+
+      if (error instanceof TossPaymentResultUnknownError) {
+        return this.reconcileCanceledTossPayment(payment);
+      }
+
+      throw error;
+    }
+  };
+
+  private reconcileCanceledTossPayment = async (
+    payment: PaymentRecord,
+  ): Promise<{ canceledAt: Date }> => {
+    const paymentKey = payment.providerPaymentId as string;
+    const tossPayment = await this.reconcileTossPayment(
+      payment.orderId,
+      paymentKey,
+    );
+
+    try {
+      return {
+        canceledAt: this.getCanceledAtOrThrow(tossPayment, payment.amount),
+      };
+    } catch {
+      throw new AppException(ErrorCode.PAYMENT_PROVIDER_REQUEST_FAILED);
+    }
+  };
+
+  private saveCanceledPaymentWithRecovery = async (
+    payment: PaymentRecord,
+    canceledAt: Date,
+  ): Promise<PaymentRecord> => {
+    try {
+      return await this.saveCanceledPayment(payment.id, canceledAt);
+    } catch (saveError) {
+      const reconciledCancellation =
+        await this.reconcileCanceledTossPayment(payment);
+
+      try {
+        return await this.saveCanceledPayment(
+          payment.id,
+          reconciledCancellation.canceledAt,
+        );
+      } catch {
+        throw saveError;
+      }
+    }
+  };
+
+  private saveCanceledPayment = async (
+    paymentId: bigint,
+    canceledAt: Date,
+  ): Promise<PaymentRecord> => {
+    const canceledPayment =
+      await this.paymentsRepository.updatePaymentAfterCancel(
+        paymentId,
+        canceledAt,
+      );
+
+    if (
+      canceledPayment.status !== PaymentStatus.CANCELED ||
+      !canceledPayment.canceledAt
+    ) {
+      throw new AppException(ErrorCode.PAYMENT_CANCEL_NOT_ALLOWED);
+    }
+
+    return canceledPayment;
+  };
+
+  private getCanceledAtOrThrow = (
+    tossPayment: TossPaymentConfirmResult,
+    paymentAmount: number,
+  ): Date => {
+    if (tossPayment.status !== PaymentStatus.CANCELED) {
+      throw new TossPaymentResultUnknownError();
+    }
+
+    const completedCancels =
+      tossPayment.cancels?.filter(
+        (cancel) => cancel.cancelStatus === PaymentStatus.DONE,
+      ) ?? [];
+    const canceledAmount = completedCancels.reduce(
+      (total, cancel) => total + cancel.cancelAmount,
+      0,
+    );
+    const latestCancel = completedCancels.at(-1);
+
+    if (!latestCancel || canceledAmount < paymentAmount) {
+      throw new TossPaymentResultUnknownError();
+    }
+
+    const canceledAt = new Date(latestCancel.canceledAt);
+
+    if (Number.isNaN(canceledAt.getTime())) {
+      throw new TossPaymentResultUnknownError();
+    }
+
+    return canceledAt;
   };
 
   private isPaymentConfigMissingError = (error: unknown): boolean => {
@@ -273,6 +436,12 @@ export class PaymentsService {
     }
   };
 
+  private validateCancelablePayment = (payment: PaymentRecord): void => {
+    if (payment.status !== PaymentStatus.DONE || !payment.providerPaymentId) {
+      throw new AppException(ErrorCode.PAYMENT_CANCEL_NOT_ALLOWED);
+    }
+  };
+
   private toPaymentResponseDto = (
     payment: PaymentRecord,
   ): PaymentResponseDto => ({
@@ -288,6 +457,16 @@ export class PaymentsService {
     createdAt: payment.createdAt,
   });
 
+  private toCancelPaymentResponseDto = (
+    payment: PaymentRecord,
+  ): CancelPaymentResponseDto => ({
+    paymentId: Number(payment.id),
+    orderId: payment.orderId,
+    amount: payment.amount,
+    status: payment.status,
+    canceledAt: payment.canceledAt as Date,
+  });
+
   private createOrderId = (userId: number): string => {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).slice(2, 10);
@@ -297,5 +476,9 @@ export class PaymentsService {
 
   private createCustomerKey = (userId: number): string => {
     return `${PaymentOrder.CUSTOMER_KEY_PREFIX}_${userId}`;
+  };
+
+  private createCancelIdempotencyKey = (paymentId: bigint): string => {
+    return `${PaymentIdempotencyKey.CANCEL_PREFIX}_${paymentId}`;
   };
 }
