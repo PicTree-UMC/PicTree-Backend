@@ -49,6 +49,37 @@ export class TossPaymentsService {
     return this.parsePaymentResponse(response);
   };
 
+  cancelPayment = async (
+    paymentKey: string,
+    cancelReason: string,
+    idempotencyKey: string,
+  ): Promise<TossPaymentConfirmResult> => {
+    const response = await this.request(
+      `${this.getBaseUrl()}/v1/payments/${encodeURIComponent(paymentKey)}/cancel`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: this.createAuthorizationHeader(),
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
+        },
+        body: JSON.stringify({ cancelReason }),
+      },
+    );
+
+    if (!response.ok) {
+      const providerErrorCode = await this.getProviderErrorCode(response);
+
+      if (this.isExplicitRejection(response.status, providerErrorCode)) {
+        throw new TossPaymentRejectedError();
+      }
+
+      throw new TossPaymentResultUnknownError();
+    }
+
+    return this.parsePaymentResponse(response);
+  };
+
   getPaymentForReconciliation = async (
     orderId: string,
     paymentKey: string,
@@ -187,8 +218,33 @@ export class TossPaymentsService {
       (typeof payment.method === 'string' || payment.method === null) &&
       (typeof payment.approvedAt === 'string' || payment.approvedAt === null) &&
       (payment.receipt === null ||
-        (typeof payment.receipt === 'object' && payment.receipt !== null))
+        (typeof payment.receipt === 'object' && payment.receipt !== null)) &&
+      this.isTossPaymentCancels(payment.cancels)
     );
+  };
+
+  private isTossPaymentCancels = (cancels: unknown): boolean => {
+    if (cancels === undefined || cancels === null) {
+      return true;
+    }
+
+    if (!Array.isArray(cancels)) {
+      return false;
+    }
+
+    return cancels.every((cancel: unknown) => {
+      if (!cancel || typeof cancel !== 'object') {
+        return false;
+      }
+
+      const cancelRecord = cancel as Record<string, unknown>;
+
+      return (
+        typeof cancelRecord.cancelAmount === 'number' &&
+        typeof cancelRecord.canceledAt === 'string' &&
+        typeof cancelRecord.cancelStatus === 'string'
+      );
+    });
   };
 
   private toConfirmResult = (

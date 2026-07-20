@@ -1,5 +1,11 @@
 import { PaymentStatusType } from './payments.constant';
 
+export type TossPaymentCancelRecord = {
+  cancelAmount: number;
+  canceledAt: string;
+  cancelStatus: string;
+};
+
 export type TossPaymentResponse = {
   paymentKey: string;
   orderId: string;
@@ -9,6 +15,7 @@ export type TossPaymentResponse = {
   receipt: {
     url?: string;
   } | null;
+  cancels?: TossPaymentCancelRecord[] | null;
 };
 
 export type TossPaymentConfirmResult = Omit<TossPaymentResponse, 'status'> & {
