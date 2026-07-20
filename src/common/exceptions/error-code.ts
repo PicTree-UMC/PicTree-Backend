@@ -146,6 +146,28 @@ export const ErrorCode = {
     message: '취소할 수 없는 결제 상태입니다.',
   },
 
+  // Billing Key
+  BILLING_KEY_INVALID_CUSTOMER_KEY: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'BILLING_KEY400',
+    message: 'customerKey가 유효하지 않습니다.',
+  },
+  BILLING_KEY_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'BILLING_KEY404',
+    message: '자동결제 수단을 찾을 수 없습니다.',
+  },
+  BILLING_KEY_CONFIG_MISSING: {
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    code: 'BILLING_KEY500',
+    message: '자동결제 설정이 누락되었습니다.',
+  },
+  BILLING_KEY_PROVIDER_REQUEST_FAILED: {
+    status: HttpStatus.BAD_GATEWAY,
+    code: 'BILLING_KEY502',
+    message: '결제 제공자와 통신하는 중 오류가 발생했습니다.',
+  },
+
   // Tree
   TREE_INVALID_REQUEST: {
     status: HttpStatus.BAD_REQUEST,

@@ -19,6 +19,18 @@ export const SuccessCode = {
     code: 'PAYMENT200',
     message: '결제가 취소되었습니다.',
   },
+
+  // Billing Key
+  BILLING_KEY_ISSUED: {
+    status: HttpStatus.CREATED,
+    code: 'BILLING_KEY201',
+    message: '자동결제 수단이 등록되었습니다.',
+  },
+  BILLING_KEY_DEACTIVATED: {
+    status: HttpStatus.OK,
+    code: 'BILLING_KEY200',
+    message: '자동결제 수단이 삭제되었습니다.',
+  },
 } as const;
 
 export type SuccessCodeType = (typeof SuccessCode)[keyof typeof SuccessCode];
