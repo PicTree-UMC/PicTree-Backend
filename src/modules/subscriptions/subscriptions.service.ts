@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
@@ -26,6 +26,8 @@ import {
 
 @Injectable()
 export class SubscriptionsService {
+  private readonly logger = new Logger(SubscriptionsService.name);
+
   constructor(
     private readonly subscriptionsRepository: SubscriptionsRepository,
     private readonly tossPaymentsService: TossPaymentsService,
@@ -262,9 +264,26 @@ export class SubscriptionsService {
     try {
       return await this.saveSubscription(userId, payment, plan, tossPayment);
     } catch (saveError) {
-      const reconciledPayment = await this.reconcileTossBillingPayment(
-        payment.orderId,
+      this.logRecoveryError(
+        '구독 저장에 실패해 토스 결제 조회를 시도합니다.',
+        payment,
+        saveError,
       );
+
+      let reconciledPayment: TossPaymentConfirmResult;
+
+      try {
+        reconciledPayment = await this.reconcileTossBillingPayment(
+          payment.orderId,
+        );
+      } catch (reconcileError) {
+        this.logRecoveryError(
+          '토스 결제 조회를 통한 구독 복구에 실패했습니다.',
+          payment,
+          reconcileError,
+        );
+        throw saveError;
+      }
 
       try {
         return await this.saveSubscription(
@@ -273,10 +292,27 @@ export class SubscriptionsService {
           plan,
           reconciledPayment,
         );
-      } catch {
+      } catch (retryError) {
+        this.logRecoveryError(
+          '조회된 토스 결제로 구독을 다시 저장하지 못했습니다.',
+          payment,
+          retryError,
+        );
         throw saveError;
       }
     }
+  };
+
+  private logRecoveryError = (
+    message: string,
+    payment: SubscriptionPaymentRecord,
+    error: unknown,
+  ): void => {
+    this.logger.error(message, {
+      paymentId: payment.id.toString(),
+      orderId: payment.orderId,
+      error,
+    });
   };
 
   private saveSubscription = (

@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { PaymentStatus } from '../payments/payments.constant';
 import {
@@ -21,8 +22,12 @@ describe('SubscriptionsService', () => {
   let subscriptionsRepository: jest.Mocked<SubscriptionsRepository>;
   let tossPaymentsService: jest.Mocked<TossPaymentsService>;
   let subscriptionsService: SubscriptionsService;
+  let loggerErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
+    loggerErrorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
     subscriptionsRepository = {
       findCurrentSubscription: jest.fn(),
       findActiveFreePlan: jest.fn(),
@@ -38,6 +43,10 @@ describe('SubscriptionsService', () => {
       subscriptionsRepository,
       tossPaymentsService,
     );
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('현재 활성 구독을 조회한다', async () => {
@@ -202,6 +211,68 @@ describe('SubscriptionsService', () => {
     expect(
       subscriptionsRepository.failSubscriptionPayment,
     ).not.toHaveBeenCalled();
+  });
+
+  it('승인 후 최초 저장에 실패하면 결제를 조회하고 저장을 재시도한다', async () => {
+    const initialSaveError = new Error('temporary database error');
+    const subscription = createSubscriptionRecord();
+
+    subscriptionsRepository.reserveSubscriptionPayment.mockResolvedValue(
+      createReservation(),
+    );
+    tossPaymentsService.approveBillingPayment.mockResolvedValue(
+      createTossPayment(),
+    );
+    tossPaymentsService.getPaymentByOrderIdForReconciliation.mockResolvedValue(
+      createTossPayment(),
+    );
+    subscriptionsRepository.completeSubscription
+      .mockRejectedValueOnce(initialSaveError)
+      .mockResolvedValueOnce(subscription);
+
+    await expect(
+      subscriptionsService.createSubscription(1, {
+        subscriptionPlanId: 2,
+        billingKeyId: 1,
+      }),
+    ).resolves.toMatchObject({ subscriptionId: 1 });
+
+    expect(
+      tossPaymentsService.getPaymentByOrderIdForReconciliation,
+    ).toHaveBeenCalledWith('SUBSCRIPTION_1_test');
+    expect(subscriptionsRepository.completeSubscription).toHaveBeenCalledTimes(
+      2,
+    );
+    expect(loggerErrorSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('저장 실패 후 결제 재조회도 실패하면 최초 저장 오류를 보존한다', async () => {
+    const initialSaveError = new Error('database unavailable');
+
+    subscriptionsRepository.reserveSubscriptionPayment.mockResolvedValue(
+      createReservation(),
+    );
+    tossPaymentsService.approveBillingPayment.mockResolvedValue(
+      createTossPayment(),
+    );
+    subscriptionsRepository.completeSubscription.mockRejectedValue(
+      initialSaveError,
+    );
+    tossPaymentsService.getPaymentByOrderIdForReconciliation.mockRejectedValue(
+      new TossPaymentResultUnknownError(),
+    );
+
+    await expect(
+      subscriptionsService.createSubscription(1, {
+        subscriptionPlanId: 2,
+        billingKeyId: 1,
+      }),
+    ).rejects.toBe(initialSaveError);
+
+    expect(subscriptionsRepository.completeSubscription).toHaveBeenCalledTimes(
+      1,
+    );
+    expect(loggerErrorSpy).toHaveBeenCalledTimes(2);
   });
 });
 
