@@ -13,6 +13,8 @@ import {
   ApiParam,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { ErrorCode } from '../../common/exceptions/error-code';
+import { SuccessCode } from '../../common/responses/success-code';
 import { CreateSubscriptionRequestDto } from './dto/create-subscription-request.dto';
 
 const failResponse = (code: string, message: string) => ({
@@ -178,15 +180,15 @@ const subscriptionRenewalResponses = (
 export const ApiCancelSubscription = () =>
   subscriptionRenewalResponses(
     '구독 해지',
-    '구독 자동갱신이 해지되었습니다.',
-    '해지할 수 없는 구독입니다.',
+    SuccessCode.SUBSCRIPTION_CANCELED.message,
+    ErrorCode.SUBSCRIPTION_CANCEL_NOT_ALLOWED.message,
     false,
   );
 
 export const ApiResumeSubscription = () =>
   subscriptionRenewalResponses(
     '구독 자동갱신 재개',
-    '구독 자동갱신이 재개되었습니다.',
-    '자동갱신을 재개할 수 없는 구독입니다.',
+    SuccessCode.SUBSCRIPTION_RESUMED.message,
+    ErrorCode.SUBSCRIPTION_RESUME_NOT_ALLOWED.message,
     true,
   );

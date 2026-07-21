@@ -119,6 +119,31 @@ describe('SubscriptionsRepository', () => {
     expect(tx.userSubscription.update).not.toHaveBeenCalled();
     expect(result.isCurrent).toBe(false);
   });
+
+  it('다른 사용자 소유의 구독은 찾지 못한 것으로 처리한다', async () => {
+    tx.userSubscription.findFirst.mockResolvedValue(null);
+
+    const result = await subscriptionsRepository.updateSubscriptionAutoRenewal({
+      userId: 1,
+      subscriptionId: 99,
+      autoRenew: false,
+      changedAt: new Date('2026-02-01T10:00:00.000Z'),
+    });
+
+    expect(tx.userSubscription.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 99n,
+        userId: 1n,
+      },
+      include: { subscriptionPlan: true },
+    });
+    expect(result).toEqual({
+      subscription: null,
+      isCurrent: false,
+      isExpired: false,
+    });
+    expect(tx.userSubscription.update).not.toHaveBeenCalled();
+  });
 });
 
 function createSubscriptionRecord(

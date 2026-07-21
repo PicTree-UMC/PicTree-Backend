@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
+import { ErrorCode } from '../../common/exceptions/error-code';
 import { PaymentStatus } from '../payments/payments.constant';
 import {
   TossPaymentRejectedError,
@@ -337,9 +338,15 @@ describe('SubscriptionsService', () => {
         isExpired: false,
       });
 
-      await expect(
-        subscriptionsService.cancelSubscription(1, 999),
-      ).rejects.toBeInstanceOf(AppException);
+      try {
+        await subscriptionsService.cancelSubscription(1, 999);
+        fail('구독 없음 예외가 발생해야 합니다.');
+      } catch (error) {
+        expect(error).toBeInstanceOf(AppException);
+        expect((error as AppException).getResponse()).toMatchObject({
+          code: ErrorCode.SUBSCRIPTION_NOT_FOUND.code,
+        });
+      }
     });
 
     it('현재 구독이 아니면 자동갱신 변경을 거부한다', async () => {
