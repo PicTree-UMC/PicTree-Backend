@@ -10,5 +10,6 @@ import { TossPaymentsService } from './toss-payments.service';
   imports: [AuthModule],
   controllers: [PaymentOrdersController, PaymentsController],
   providers: [PaymentsService, PaymentsRepository, TossPaymentsService],
+  exports: [TossPaymentsService],
 })
 export class PaymentsModule {}

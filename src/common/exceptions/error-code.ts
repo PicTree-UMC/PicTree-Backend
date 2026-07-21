@@ -168,6 +168,38 @@ export const ErrorCode = {
     message: '결제 제공자와 통신하는 중 오류가 발생했습니다.',
   },
 
+  // Subscription
+  SUBSCRIPTION_PLAN_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'SUBSCRIPTION404',
+    message: '구독 요금제를 찾을 수 없습니다.',
+  },
+  SUBSCRIPTION_PLAN_NOT_SUBSCRIBABLE: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'SUBSCRIPTION400',
+    message: '구독할 수 없는 요금제입니다.',
+  },
+  SUBSCRIPTION_BILLING_KEY_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'SUBSCRIPTION404',
+    message: '사용 가능한 자동결제 수단을 찾을 수 없습니다.',
+  },
+  SUBSCRIPTION_ALREADY_ACTIVE: {
+    status: HttpStatus.CONFLICT,
+    code: 'SUBSCRIPTION409',
+    message: '이미 이용 중인 구독이 있습니다.',
+  },
+  SUBSCRIPTION_PAYMENT_IN_PROGRESS: {
+    status: HttpStatus.CONFLICT,
+    code: 'SUBSCRIPTION409',
+    message: '구독 결제가 진행 중입니다.',
+  },
+  SUBSCRIPTION_PAYMENT_FAILED: {
+    status: HttpStatus.BAD_GATEWAY,
+    code: 'SUBSCRIPTION502',
+    message: '구독 결제를 완료하지 못했습니다.',
+  },
+
   // Tree
   TREE_INVALID_REQUEST: {
     status: HttpStatus.BAD_REQUEST,

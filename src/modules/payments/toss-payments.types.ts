@@ -21,3 +21,12 @@ export type TossPaymentResponse = {
 export type TossPaymentConfirmResult = Omit<TossPaymentResponse, 'status'> & {
   status: PaymentStatusType;
 };
+
+export type TossBillingPaymentRequest = {
+  amount: number;
+  customerKey: string;
+  orderId: string;
+  orderName: string;
+  customerEmail?: string;
+  customerName?: string;
+};
