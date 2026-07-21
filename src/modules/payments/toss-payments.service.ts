@@ -288,6 +288,7 @@ export class TossPaymentsService {
     return (
       typeof payment.paymentKey === 'string' &&
       typeof payment.orderId === 'string' &&
+      typeof payment.totalAmount === 'number' &&
       typeof payment.status === 'string' &&
       (typeof payment.method === 'string' || payment.method === null) &&
       (typeof payment.approvedAt === 'string' || payment.approvedAt === null) &&

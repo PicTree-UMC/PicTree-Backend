@@ -10,3 +10,14 @@ export type PaymentRecord = Prisma.PaymentGetPayload<{
     receipt: true;
   };
 }>;
+
+export type SynchronizePaymentFromWebhookData = {
+  paymentId: bigint;
+  providerPaymentId: string;
+  paymentMethod: string | null;
+  status: string;
+  paidAt: Date | null;
+  failedAt: Date | null;
+  canceledAt: Date | null;
+  receiptUrl: string | null;
+};

@@ -9,6 +9,7 @@ export type TossPaymentCancelRecord = {
 export type TossPaymentResponse = {
   paymentKey: string;
   orderId: string;
+  totalAmount: number;
   status: string;
   method: string | null;
   approvedAt: string | null;

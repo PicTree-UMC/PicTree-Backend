@@ -21,3 +21,11 @@ export const PaymentOrder = {
 export const PaymentIdempotencyKey = {
   CANCEL_PREFIX: 'CANCEL_PAYMENT',
 } as const;
+
+export const TossPaymentWebhookEvent = {
+  PAYMENT_STATUS_CHANGED: 'PAYMENT_STATUS_CHANGED',
+} as const;
+
+export const TossPaymentWebhookHeader = {
+  TRANSMISSION_ID: 'tosspayments-webhook-transmission-id',
+} as const;
