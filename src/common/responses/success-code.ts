@@ -31,6 +31,13 @@ export const SuccessCode = {
     code: 'BILLING_KEY200',
     message: '자동결제 수단이 삭제되었습니다.',
   },
+
+  // Subscription
+  SUBSCRIPTION_STARTED: {
+    status: HttpStatus.CREATED,
+    code: 'SUBSCRIPTION201',
+    message: '구독이 시작되었습니다.',
+  },
 } as const;
 
 export type SuccessCodeType = (typeof SuccessCode)[keyof typeof SuccessCode];
