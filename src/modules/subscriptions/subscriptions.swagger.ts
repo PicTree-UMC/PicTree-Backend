@@ -10,6 +10,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CreateSubscriptionRequestDto } from './dto/create-subscription-request.dto';
@@ -131,4 +132,61 @@ export const ApiCreateSubscription = () =>
         ),
       },
     }),
+  );
+
+const subscriptionRenewalResponses = (
+  summary: string,
+  successMessage: string,
+  conflictMessage: string,
+  autoRenew: boolean,
+) =>
+  applyDecorators(
+    protectedSubscriptionResponses(),
+    ApiOperation({ summary }),
+    ApiParam({ name: 'subscriptionId', example: 1 }),
+    ApiOkResponse({
+      description: successMessage,
+      schema: {
+        example: {
+          success: true,
+          code: 'SUBSCRIPTION200',
+          message: successMessage,
+          data: {
+            ...activeSubscriptionExample,
+            autoRenew,
+            nextBillingAt: autoRenew
+              ? activeSubscriptionExample.nextBillingAt
+              : null,
+          },
+        },
+      },
+    }),
+    ApiNotFoundResponse({
+      description: '구독을 찾을 수 없음',
+      schema: {
+        example: failResponse('SUBSCRIPTION404', '구독을 찾을 수 없습니다.'),
+      },
+    }),
+    ApiConflictResponse({
+      description: conflictMessage,
+      schema: {
+        example: failResponse('SUBSCRIPTION409', conflictMessage),
+      },
+    }),
+  );
+
+export const ApiCancelSubscription = () =>
+  subscriptionRenewalResponses(
+    '구독 해지',
+    '구독 자동갱신이 해지되었습니다.',
+    '해지할 수 없는 구독입니다.',
+    false,
+  );
+
+export const ApiResumeSubscription = () =>
+  subscriptionRenewalResponses(
+    '구독 자동갱신 재개',
+    '구독 자동갱신이 재개되었습니다.',
+    '자동갱신을 재개할 수 없는 구독입니다.',
+    true,
   );

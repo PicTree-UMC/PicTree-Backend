@@ -55,3 +55,16 @@ export type CompleteSubscriptionData = {
   paidAt: Date;
   receiptUrl: string | null;
 };
+
+export type UpdateSubscriptionAutoRenewalData = {
+  userId: number;
+  subscriptionId: number;
+  autoRenew: boolean;
+  changedAt: Date;
+};
+
+export type SubscriptionAutoRenewalUpdateResult = {
+  subscription: SubscriptionRecord | null;
+  isCurrent: boolean;
+  isExpired: boolean;
+};

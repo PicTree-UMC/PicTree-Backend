@@ -38,6 +38,16 @@ export const SuccessCode = {
     code: 'SUBSCRIPTION201',
     message: '구독이 시작되었습니다.',
   },
+  SUBSCRIPTION_CANCELED: {
+    status: HttpStatus.OK,
+    code: 'SUBSCRIPTION200',
+    message: '구독 자동갱신이 해지되었습니다.',
+  },
+  SUBSCRIPTION_RESUMED: {
+    status: HttpStatus.OK,
+    code: 'SUBSCRIPTION200',
+    message: '구독 자동갱신이 재개되었습니다.',
+  },
 } as const;
 
 export type SuccessCodeType = (typeof SuccessCode)[keyof typeof SuccessCode];
