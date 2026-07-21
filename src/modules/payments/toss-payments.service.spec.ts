@@ -64,4 +64,64 @@ describe('TossPaymentsService', () => {
       'CANCEL_PAYMENT_1',
     );
   });
+
+  it('자동결제 승인 요청에 주문번호 멱등키를 포함한다', async () => {
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(createPaymentResponse());
+
+    await tossPaymentsService.approveBillingPayment('billing-key', {
+      amount: 2900,
+      customerKey: 'customer-key',
+      orderId: 'SUBSCRIPTION_1_test',
+      orderName: '플러스 플랜 구독',
+    });
+
+    const [requestUrl, requestInit] = fetchMock.mock.calls[0];
+
+    expect(requestUrl).toBe(
+      'https://api.tosspayments.com/v1/billing/billing-key',
+    );
+    expect(requestInit?.method).toBe('POST');
+    expect(new Headers(requestInit?.headers).get('Idempotency-Key')).toBe(
+      'SUBSCRIPTION_1_test',
+    );
+    expect(JSON.parse(requestInit?.body as string)).toMatchObject({
+      amount: 2900,
+      customerKey: 'customer-key',
+      orderId: 'SUBSCRIPTION_1_test',
+    });
+  });
+
+  it('자동결제 결과 복구 시 주문번호로 결제를 조회한다', async () => {
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(createPaymentResponse());
+
+    await tossPaymentsService.getPaymentByOrderIdForReconciliation(
+      'SUBSCRIPTION_1_test',
+    );
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://api.tosspayments.com/v1/payments/orders/SUBSCRIPTION_1_test',
+    );
+  });
 });
+
+function createPaymentResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      paymentKey: 'payment-key',
+      orderId: 'SUBSCRIPTION_1_test',
+      status: PaymentStatus.DONE,
+      method: '카드',
+      approvedAt: '2026-01-31T10:00:00.000Z',
+      receipt: null,
+      cancels: null,
+    }),
+    {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
+}
