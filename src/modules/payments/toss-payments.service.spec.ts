@@ -29,6 +29,7 @@ describe('TossPaymentsService', () => {
         JSON.stringify({
           paymentKey: 'payment-key',
           orderId: 'ORDER_1_test',
+          totalAmount: 2900,
           status: PaymentStatus.CANCELED,
           method: '카드',
           approvedAt: '2026-07-20T09:00:00+09:00',
@@ -106,6 +107,22 @@ describe('TossPaymentsService', () => {
       'https://api.tosspayments.com/v1/payments/orders/SUBSCRIPTION_1_test',
     );
   });
+
+  it('웹훅 결제 재조회는 7초 타임아웃을 사용한다', async () => {
+    const timeoutSpy = jest.spyOn(AbortSignal, 'timeout');
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(createPaymentResponse());
+
+    await tossPaymentsService.getPaymentByOrderIdForWebhook(
+      'SUBSCRIPTION_1_test',
+    );
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://api.tosspayments.com/v1/payments/orders/SUBSCRIPTION_1_test',
+    );
+    expect(timeoutSpy).toHaveBeenCalledWith(7_000);
+  });
 });
 
 function createPaymentResponse(): Response {
@@ -113,6 +130,7 @@ function createPaymentResponse(): Response {
     JSON.stringify({
       paymentKey: 'payment-key',
       orderId: 'SUBSCRIPTION_1_test',
+      totalAmount: 2900,
       status: PaymentStatus.DONE,
       method: '카드',
       approvedAt: '2026-01-31T10:00:00.000Z',

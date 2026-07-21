@@ -260,6 +260,7 @@ function createTossPayment(status: string): TossPaymentConfirmResult {
   return {
     paymentKey: 'payment-key',
     orderId: 'ORDER_1_test',
+    totalAmount: 2900,
     status,
     method: status === PaymentStatus.WAITING_FOR_DEPOSIT ? '가상계좌' : '카드',
     approvedAt:

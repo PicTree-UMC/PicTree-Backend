@@ -474,6 +474,7 @@ function createTossPayment(): TossPaymentConfirmResult {
   return {
     paymentKey: 'payment-key',
     orderId: 'SUBSCRIPTION_1_test',
+    totalAmount: 2900,
     status: PaymentStatus.DONE,
     method: '카드',
     approvedAt: '2026-01-31T10:00:00.000Z',
