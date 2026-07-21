@@ -9,6 +9,7 @@ import {
   TossPaymentResultUnknownError,
 } from './toss-payments.exception';
 import {
+  TossBillingPaymentRequest,
   TossPaymentConfirmResult,
   TossPaymentResponse,
 } from './toss-payments.types';
@@ -33,6 +34,36 @@ export class TossPaymentsService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(confirmPaymentRequestDto),
+      },
+    );
+
+    if (!response.ok) {
+      const providerErrorCode = await this.getProviderErrorCode(response);
+
+      if (this.isExplicitRejection(response.status, providerErrorCode)) {
+        throw new TossPaymentRejectedError();
+      }
+
+      throw new TossPaymentResultUnknownError();
+    }
+
+    return this.parsePaymentResponse(response);
+  };
+
+  approveBillingPayment = async (
+    billingKey: string,
+    billingPaymentRequest: TossBillingPaymentRequest,
+  ): Promise<TossPaymentConfirmResult> => {
+    const response = await this.request(
+      `${this.getBaseUrl()}/v1/billing/${encodeURIComponent(billingKey)}`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: this.createAuthorizationHeader(),
+          'Content-Type': 'application/json',
+          'Idempotency-Key': billingPaymentRequest.orderId,
+        },
+        body: JSON.stringify(billingPaymentRequest),
       },
     );
 
@@ -117,6 +148,26 @@ export class TossPaymentsService {
     }
 
     return this.parsePaymentResponse(paymentKeyResponse);
+  };
+
+  getPaymentByOrderIdForReconciliation = async (
+    orderId: string,
+  ): Promise<TossPaymentConfirmResult> => {
+    const response = await this.request(
+      `${this.getBaseUrl()}/v1/payments/orders/${encodeURIComponent(orderId)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: this.createAuthorizationHeader(),
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new TossPaymentResultUnknownError();
+    }
+
+    return this.parsePaymentResponse(response);
   };
 
   private createAuthorizationHeader = (): string => {
