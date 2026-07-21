@@ -104,6 +104,48 @@ export class SubscriptionsService {
     return this.toSubscriptionResponseDto(subscription);
   };
 
+  cancelSubscription = async (
+    userId: number,
+    subscriptionId: number,
+  ): Promise<SubscriptionResponseDto> => {
+    return this.updateSubscriptionAutoRenewal(userId, subscriptionId, false);
+  };
+
+  resumeSubscription = async (
+    userId: number,
+    subscriptionId: number,
+  ): Promise<SubscriptionResponseDto> => {
+    return this.updateSubscriptionAutoRenewal(userId, subscriptionId, true);
+  };
+
+  private updateSubscriptionAutoRenewal = async (
+    userId: number,
+    subscriptionId: number,
+    autoRenew: boolean,
+  ): Promise<SubscriptionResponseDto> => {
+    const result =
+      await this.subscriptionsRepository.updateSubscriptionAutoRenewal({
+        userId,
+        subscriptionId,
+        autoRenew,
+        changedAt: new Date(),
+      });
+
+    if (!result.subscription) {
+      throw new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND);
+    }
+
+    if (!result.isCurrent || result.isExpired) {
+      throw new AppException(
+        autoRenew
+          ? ErrorCode.SUBSCRIPTION_RESUME_NOT_ALLOWED
+          : ErrorCode.SUBSCRIPTION_CANCEL_NOT_ALLOWED,
+      );
+    }
+
+    return this.toSubscriptionResponseDto(result.subscription);
+  };
+
   private validateReservation = (
     reservation: SubscriptionStartReservation,
     request: CreateSubscriptionRequestDto,

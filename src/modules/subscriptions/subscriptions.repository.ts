@@ -5,10 +5,12 @@ import { PaymentStatus } from '../payments/payments.constant';
 import {
   CompleteSubscriptionData,
   ReserveSubscriptionPaymentData,
+  SubscriptionAutoRenewalUpdateResult,
   SubscriptionPaymentRecord,
   SubscriptionPlanRecord,
   SubscriptionRecord,
   SubscriptionStartReservation,
+  UpdateSubscriptionAutoRenewalData,
 } from './subscriptions.types';
 
 @Injectable()
@@ -245,6 +247,74 @@ export class SubscriptionsRepository {
       });
 
       return subscription;
+    });
+  };
+
+  updateSubscriptionAutoRenewal = (
+    data: UpdateSubscriptionAutoRenewalData,
+  ): Promise<SubscriptionAutoRenewalUpdateResult> => {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        SELECT id
+        FROM users
+        WHERE id = ${BigInt(data.userId)}
+        FOR UPDATE
+      `;
+
+      const user = await tx.user.findUnique({
+        where: { id: BigInt(data.userId) },
+        select: { currentSubscriptionId: true },
+      });
+
+      if (!user) {
+        return {
+          subscription: null,
+          isCurrent: false,
+          isExpired: false,
+        };
+      }
+
+      const subscription = await tx.userSubscription.findFirst({
+        where: {
+          id: BigInt(data.subscriptionId),
+          userId: BigInt(data.userId),
+        },
+        include: { subscriptionPlan: true },
+      });
+
+      if (!subscription) {
+        return {
+          subscription: null,
+          isCurrent: false,
+          isExpired: false,
+        };
+      }
+
+      const isCurrent = user.currentSubscriptionId === subscription.id;
+      const isExpired = subscription.expiresAt <= data.changedAt;
+
+      if (
+        !isCurrent ||
+        isExpired ||
+        subscription.autoRenew === data.autoRenew
+      ) {
+        return { subscription, isCurrent, isExpired };
+      }
+
+      const updatedSubscription = await tx.userSubscription.update({
+        where: { id: subscription.id },
+        data: {
+          autoRenew: data.autoRenew,
+          canceledAt: data.autoRenew ? null : data.changedAt,
+        },
+        include: { subscriptionPlan: true },
+      });
+
+      return {
+        subscription: updatedSubscription,
+        isCurrent: true,
+        isExpired: false,
+      };
     });
   };
 }

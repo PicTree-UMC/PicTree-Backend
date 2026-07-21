@@ -199,6 +199,21 @@ export const ErrorCode = {
     code: 'SUBSCRIPTION502',
     message: '구독 결제를 완료하지 못했습니다.',
   },
+  SUBSCRIPTION_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'SUBSCRIPTION404',
+    message: '구독을 찾을 수 없습니다.',
+  },
+  SUBSCRIPTION_CANCEL_NOT_ALLOWED: {
+    status: HttpStatus.CONFLICT,
+    code: 'SUBSCRIPTION409',
+    message: '해지할 수 없는 구독입니다.',
+  },
+  SUBSCRIPTION_RESUME_NOT_ALLOWED: {
+    status: HttpStatus.CONFLICT,
+    code: 'SUBSCRIPTION409',
+    message: '자동갱신을 재개할 수 없는 구독입니다.',
+  },
 
   // Tree
   TREE_INVALID_REQUEST: {

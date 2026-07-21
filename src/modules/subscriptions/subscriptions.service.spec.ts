@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
+import { ErrorCode } from '../../common/exceptions/error-code';
 import { PaymentStatus } from '../payments/payments.constant';
 import {
   TossPaymentRejectedError,
@@ -34,6 +35,7 @@ describe('SubscriptionsService', () => {
       reserveSubscriptionPayment: jest.fn(),
       failSubscriptionPayment: jest.fn(),
       completeSubscription: jest.fn(),
+      updateSubscriptionAutoRenewal: jest.fn(),
     } as unknown as jest.Mocked<SubscriptionsRepository>;
     tossPaymentsService = {
       approveBillingPayment: jest.fn(),
@@ -273,6 +275,105 @@ describe('SubscriptionsService', () => {
       1,
     );
     expect(loggerErrorSpy).toHaveBeenCalledTimes(2);
+  });
+
+  describe('구독 자동갱신 관리', () => {
+    it('현재 구독의 자동갱신을 해지한다', async () => {
+      subscriptionsRepository.updateSubscriptionAutoRenewal.mockResolvedValue({
+        subscription: createSubscriptionRecord({
+          autoRenew: false,
+          canceledAt: new Date('2026-02-01T10:00:00.000Z'),
+        }),
+        isCurrent: true,
+        isExpired: false,
+      });
+
+      const result = await subscriptionsService.cancelSubscription(1, 1);
+
+      const updateRequest =
+        subscriptionsRepository.updateSubscriptionAutoRenewal.mock.calls[0][0];
+
+      expect(updateRequest).toMatchObject({
+        userId: 1,
+        subscriptionId: 1,
+        autoRenew: false,
+      });
+      expect(updateRequest.changedAt).toBeInstanceOf(Date);
+      expect(result).toMatchObject({
+        subscriptionId: 1,
+        autoRenew: false,
+        nextBillingAt: null,
+      });
+    });
+
+    it('해지 예정인 현재 구독의 자동갱신을 재개한다', async () => {
+      subscriptionsRepository.updateSubscriptionAutoRenewal.mockResolvedValue({
+        subscription: createSubscriptionRecord({
+          autoRenew: true,
+          canceledAt: null,
+        }),
+        isCurrent: true,
+        isExpired: false,
+      });
+
+      const result = await subscriptionsService.resumeSubscription(1, 1);
+
+      const updateRequest =
+        subscriptionsRepository.updateSubscriptionAutoRenewal.mock.calls[0][0];
+
+      expect(updateRequest).toMatchObject({
+        userId: 1,
+        subscriptionId: 1,
+        autoRenew: true,
+      });
+      expect(updateRequest.changedAt).toBeInstanceOf(Date);
+      expect(result.autoRenew).toBe(true);
+      expect(result.nextBillingAt).toEqual(result.expiresAt);
+    });
+
+    it('소유한 구독이 없으면 변경을 거부한다', async () => {
+      subscriptionsRepository.updateSubscriptionAutoRenewal.mockResolvedValue({
+        subscription: null,
+        isCurrent: false,
+        isExpired: false,
+      });
+
+      try {
+        await subscriptionsService.cancelSubscription(1, 999);
+        fail('구독 없음 예외가 발생해야 합니다.');
+      } catch (error) {
+        expect(error).toBeInstanceOf(AppException);
+        expect((error as AppException).getResponse()).toMatchObject({
+          code: ErrorCode.SUBSCRIPTION_NOT_FOUND.code,
+        });
+      }
+    });
+
+    it('현재 구독이 아니면 자동갱신 변경을 거부한다', async () => {
+      subscriptionsRepository.updateSubscriptionAutoRenewal.mockResolvedValue({
+        subscription: createSubscriptionRecord(),
+        isCurrent: false,
+        isExpired: false,
+      });
+
+      await expect(
+        subscriptionsService.cancelSubscription(1, 1),
+      ).rejects.toBeInstanceOf(AppException);
+    });
+
+    it('만료된 구독은 자동갱신을 재개할 수 없다', async () => {
+      subscriptionsRepository.updateSubscriptionAutoRenewal.mockResolvedValue({
+        subscription: createSubscriptionRecord({
+          expiresAt: new Date('2026-01-01T00:00:00.000Z'),
+        }),
+        isCurrent: true,
+        isExpired: true,
+      });
+
+      await expect(
+        subscriptionsService.resumeSubscription(1, 1),
+      ).rejects.toBeInstanceOf(AppException);
+    });
   });
 });
 
