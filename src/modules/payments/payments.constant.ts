@@ -13,6 +13,14 @@ export const PaymentStatus = {
 export type PaymentStatusType =
   (typeof PaymentStatus)[keyof typeof PaymentStatus];
 
+export const PaymentStatusPriority: Record<PaymentStatusType, number> = {
+  [PaymentStatus.READY]: 0,
+  [PaymentStatus.WAITING_FOR_DEPOSIT]: 1,
+  [PaymentStatus.DONE]: 2,
+  [PaymentStatus.FAILED]: 3,
+  [PaymentStatus.CANCELED]: 3,
+};
+
 export const PaymentOrder = {
   ORDER_ID_PREFIX: 'ORDER',
   CUSTOMER_KEY_PREFIX: 'USER',

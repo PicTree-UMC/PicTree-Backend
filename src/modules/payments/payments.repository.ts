@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PaymentStatus } from './payments.constant';
+import {
+  PaymentStatus,
+  PaymentStatusPriority,
+  PaymentStatusType,
+} from './payments.constant';
 import {
   PaymentRecord,
   PaymentSubscriptionPlanRecord,
@@ -230,6 +234,10 @@ export class PaymentsRepository {
         return null;
       }
 
+      if (this.isPaymentStatusRegression(payment.status, data.status)) {
+        return payment;
+      }
+
       const hasSamePaymentState =
         payment.providerPaymentId === data.providerPaymentId &&
         payment.paymentMethod === data.paymentMethod &&
@@ -280,5 +288,24 @@ export class PaymentsRepository {
 
   private hasSameDate = (left: Date | null, right: Date | null): boolean => {
     return left?.getTime() === right?.getTime();
+  };
+
+  private isPaymentStatusRegression = (
+    currentStatus: string,
+    nextStatus: string,
+  ): boolean => {
+    if (currentStatus === nextStatus) {
+      return false;
+    }
+
+    const currentPriority =
+      PaymentStatusPriority[currentStatus as PaymentStatusType];
+    const nextPriority = PaymentStatusPriority[nextStatus as PaymentStatusType];
+
+    return (
+      currentPriority === undefined ||
+      nextPriority === undefined ||
+      nextPriority <= currentPriority
+    );
   };
 }

@@ -88,6 +88,23 @@ describe('PaymentsRepository', () => {
     expect(tx.paymentReceipt.upsert).not.toHaveBeenCalled();
     expect(result).toBe(donePayment);
   });
+
+  it('이미 취소된 결제를 이전 상태로 되돌리지 않는다', async () => {
+    const canceledPayment = createPaymentRecord(PaymentStatus.CANCELED, {
+      paidAt: new Date('2026-07-22T01:00:00.000Z'),
+      canceledAt: new Date('2026-07-22T02:00:00.000Z'),
+    });
+
+    tx.payment.findUnique.mockResolvedValue(canceledPayment);
+
+    const result = await paymentsRepository.synchronizePaymentFromWebhook(
+      createSynchronizationData({ status: PaymentStatus.DONE }),
+    );
+
+    expect(tx.payment.update).not.toHaveBeenCalled();
+    expect(tx.paymentReceipt.upsert).not.toHaveBeenCalled();
+    expect(result).toBe(canceledPayment);
+  });
 });
 
 function createSynchronizationData(
