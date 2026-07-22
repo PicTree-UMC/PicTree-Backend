@@ -17,6 +17,7 @@ import {
 const TOSS_PAYMENTS_BASE_URL = 'https://api.tosspayments.com';
 const TOSS_PAYMENTS_CONFIRM_PATH = '/v1/payments/confirm';
 const TOSS_PAYMENTS_REQUEST_TIMEOUT_MS = 60_000;
+const TOSS_PAYMENTS_WEBHOOK_REQUEST_TIMEOUT_MS = 7_000;
 
 @Injectable()
 export class TossPaymentsService {
@@ -170,6 +171,27 @@ export class TossPaymentsService {
     return this.parsePaymentResponse(response);
   };
 
+  getPaymentByOrderIdForWebhook = async (
+    orderId: string,
+  ): Promise<TossPaymentConfirmResult> => {
+    const response = await this.request(
+      `${this.getBaseUrl()}/v1/payments/orders/${encodeURIComponent(orderId)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: this.createAuthorizationHeader(),
+        },
+      },
+      TOSS_PAYMENTS_WEBHOOK_REQUEST_TIMEOUT_MS,
+    );
+
+    if (!response.ok) {
+      throw new TossPaymentResultUnknownError();
+    }
+
+    return this.parsePaymentResponse(response);
+  };
+
   private createAuthorizationHeader = (): string => {
     const secretKey = this.configService.get<string>(
       'TOSS_PAYMENTS_SECRET_KEY',
@@ -192,11 +214,12 @@ export class TossPaymentsService {
   private request = async (
     url: string,
     init: RequestInit,
+    timeoutMs = TOSS_PAYMENTS_REQUEST_TIMEOUT_MS,
   ): Promise<Response> => {
     try {
       return await fetch(url, {
         ...init,
-        signal: AbortSignal.timeout(TOSS_PAYMENTS_REQUEST_TIMEOUT_MS),
+        signal: AbortSignal.timeout(timeoutMs),
       });
     } catch {
       throw new TossPaymentResultUnknownError();
@@ -265,6 +288,7 @@ export class TossPaymentsService {
     return (
       typeof payment.paymentKey === 'string' &&
       typeof payment.orderId === 'string' &&
+      typeof payment.totalAmount === 'number' &&
       typeof payment.status === 'string' &&
       (typeof payment.method === 'string' || payment.method === null) &&
       (typeof payment.approvedAt === 'string' || payment.approvedAt === null) &&

@@ -1,8 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PaymentStatus } from './payments.constant';
-import { PaymentRecord, PaymentSubscriptionPlanRecord } from './payments.types';
+import {
+  PaymentStatus,
+  PaymentStatusPriority,
+  PaymentStatusType,
+} from './payments.constant';
+import {
+  PaymentRecord,
+  PaymentSubscriptionPlanRecord,
+  SynchronizePaymentFromWebhookData,
+} from './payments.types';
 
 type CreatePaymentData = {
   userId: number;
@@ -204,5 +212,100 @@ export class PaymentsRepository {
         receipt: true,
       },
     });
+  };
+
+  synchronizePaymentFromWebhook = (
+    data: SynchronizePaymentFromWebhookData,
+  ): Promise<PaymentRecord | null> => {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        SELECT id
+        FROM payments
+        WHERE id = ${data.paymentId}
+        FOR UPDATE
+      `;
+
+      const payment = await tx.payment.findUnique({
+        where: { id: data.paymentId },
+        include: { receipt: true },
+      });
+
+      if (!payment) {
+        return null;
+      }
+
+      if (this.isPaymentStatusRegression(payment.status, data.status)) {
+        return payment;
+      }
+
+      const hasSamePaymentState =
+        payment.providerPaymentId === data.providerPaymentId &&
+        payment.paymentMethod === data.paymentMethod &&
+        payment.status === data.status &&
+        this.hasSameDate(payment.paidAt, data.paidAt) &&
+        this.hasSameDate(payment.failedAt, data.failedAt) &&
+        this.hasSameDate(payment.canceledAt, data.canceledAt);
+      const hasSameReceipt =
+        !data.receiptUrl || payment.receipt?.receiptUrl === data.receiptUrl;
+
+      if (hasSamePaymentState && hasSameReceipt) {
+        return payment;
+      }
+
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          providerPaymentId: data.providerPaymentId,
+          paymentMethod: data.paymentMethod,
+          status: data.status,
+          paidAt: data.paidAt,
+          failedAt: data.failedAt,
+          canceledAt: data.canceledAt,
+        },
+      });
+
+      if (data.receiptUrl) {
+        await tx.paymentReceipt.upsert({
+          where: { paymentId: payment.id },
+          update: {
+            receiptUrl: data.receiptUrl,
+            issuedAt: data.paidAt,
+          },
+          create: {
+            paymentId: payment.id,
+            receiptUrl: data.receiptUrl,
+            issuedAt: data.paidAt,
+          },
+        });
+      }
+
+      return tx.payment.findUniqueOrThrow({
+        where: { id: payment.id },
+        include: { receipt: true },
+      });
+    });
+  };
+
+  private hasSameDate = (left: Date | null, right: Date | null): boolean => {
+    return left?.getTime() === right?.getTime();
+  };
+
+  private isPaymentStatusRegression = (
+    currentStatus: string,
+    nextStatus: string,
+  ): boolean => {
+    if (currentStatus === nextStatus) {
+      return false;
+    }
+
+    const currentPriority =
+      PaymentStatusPriority[currentStatus as PaymentStatusType];
+    const nextPriority = PaymentStatusPriority[nextStatus as PaymentStatusType];
+
+    return (
+      currentPriority === undefined ||
+      nextPriority === undefined ||
+      nextPriority <= currentPriority
+    );
   };
 }

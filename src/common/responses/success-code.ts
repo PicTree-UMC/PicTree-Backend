@@ -19,6 +19,11 @@ export const SuccessCode = {
     code: 'PAYMENT200',
     message: '결제가 취소되었습니다.',
   },
+  PAYMENT_WEBHOOK_RECEIVED: {
+    status: HttpStatus.OK,
+    code: 'PAYMENT200',
+    message: '결제 웹훅을 처리했습니다.',
+  },
 
   // Billing Key
   BILLING_KEY_ISSUED: {

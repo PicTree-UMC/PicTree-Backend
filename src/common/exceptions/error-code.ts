@@ -145,6 +145,16 @@ export const ErrorCode = {
     code: 'PAYMENT409',
     message: '취소할 수 없는 결제 상태입니다.',
   },
+  PAYMENT_WEBHOOK_INVALID: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'PAYMENT400',
+    message: '결제 웹훅 요청이 올바르지 않습니다.',
+  },
+  PAYMENT_WEBHOOK_PROCESSING_FAILED: {
+    status: HttpStatus.BAD_GATEWAY,
+    code: 'PAYMENT502',
+    message: '결제 웹훅을 처리하지 못했습니다.',
+  },
 
   // Billing Key
   BILLING_KEY_INVALID_CUSTOMER_KEY: {
