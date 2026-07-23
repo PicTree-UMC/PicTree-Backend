@@ -50,10 +50,13 @@ docker run -d \
   "$IMAGE_NAME" >/dev/null
 
 log "5/5 헬스체크 (최대 ${HEALTH_TIMEOUT}초)"
-for i in $(seq 1 "$HEALTH_TIMEOUT"); do
-  status=$(curl -s -o /dev/null -w '%{http_code}' "http://${HOST_PORT}${HEALTH_PATH}" || true)
+deadline=$(( $(date +%s) + HEALTH_TIMEOUT ))
+while [ "$(date +%s)" -lt "$deadline" ]; do
+  status=$(curl -s -o /dev/null -w '%{http_code}' \
+    --connect-timeout 2 --max-time 5 \
+    "http://${HOST_PORT}${HEALTH_PATH}" || true)
   if [ "$status" = "200" ]; then
-    echo "✅ 배포 성공 (${i}초, HTTP ${status})"
+    echo "✅ 배포 성공 (HTTP ${status})"
     docker image prune -f >/dev/null 2>&1 || true
     exit 0
   fi
