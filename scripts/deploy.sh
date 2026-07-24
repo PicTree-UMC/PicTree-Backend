@@ -57,7 +57,9 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
     "http://${HOST_PORT}${HEALTH_PATH}" || true)
   if [ "$status" = "200" ]; then
     echo "✅ 배포 성공 (HTTP ${status})"
+    # 미사용 이미지와 빌드 캐시를 정리해 디스크가 차는 것을 방지합니다.
     docker image prune -f >/dev/null 2>&1 || true
+    docker builder prune -f --keep-storage 1g >/dev/null 2>&1 || true
     exit 0
   fi
   sleep 1
