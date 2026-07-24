@@ -5,6 +5,10 @@ on:
   push:
     branches: [develop]
 
+# 최소 권한만 부여합니다.
+permissions:
+  contents: read
+
 # 동시에 여러 배포가 겹치지 않도록 직렬화합니다.
 concurrency:
   group: deploy-develop
@@ -21,8 +25,8 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script_stop: true
           command_timeout: 20m
           script: |
+            set -e
             cd ~/PicTree-Backend
             ./scripts/deploy.sh develop
