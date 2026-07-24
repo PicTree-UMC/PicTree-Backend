@@ -7,6 +7,7 @@ import { RoutesModule } from './modules/routes/routes.module';
 import { SubscriptionPlansModule } from './modules/subscription-plans/subscription-plans.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { TermsModule } from './modules/terms/terms.module';
+import { TimelinesModule } from './modules/timelines/timelines.module';
 import { TreesModule } from './modules/trees/trees.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -24,6 +25,7 @@ import { PrismaModule } from './prisma/prisma.module';
     SubscriptionsModule,
     TreesModule,
     RoutesModule,
+    TimelinesModule,
   ],
   controllers: [],
   providers: [],
