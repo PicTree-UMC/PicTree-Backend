@@ -1,0 +1,46 @@
+name: CI
+
+# develop 으로 향하는 PR 의 코드를 빌드/린트로 검증합니다.
+on:
+  pull_request:
+    branches: [develop]
+
+# 최소 권한만 부여합니다.
+permissions:
+  contents: read
+
+jobs:
+  build-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        # 실제 접속하지 않고 스키마만 읽으므로 형식만 맞는 더미 값을 사용합니다.
+        env:
+          DATABASE_URL: mysql://user:pass@localhost:3306/db
+        run: pnpm prisma generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build

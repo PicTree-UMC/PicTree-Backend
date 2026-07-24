@@ -1,0 +1,32 @@
+name: Deploy
+
+# develop 에 반영되면 EC2 에 자동 배포합니다.
+on:
+  push:
+    branches: [develop]
+
+# 최소 권한만 부여합니다.
+permissions:
+  contents: read
+
+# 동시에 여러 배포가 겹치지 않도록 직렬화합니다.
+concurrency:
+  group: deploy-develop
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 20m
+          script: |
+            set -e
+            cd ~/PicTree-Backend
+            ./scripts/deploy.sh develop
