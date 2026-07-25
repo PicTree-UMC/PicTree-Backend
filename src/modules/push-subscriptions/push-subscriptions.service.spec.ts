@@ -7,7 +7,7 @@ describe('PushSubscriptionsService', () => {
   const subscription: PushSubscriptionRecord = {
     id: 1n,
     userId: 10n,
-    endpoint: 'https://example.com/push/1',
+    endpoint: 'https://fcm.googleapis.com/fcm/send/push-1',
     endpointHash: 'hash',
     p256dhKey: 'p256dh',
     authKey: 'auth',
@@ -52,6 +52,16 @@ describe('PushSubscriptionsService', () => {
 
     expect(repository.findAllByUser).toHaveBeenCalledWith(10n);
     expect(result).toHaveLength(1);
+  });
+
+  it('허용되지 않은 endpoint는 저장하지 않는다', async () => {
+    await expect(
+      service.register(10, {
+        endpoint: 'https://127.0.0.1/push',
+        keys: { p256dh: 'p256dh', auth: 'auth' },
+      }),
+    ).rejects.toBeInstanceOf(AppException);
+    expect(repository.upsert).not.toHaveBeenCalled();
   });
 
   it('존재하지 않는 구독을 비활성화할 수 없다', async () => {

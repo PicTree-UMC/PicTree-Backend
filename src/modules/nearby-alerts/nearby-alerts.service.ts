@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { NearbyAlertStatus } from '@prisma/client';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
@@ -18,6 +18,8 @@ import { WebPushService } from './web-push.service';
 
 @Injectable()
 export class NearbyAlertsService {
+  private readonly logger = new Logger(NearbyAlertsService.name);
+
   constructor(
     private readonly nearbyAlertsRepository: NearbyAlertsRepository,
     private readonly treesRepository: TreesRepository,
@@ -29,21 +31,21 @@ export class NearbyAlertsService {
     userId: number,
     request: CheckNearbyAlertRequestDto,
   ): Promise<CheckNearbyAlertResponseDto> => {
-    const notificationEnabled =
-      await this.nearbyAlertsRepository.isNotificationEnabled(BigInt(userId));
-    if (!notificationEnabled) {
-      return { nearbyCount: 0, sentCount: 0 };
-    }
-
-    const [trees, subscriptions] = await Promise.all([
+    const [notificationEnabled, trees] = await Promise.all([
+      this.nearbyAlertsRepository.isNotificationEnabled(BigInt(userId)),
       this.treesRepository.findNearbyTrees(
         request.latitude,
         request.longitude,
         NEARBY_TREE_RADIUS_M,
       ),
-      this.pushSubscriptionsRepository.findActiveByUser(BigInt(userId)),
     ]);
 
+    if (!notificationEnabled) {
+      return { nearbyCount: trees.length, sentCount: 0 };
+    }
+
+    const subscriptions =
+      await this.pushSubscriptionsRepository.findActiveByUser(BigInt(userId));
     if (subscriptions.length === 0) {
       return { nearbyCount: trees.length, sentCount: 0 };
     }
@@ -63,47 +65,37 @@ export class NearbyAlertsService {
         continue;
       }
 
-      try {
-        const deliveryResults = await Promise.all(
-          subscriptions.map(async (subscription) => {
-            try {
-              const delivered = await this.webPushService.send(subscription, {
-                title: '근처에 심어진 나무가 있어요',
-                body: `${tree.name} · 약 ${distanceM}m`,
-                data: {
-                  url: `/trees/${Number(tree.id)}`,
-                  treeId: Number(tree.id),
-                  alertLogId: Number(log.id),
-                },
-              });
-              if (!delivered) {
-                await this.pushSubscriptionsRepository.deactivate(
-                  subscription.id,
-                );
-              }
-              return delivered;
-            } catch (error) {
-              if (error instanceof AppException) {
-                throw error;
-              }
-              return false;
+      const deliveryResults = await Promise.all(
+        subscriptions.map(async (subscription) => {
+          try {
+            const delivered = await this.webPushService.send(subscription, {
+              title: '근처에 심어진 나무가 있어요',
+              body: `${tree.name} · 약 ${distanceM}m`,
+              data: {
+                url: `/trees/${Number(tree.id)}`,
+                treeId: Number(tree.id),
+                alertLogId: Number(log.id),
+              },
+            });
+            if (!delivered) {
+              await this.pushSubscriptionsRepository.deactivate(
+                subscription.id,
+              );
             }
-          }),
-        );
-        const delivered = deliveryResults.some(Boolean);
-        await this.nearbyAlertsRepository.updateStatus(
-          log.id,
-          delivered ? NearbyAlertStatus.SENT : NearbyAlertStatus.FAILED,
-        );
-        if (delivered) {
-          sentCount += 1;
-        }
-      } catch (error) {
-        await this.nearbyAlertsRepository.updateStatus(
-          log.id,
-          NearbyAlertStatus.FAILED,
-        );
-        throw error;
+            return delivered;
+          } catch (error) {
+            this.logPushError(tree.id, error);
+            return false;
+          }
+        }),
+      );
+      const delivered = deliveryResults.some(Boolean);
+      await this.nearbyAlertsRepository.updateStatus(
+        log.id,
+        delivered ? NearbyAlertStatus.SENT : NearbyAlertStatus.FAILED,
+      );
+      if (delivered) {
+        sentCount += 1;
       }
     }
 
@@ -160,6 +152,16 @@ export class NearbyAlertsService {
         koreanTime.getUTCDate(),
       ),
     );
+  };
+
+  private logPushError = (treeId: bigint, error: unknown): void => {
+    const message = `근처 나무 푸시 발송 실패 (treeId=${treeId.toString()})`;
+    if (error instanceof Error) {
+      this.logger.error(message, error.stack);
+      return;
+    }
+
+    this.logger.error(message);
   };
 
   private toResponseDto = (

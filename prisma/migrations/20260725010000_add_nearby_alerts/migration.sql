@@ -24,7 +24,7 @@ CREATE TABLE `nearby_alert_logs` (
     `distance_m` INTEGER NOT NULL,
     `alert_date` DATE NOT NULL,
     `status` ENUM('PENDING', 'SENT', 'OPENED', 'FAILED') NOT NULL DEFAULT 'PENDING',
-    `sent_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `sent_at` DATETIME(3) NULL,
     `opened_at` DATETIME(3) NULL,
 
     INDEX `nearby_alert_logs_user_id_sent_at_idx`(`user_id`, `sent_at`),

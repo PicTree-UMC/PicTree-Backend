@@ -28,7 +28,7 @@ describe('NearbyAlertsService', () => {
     distanceM: 42,
     alertDate: new Date('2026-07-23T00:00:00.000Z'),
     status: NearbyAlertStatus.PENDING,
-    sentAt: new Date(),
+    sentAt: null,
     openedAt: null,
     tree: { name: '벚나무', defaultImage: 'DEFAULT_1' },
   };
@@ -66,16 +66,27 @@ describe('NearbyAlertsService', () => {
     );
   });
 
-  it('알림 설정이 꺼져 있으면 위치를 조회하지 않는다', async () => {
+  it('알림 설정이 꺼져 있어도 실제 근처 나무 개수를 반환한다', async () => {
     alertsRepository.isNotificationEnabled.mockResolvedValue(false);
+    treesRepository.findNearbyTrees.mockResolvedValue([
+      {
+        id: 2n,
+        name: '벚나무',
+        latitude: new Prisma.Decimal(37.5),
+        longitude: new Prisma.Decimal(127),
+        mood: 'HAPPY',
+        defaultImage: 'DEFAULT_1',
+        distanceM: 42,
+      },
+    ]);
 
     const result = await service.check(10, {
       latitude: 37.5,
       longitude: 127,
     });
 
-    expect(result).toEqual({ nearbyCount: 0, sentCount: 0 });
-    expect(treesRepository.findNearbyTrees).not.toHaveBeenCalled();
+    expect(result).toEqual({ nearbyCount: 1, sentCount: 0 });
+    expect(subscriptionsRepository.findActiveByUser).not.toHaveBeenCalled();
   });
 
   it('근처 나무를 찾고 활성 구독으로 알림을 전송한다', async () => {
@@ -141,7 +152,7 @@ describe('NearbyAlertsService', () => {
     expect(result.sentCount).toBe(0);
   });
 
-  it('푸시 설정 오류가 발생하면 기록을 실패 상태로 변경한다', async () => {
+  it('푸시 설정 오류가 발생해도 기록을 실패 처리하고 응답을 반환한다', async () => {
     alertsRepository.isNotificationEnabled.mockResolvedValue(true);
     treesRepository.findNearbyTrees.mockResolvedValue([
       {
@@ -153,16 +164,29 @@ describe('NearbyAlertsService', () => {
         defaultImage: 'DEFAULT_1',
         distanceM: 42,
       },
+      {
+        id: 3n,
+        name: '은행나무',
+        latitude: new Prisma.Decimal(37.5001),
+        longitude: new Prisma.Decimal(127.0001),
+        mood: 'NORMAL',
+        defaultImage: 'DEFAULT_2',
+        distanceM: 58,
+      },
     ]);
     subscriptionsRepository.findActiveByUser.mockResolvedValue([subscription]);
-    alertsRepository.createIfAbsent.mockResolvedValue(log);
-    webPushService.send.mockRejectedValue(
-      new AppException({
-        status: 500,
-        code: 'PUSH_CONFIG_MISSING',
-        message: '푸시 알림 설정이 누락되었습니다.',
-      }),
-    );
+    alertsRepository.createIfAbsent
+      .mockResolvedValueOnce(log)
+      .mockResolvedValueOnce({ ...log, id: 6n, treeId: 3n });
+    webPushService.send
+      .mockRejectedValueOnce(
+        new AppException({
+          status: 500,
+          code: 'PUSH_CONFIG_MISSING',
+          message: '푸시 알림 설정이 누락되었습니다.',
+        }),
+      )
+      .mockResolvedValueOnce(true);
     alertsRepository.updateStatus.mockResolvedValue({
       ...log,
       status: NearbyAlertStatus.FAILED,
@@ -173,10 +197,14 @@ describe('NearbyAlertsService', () => {
         latitude: 37.5,
         longitude: 127,
       }),
-    ).rejects.toBeInstanceOf(AppException);
+    ).resolves.toEqual({ nearbyCount: 2, sentCount: 1 });
     expect(alertsRepository.updateStatus).toHaveBeenCalledWith(
       5n,
       NearbyAlertStatus.FAILED,
+    );
+    expect(alertsRepository.updateStatus).toHaveBeenCalledWith(
+      6n,
+      NearbyAlertStatus.SENT,
     );
   });
 

@@ -277,6 +277,11 @@ export const ErrorCode = {
     code: 'PUSH_SUBSCRIPTION404',
     message: '푸시 구독을 찾을 수 없습니다.',
   },
+  PUSH_SUBSCRIPTION_ENDPOINT_INVALID: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'PUSH_SUBSCRIPTION400',
+    message: '허용되지 않은 푸시 구독 endpoint입니다.',
+  },
   PUSH_CONFIG_MISSING: {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     code: 'PUSH500',

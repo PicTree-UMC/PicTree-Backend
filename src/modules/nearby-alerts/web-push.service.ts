@@ -6,6 +6,8 @@ import { ErrorCode } from '../../common/exceptions/error-code';
 import { PushSubscriptionRecord } from '../push-subscriptions/push-subscriptions.types';
 import { PushPayload } from './nearby-alerts.types';
 
+const WEB_PUSH_TIMEOUT_MS = 10_000;
+
 @Injectable()
 export class WebPushService {
   private configured = false;
@@ -28,6 +30,7 @@ export class WebPushService {
           },
         },
         JSON.stringify(payload),
+        { timeout: WEB_PUSH_TIMEOUT_MS },
       );
       return true;
     } catch (error) {

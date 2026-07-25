@@ -26,7 +26,11 @@ export class PushSubscriptionKeysDto {
 export class CreatePushSubscriptionRequestDto {
   @ApiProperty({ example: 'https://fcm.googleapis.com/fcm/send/...' })
   @IsString()
-  @IsUrl({ require_tld: false })
+  @IsUrl({
+    protocols: ['https'],
+    require_protocol: true,
+    require_tld: true,
+  })
   endpoint!: string;
 
   @ApiProperty({ type: PushSubscriptionKeysDto })

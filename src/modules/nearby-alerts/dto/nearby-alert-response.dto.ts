@@ -28,8 +28,8 @@ export class NearbyAlertLogResponseDto {
   @ApiProperty({ enum: NearbyAlertStatus })
   status!: NearbyAlertStatus;
 
-  @ApiProperty({ format: 'date-time' })
-  sentAt!: Date;
+  @ApiProperty({ format: 'date-time', nullable: true })
+  sentAt!: Date | null;
 
   @ApiProperty({ format: 'date-time', nullable: true })
   openedAt!: Date | null;

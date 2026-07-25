@@ -18,6 +18,17 @@ const failResponse = (code: string, message: string) => ({
   message,
 });
 
+const alertLogExample = {
+  alertLogId: 1,
+  treeId: 3,
+  treeName: '우리 동네 벚나무',
+  defaultImage: 'DEFAULT_1',
+  distanceM: 42,
+  status: 'SENT',
+  sentAt: '2026-07-25T05:30:00.000Z',
+  openedAt: null,
+};
+
 const protectedResponses = () =>
   applyDecorators(
     ApiBearerAuth(),
@@ -61,7 +72,24 @@ export const ApiGetNearbyAlertLogs = () =>
   applyDecorators(
     ApiOperation({ summary: '근처 나무 알림 기록 조회' }),
     protectedResponses(),
-    ApiOkResponse({ description: '알림 기록 목록 조회 성공' }),
+    ApiOkResponse({
+      description: '알림 기록 목록 조회 성공',
+      schema: {
+        example: {
+          success: true,
+          code: 'COMMON200',
+          message: '요청이 성공했습니다.',
+          data: {
+            items: [alertLogExample],
+            page: 1,
+            size: 20,
+            totalElements: 1,
+            totalPages: 1,
+            hasNext: false,
+          },
+        },
+      },
+    }),
   );
 
 export const ApiOpenNearbyAlertLog = () =>
@@ -69,7 +97,21 @@ export const ApiOpenNearbyAlertLog = () =>
     ApiOperation({ summary: '근처 나무 알림 확인 처리' }),
     protectedResponses(),
     ApiParam({ name: 'alertLogId', example: 1 }),
-    ApiOkResponse({ description: '알림 확인 처리 성공' }),
+    ApiOkResponse({
+      description: '알림 확인 처리 성공',
+      schema: {
+        example: {
+          success: true,
+          code: 'COMMON200',
+          message: '요청이 성공했습니다.',
+          data: {
+            ...alertLogExample,
+            status: 'OPENED',
+            openedAt: '2026-07-25T05:31:00.000Z',
+          },
+        },
+      },
+    }),
     ApiNotFoundResponse({
       schema: {
         example: failResponse(

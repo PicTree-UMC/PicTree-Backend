@@ -71,7 +71,7 @@ export class NearbyAlertsRepository {
       data: {
         distanceM,
         status: NearbyAlertStatus.PENDING,
-        sentAt: new Date(),
+        sentAt: null,
         openedAt: null,
       },
     });
@@ -91,7 +91,10 @@ export class NearbyAlertsRepository {
   ): Promise<NearbyAlertLogRecord> =>
     this.prisma.nearbyAlertLog.update({
       where: { id: alertLogId },
-      data: { status },
+      data: {
+        status,
+        ...(status === NearbyAlertStatus.SENT && { sentAt: new Date() }),
+      },
       include: alertInclude,
     });
 

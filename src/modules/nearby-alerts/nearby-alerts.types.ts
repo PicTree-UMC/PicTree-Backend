@@ -7,7 +7,7 @@ export interface NearbyAlertLogRecord {
   distanceM: number;
   alertDate: Date;
   status: NearbyAlertStatus;
-  sentAt: Date;
+  sentAt: Date | null;
   openedAt: Date | null;
   tree: {
     name: string;
