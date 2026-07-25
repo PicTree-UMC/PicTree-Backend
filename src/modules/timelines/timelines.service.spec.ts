@@ -29,7 +29,7 @@ describe('TimelinesService', () => {
 
   beforeEach(() => {
     repository = {
-      findAvailableTreeById: jest.fn(),
+      findAvailableTreeByIdAndUser: jest.fn(),
       create: jest.fn(),
       findAllByUser: jest.fn(),
       findByIdAndUser: jest.fn(),
@@ -40,7 +40,7 @@ describe('TimelinesService', () => {
   });
 
   it('타임라인을 생성한다', async () => {
-    repository.findAvailableTreeById.mockResolvedValue({ id: 2n });
+    repository.findAvailableTreeByIdAndUser.mockResolvedValue({ id: 2n });
     repository.create.mockResolvedValue(timeline);
 
     const result = await service.create(10, {
@@ -54,11 +54,15 @@ describe('TimelinesService', () => {
     expect(repository.create).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 10n, treeId: 2n }),
     );
+    expect(repository.findAvailableTreeByIdAndUser).toHaveBeenCalledWith(
+      2n,
+      10n,
+    );
     expect(result).toMatchObject({ id: 1, userId: 10, treeId: 2 });
   });
 
-  it('존재하지 않는 나무로 타임라인을 생성할 수 없다', async () => {
-    repository.findAvailableTreeById.mockResolvedValue(null);
+  it('존재하지 않거나 다른 사용자의 나무로 타임라인을 생성할 수 없다', async () => {
+    repository.findAvailableTreeByIdAndUser.mockResolvedValue(null);
 
     await expect(
       service.create(10, {
@@ -68,6 +72,10 @@ describe('TimelinesService', () => {
         visitedAt: timeline.visitedAt.toISOString(),
       }),
     ).rejects.toBeInstanceOf(AppException);
+    expect(repository.findAvailableTreeByIdAndUser).toHaveBeenCalledWith(
+      999n,
+      10n,
+    );
     expect(repository.create).not.toHaveBeenCalled();
   });
 

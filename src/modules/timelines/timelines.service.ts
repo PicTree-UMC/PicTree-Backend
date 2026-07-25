@@ -19,7 +19,7 @@ export class TimelinesService {
     userId: number,
     request: CreateTimelineRequestDto,
   ): Promise<TimelineResponseDto> => {
-    await this.validateTree(request.treeId);
+    await this.validateTree(userId, request.treeId);
 
     const timeline = await this.timelinesRepository.create({
       userId: BigInt(userId),
@@ -72,7 +72,7 @@ export class TimelinesService {
   ): Promise<TimelineResponseDto> => {
     this.validateUpdateRequest(request);
     await this.getTimelineOrThrow(userId, timelineId);
-    await this.validateTree(request.treeId);
+    await this.validateTree(userId, request.treeId);
 
     const data: UpdateTimelineData = {
       ...request,
@@ -118,13 +118,17 @@ export class TimelinesService {
     return timeline;
   };
 
-  private validateTree = async (treeId?: number | null): Promise<void> => {
+  private validateTree = async (
+    userId: number,
+    treeId?: number | null,
+  ): Promise<void> => {
     if (treeId == null) {
       return;
     }
 
-    const tree = await this.timelinesRepository.findAvailableTreeById(
+    const tree = await this.timelinesRepository.findAvailableTreeByIdAndUser(
       BigInt(treeId),
+      BigInt(userId),
     );
     if (!tree) {
       throw new AppException(ErrorCode.TREE_NOT_FOUND);

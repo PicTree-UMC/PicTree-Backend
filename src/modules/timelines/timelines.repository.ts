@@ -21,9 +21,9 @@ const timelineInclude = {
 export class TimelinesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAvailableTreeById = (treeId: bigint) =>
+  findAvailableTreeByIdAndUser = (treeId: bigint, userId: bigint) =>
     this.prisma.tree.findFirst({
-      where: { id: treeId, deletedAt: null },
+      where: { id: treeId, userId, deletedAt: null },
       select: { id: true },
     });
 
