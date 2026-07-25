@@ -270,6 +270,40 @@ export const ErrorCode = {
     code: 'TIMELINE404',
     message: '타임라인을 찾을 수 없습니다.',
   },
+
+  // Tree Image
+  TREE_IMAGE_NO_FILE: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'TREE_IMAGE400',
+    message: '업로드할 이미지 파일이 없습니다.',
+  },
+  TREE_IMAGE_UNSUPPORTED_TYPE: {
+    status: HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+    code: 'TREE_IMAGE415',
+    message: '지원하지 않는 이미지 형식입니다.',
+  },
+  TREE_IMAGE_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'TREE_IMAGE404',
+    message: '존재하지 않는 사진입니다.',
+  },
+
+  // S3
+  S3_CONFIG_MISSING: {
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    code: 'S3500',
+    message: 'S3 설정이 누락되었습니다.',
+  },
+  S3_UPLOAD_FAILED: {
+    status: HttpStatus.BAD_GATEWAY,
+    code: 'S3502',
+    message: '이미지 업로드에 실패했습니다.',
+  },
+  S3_DELETE_FAILED: {
+    status: HttpStatus.BAD_GATEWAY,
+    code: 'S3502',
+    message: '이미지 삭제에 실패했습니다.',
+  },
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
