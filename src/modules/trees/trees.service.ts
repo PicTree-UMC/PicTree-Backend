@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import { CreateTreeRequestDto } from './dto/create-tree-request.dto';
+import { GetNearbyTreesQueryDto } from './dto/get-nearby-trees-query.dto';
 import { GetTreesQueryDto } from './dto/get-trees-query.dto';
+import { NearbyTreeResponseDto } from './dto/nearby-tree-response.dto';
 import { TreeListResponseDto } from './dto/tree-list-response.dto';
 import {
   CreateTreeResponseDto,
@@ -10,7 +12,12 @@ import {
   TreeSummaryResponseDto,
 } from './dto/tree-response.dto';
 import { UpdateTreeRequestDto } from './dto/update-tree-request.dto';
-import { AD_INTERVAL, FREE_PLAN_CODE, TreePagination } from './trees.constant';
+import {
+  AD_INTERVAL,
+  FREE_PLAN_CODE,
+  NEARBY_TREE_RADIUS_M,
+  TreePagination,
+} from './trees.constant';
 import { TreesRepository } from './trees.repository';
 import { TreeRecord, TreeWithImagesRecord } from './trees.types';
 
@@ -97,6 +104,26 @@ export class TreesService {
     await this.treesRepository.softDeleteTree(treeId, new Date());
 
     return null;
+  };
+
+  getNearbyTrees = async (
+    query: GetNearbyTreesQueryDto,
+  ): Promise<NearbyTreeResponseDto[]> => {
+    const trees = await this.treesRepository.findNearbyTrees(
+      query.lat,
+      query.lng,
+      NEARBY_TREE_RADIUS_M,
+    );
+
+    return trees.map((tree) => ({
+      treeId: Number(tree.id),
+      name: tree.name,
+      latitude: Number(tree.latitude),
+      longitude: Number(tree.longitude),
+      mood: tree.mood,
+      defaultImage: tree.defaultImage,
+      distanceM: Math.round(Number(tree.distanceM)),
+    }));
   };
 
   private resolveAdRequired = async (userId: number): Promise<boolean> => {

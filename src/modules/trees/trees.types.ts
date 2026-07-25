@@ -26,6 +26,16 @@ export interface TreeWithImagesRecord extends TreeRecord {
   images: TreeImageRecord[];
 }
 
+export interface NearbyTreeRecord {
+  id: bigint;
+  name: string;
+  latitude: Prisma.Decimal;
+  longitude: Prisma.Decimal;
+  mood: string;
+  defaultImage: string;
+  distanceM: number;
+}
+
 export interface CreateTreeData {
   userId: number;
   name: string;

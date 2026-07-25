@@ -270,6 +270,25 @@ export const ErrorCode = {
     code: 'TIMELINE404',
     message: '타임라인을 찾을 수 없습니다.',
   },
+
+  // Push Subscription
+  PUSH_SUBSCRIPTION_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'PUSH_SUBSCRIPTION404',
+    message: '푸시 구독을 찾을 수 없습니다.',
+  },
+  PUSH_CONFIG_MISSING: {
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    code: 'PUSH500',
+    message: 'Web Push 설정이 누락되었습니다.',
+  },
+
+  // Nearby Alert
+  NEARBY_ALERT_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'NEARBY_ALERT404',
+    message: '근처 나무 알림 기록을 찾을 수 없습니다.',
+  },
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];

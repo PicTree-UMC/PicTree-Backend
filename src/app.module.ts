@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { BillingKeysModule } from './modules/billing-keys/billing-keys.module';
+import { NearbyAlertsModule } from './modules/nearby-alerts/nearby-alerts.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { PushSubscriptionsModule } from './modules/push-subscriptions/push-subscriptions.module';
 import { RoutesModule } from './modules/routes/routes.module';
 import { SubscriptionPlansModule } from './modules/subscription-plans/subscription-plans.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
@@ -21,7 +23,9 @@ import { PrismaModule } from './prisma/prisma.module';
     TermsModule,
     SubscriptionPlansModule,
     PaymentsModule,
+    PushSubscriptionsModule,
     BillingKeysModule,
+    NearbyAlertsModule,
     SubscriptionsModule,
     TreesModule,
     RoutesModule,
