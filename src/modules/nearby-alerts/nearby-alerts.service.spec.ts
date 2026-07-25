@@ -208,6 +208,102 @@ describe('NearbyAlertsService', () => {
     );
   });
 
+  it('한 나무의 알림 기록 생성이 실패해도 다음 나무를 처리한다', async () => {
+    alertsRepository.isNotificationEnabled.mockResolvedValue(true);
+    treesRepository.findNearbyTrees.mockResolvedValue([
+      {
+        id: 2n,
+        name: '벚나무',
+        latitude: new Prisma.Decimal(37.5),
+        longitude: new Prisma.Decimal(127),
+        mood: 'HAPPY',
+        defaultImage: 'DEFAULT_1',
+        distanceM: 42,
+      },
+      {
+        id: 3n,
+        name: '은행나무',
+        latitude: new Prisma.Decimal(37.5001),
+        longitude: new Prisma.Decimal(127.0001),
+        mood: 'NORMAL',
+        defaultImage: 'DEFAULT_2',
+        distanceM: 58,
+      },
+    ]);
+    subscriptionsRepository.findActiveByUser.mockResolvedValue([subscription]);
+    alertsRepository.createIfAbsent
+      .mockRejectedValueOnce(new Error('DB connection failed'))
+      .mockResolvedValueOnce({ ...log, id: 6n, treeId: 3n });
+    webPushService.send.mockResolvedValue(true);
+    alertsRepository.updateStatus.mockResolvedValue({
+      ...log,
+      id: 6n,
+      treeId: 3n,
+      status: NearbyAlertStatus.SENT,
+    });
+
+    await expect(
+      service.check(10, {
+        latitude: 37.5,
+        longitude: 127,
+      }),
+    ).resolves.toEqual({ nearbyCount: 2, sentCount: 1 });
+    expect(webPushService.send).toHaveBeenCalledTimes(1);
+    expect(alertsRepository.updateStatus).toHaveBeenCalledWith(
+      6n,
+      NearbyAlertStatus.SENT,
+    );
+  });
+
+  it('한 나무의 상태 갱신이 실패해도 다음 나무를 처리한다', async () => {
+    alertsRepository.isNotificationEnabled.mockResolvedValue(true);
+    treesRepository.findNearbyTrees.mockResolvedValue([
+      {
+        id: 2n,
+        name: '벚나무',
+        latitude: new Prisma.Decimal(37.5),
+        longitude: new Prisma.Decimal(127),
+        mood: 'HAPPY',
+        defaultImage: 'DEFAULT_1',
+        distanceM: 42,
+      },
+      {
+        id: 3n,
+        name: '은행나무',
+        latitude: new Prisma.Decimal(37.5001),
+        longitude: new Prisma.Decimal(127.0001),
+        mood: 'NORMAL',
+        defaultImage: 'DEFAULT_2',
+        distanceM: 58,
+      },
+    ]);
+    subscriptionsRepository.findActiveByUser.mockResolvedValue([subscription]);
+    alertsRepository.createIfAbsent
+      .mockResolvedValueOnce(log)
+      .mockResolvedValueOnce({ ...log, id: 6n, treeId: 3n });
+    webPushService.send.mockResolvedValue(true);
+    alertsRepository.updateStatus
+      .mockRejectedValueOnce(new Error('DB connection failed'))
+      .mockResolvedValueOnce({
+        ...log,
+        id: 6n,
+        treeId: 3n,
+        status: NearbyAlertStatus.SENT,
+      });
+
+    await expect(
+      service.check(10, {
+        latitude: 37.5,
+        longitude: 127,
+      }),
+    ).resolves.toEqual({ nearbyCount: 2, sentCount: 2 });
+    expect(webPushService.send).toHaveBeenCalledTimes(2);
+    expect(alertsRepository.updateStatus).toHaveBeenCalledWith(
+      6n,
+      NearbyAlertStatus.SENT,
+    );
+  });
+
   it('본인 소유가 아닌 알림 기록은 확인할 수 없다', async () => {
     alertsRepository.findByIdAndUser.mockResolvedValue(null);
 

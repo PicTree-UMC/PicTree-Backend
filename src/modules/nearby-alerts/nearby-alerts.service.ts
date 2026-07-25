@@ -55,47 +55,51 @@ export class NearbyAlertsService {
 
     for (const tree of trees) {
       const distanceM = Math.round(Number(tree.distanceM));
-      const log = await this.nearbyAlertsRepository.createIfAbsent(
-        BigInt(userId),
-        tree.id,
-        distanceM,
-        alertDate,
-      );
-      if (!log) {
-        continue;
-      }
+      try {
+        const log = await this.nearbyAlertsRepository.createIfAbsent(
+          BigInt(userId),
+          tree.id,
+          distanceM,
+          alertDate,
+        );
+        if (!log) {
+          continue;
+        }
 
-      const deliveryResults = await Promise.all(
-        subscriptions.map(async (subscription) => {
-          try {
-            const delivered = await this.webPushService.send(subscription, {
-              title: '근처에 심어진 나무가 있어요',
-              body: `${tree.name} · 약 ${distanceM}m`,
-              data: {
-                url: `/trees/${Number(tree.id)}`,
-                treeId: Number(tree.id),
-                alertLogId: Number(log.id),
-              },
-            });
-            if (!delivered) {
-              await this.pushSubscriptionsRepository.deactivate(
-                subscription.id,
-              );
+        const deliveryResults = await Promise.all(
+          subscriptions.map(async (subscription) => {
+            try {
+              const delivered = await this.webPushService.send(subscription, {
+                title: '근처에 심어진 나무가 있어요',
+                body: `${tree.name} · 약 ${distanceM}m`,
+                data: {
+                  url: `/trees/${Number(tree.id)}`,
+                  treeId: Number(tree.id),
+                  alertLogId: Number(log.id),
+                },
+              });
+              if (!delivered) {
+                await this.pushSubscriptionsRepository.deactivate(
+                  subscription.id,
+                );
+              }
+              return delivered;
+            } catch (error) {
+              this.logTreeProcessingError(tree.id, error);
+              return false;
             }
-            return delivered;
-          } catch (error) {
-            this.logPushError(tree.id, error);
-            return false;
-          }
-        }),
-      );
-      const delivered = deliveryResults.some(Boolean);
-      await this.nearbyAlertsRepository.updateStatus(
-        log.id,
-        delivered ? NearbyAlertStatus.SENT : NearbyAlertStatus.FAILED,
-      );
-      if (delivered) {
-        sentCount += 1;
+          }),
+        );
+        const delivered = deliveryResults.some(Boolean);
+        if (delivered) {
+          sentCount += 1;
+        }
+        await this.nearbyAlertsRepository.updateStatus(
+          log.id,
+          delivered ? NearbyAlertStatus.SENT : NearbyAlertStatus.FAILED,
+        );
+      } catch (error) {
+        this.logTreeProcessingError(tree.id, error);
       }
     }
 
@@ -154,8 +158,8 @@ export class NearbyAlertsService {
     );
   };
 
-  private logPushError = (treeId: bigint, error: unknown): void => {
-    const message = `근처 나무 푸시 발송 실패 (treeId=${treeId.toString()})`;
+  private logTreeProcessingError = (treeId: bigint, error: unknown): void => {
+    const message = `근처 나무 알림 처리 실패 (treeId=${treeId.toString()})`;
     if (error instanceof Error) {
       this.logger.error(message, error.stack);
       return;
