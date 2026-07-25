@@ -11,7 +11,10 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiPayloadTooLargeResponse,
+  ApiQuery,
   ApiUnauthorizedResponse,
+  ApiUnsupportedMediaTypeResponse,
 } from '@nestjs/swagger';
 
 const failResponse = (code: string, message: string) => ({
@@ -91,11 +94,24 @@ export const ApiUploadTreeImages = () =>
       },
     }),
     ApiBadRequestResponse({
-      description: '파일 없음 / 지원하지 않는 형식',
+      description: '파일 없음',
       schema: {
         example: failResponse(
           'TREE_IMAGE400',
           '업로드할 이미지 파일이 없습니다.',
+        ),
+      },
+    }),
+    ApiPayloadTooLargeResponse({
+      description: '파일 크기 초과 (10MB)',
+      schema: { example: failResponse('COMMON400', '잘못된 요청입니다.') },
+    }),
+    ApiUnsupportedMediaTypeResponse({
+      description: '지원하지 않는 이미지 형식',
+      schema: {
+        example: failResponse(
+          'TREE_IMAGE415',
+          '지원하지 않는 이미지 형식입니다.',
         ),
       },
     }),
@@ -106,6 +122,12 @@ export const ApiGetTreeImages = () =>
     ApiOperation({ summary: '나무 사진 목록 조회' }),
     protectedResponses(),
     treeIdParam(),
+    ApiQuery({
+      name: 'timelineRecordId',
+      required: false,
+      type: Number,
+      description: '특정 타임라인 기록의 사진만 필터 (생략 시 전체)',
+    }),
     ApiOkResponse({
       description: '사진 목록 조회 성공',
       schema: {

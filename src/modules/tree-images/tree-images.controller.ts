@@ -38,7 +38,12 @@ export class TreeImagesController {
   constructor(private readonly treeImagesService: TreeImagesService) {}
 
   @Post()
-  @UseInterceptors(FilesInterceptor('images', MAX_IMAGE_COUNT))
+  @UseInterceptors(
+    FilesInterceptor('images', MAX_IMAGE_COUNT, {
+      // 파일이 메모리에 버퍼링되기 전에 크기를 제한한다.
+      limits: { fileSize: MAX_IMAGE_SIZE_BYTES },
+    }),
+  )
   @ApiUploadTreeImages()
   async uploadImages(
     @CurrentUser() currentUser: JwtPayload,

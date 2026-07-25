@@ -36,8 +36,9 @@ export class TreeImagesService {
     const startSortOrder =
       (await this.treeImagesRepository.findMaxSortOrder(treeId)) + 1;
 
-    // S3 업로드가 성공한 객체만 추적해, 이후 DB 저장 실패 시 정리한다.
+    // S3 업로드가 성공한 객체만 추적해, DB 저장 전 실패 시 정리한다.
     const uploadedKeys: string[] = [];
+    let created: TreeImageRecord[];
     try {
       const createData: CreateTreeImageData[] = [];
       for (let i = 0; i < files.length; i++) {
@@ -59,15 +60,17 @@ export class TreeImagesService {
         });
       }
 
-      const created = await this.treeImagesRepository.createMany(createData);
-
-      return { images: await this.toResponseDtos(created) };
+      created = await this.treeImagesRepository.createMany(createData);
     } catch (error) {
+      // DB 저장 전 실패한 경우에만 업로드된 S3 객체를 되돌린다.
       await Promise.all(
         uploadedKeys.map((key) => this.s3Service.delete(key).catch(() => {})),
       );
       throw error;
     }
+
+    // DB 저장까지 성공한 뒤에는 presigned 발급이 실패해도 데이터를 되돌리지 않는다.
+    return { images: await this.toResponseDtos(created) };
   };
 
   getImages = async (
@@ -100,8 +103,10 @@ export class TreeImagesService {
       throw new AppException(ErrorCode.TREE_IMAGE_NOT_FOUND);
     }
 
-    await this.treeImagesRepository.deleteById(imageId);
+    // S3 객체를 먼저 지워, DB에는 없는데 S3에만 남는 고아 객체를 방지한다.
+    // S3 삭제가 실패하면 DB 레코드는 유지되어 재시도할 수 있다.
     await this.s3Service.delete(image.s3Key);
+    await this.treeImagesRepository.deleteById(imageId);
 
     return null;
   };
