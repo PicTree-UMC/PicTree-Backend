@@ -5,13 +5,14 @@ import { ErrorCode } from '../../common/exceptions/error-code';
 import { S3Service } from '../../common/s3/s3.service';
 import { TreeImageListResponseDto } from './dto/tree-image-list-response.dto';
 import { TreeImageResponseDto } from './dto/tree-image-response.dto';
+import { TreeImageUploadResponseDto } from './dto/tree-image-upload-response.dto';
 import {
   ALLOWED_IMAGE_MIME_TYPES,
   MIME_TYPE_EXTENSION,
   TREE_IMAGE_KEY_PREFIX,
 } from './tree-images.constant';
 import { TreeImagesRepository } from './tree-images.repository';
-import { CreateTreeImageData, TreeImageRecord } from './tree-images.types';
+import { TreeImageRecord } from './tree-images.types';
 
 @Injectable()
 export class TreeImagesService {
@@ -20,57 +21,55 @@ export class TreeImagesService {
     private readonly s3Service: S3Service,
   ) {}
 
-  uploadImages = async (
+  // 나무(또는 타임라인 기록)당 사진은 1장이다. 이미 있으면 교체한다.
+  // 사진의 날짜는 항상 나무 등록 시점(Tree.createdAt) 기준이며, 교체해도 변하지 않는다.
+  uploadImage = async (
     userId: number,
     treeId: number,
-    files: Express.Multer.File[],
+    file: Express.Multer.File,
     timelineRecordId?: number,
-  ): Promise<TreeImageListResponseDto> => {
+  ): Promise<TreeImageUploadResponseDto> => {
     await this.ensureTreeOwnership(userId, treeId);
 
-    if (!files || files.length === 0) {
+    if (!file) {
       throw new AppException(ErrorCode.TREE_IMAGE_NO_FILE);
     }
-    this.validateFileTypes(files);
+    this.validateFileType(file);
 
-    const startSortOrder =
-      (await this.treeImagesRepository.findMaxSortOrder(treeId)) + 1;
+    const normalizedTimelineRecordId = timelineRecordId ?? null;
+    const existing = await this.treeImagesRepository.findByTreeAndTimeline(
+      treeId,
+      normalizedTimelineRecordId,
+    );
 
-    // S3 업로드가 성공한 객체만 추적해, DB 저장 전 실패 시 정리한다.
-    const uploadedKeys: string[] = [];
-    let created: TreeImageRecord[];
+    const key = this.buildKey(treeId, file.mimetype);
+    const imageUrl = await this.s3Service.upload({
+      key,
+      body: file.buffer,
+      contentType: file.mimetype,
+    });
+
+    let created: TreeImageRecord;
     try {
-      const createData: CreateTreeImageData[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const key = this.buildKey(treeId, file.mimetype);
-        const imageUrl = await this.s3Service.upload({
-          key,
-          body: file.buffer,
-          contentType: file.mimetype,
-        });
-        uploadedKeys.push(key);
-        createData.push({
-          treeId,
-          timelineRecordId: timelineRecordId ?? null,
-          imageUrl,
-          s3Key: key,
-          fileSize: file.size,
-          sortOrder: startSortOrder + i,
-        });
-      }
-
-      created = await this.treeImagesRepository.createMany(createData);
+      created = await this.treeImagesRepository.replace(existing?.id ?? null, {
+        treeId,
+        timelineRecordId: normalizedTimelineRecordId,
+        imageUrl,
+        s3Key: key,
+        fileSize: file.size,
+      });
     } catch (error) {
-      // DB 저장 전 실패한 경우에만 업로드된 S3 객체를 되돌린다.
-      await Promise.all(
-        uploadedKeys.map((key) => this.s3Service.delete(key).catch(() => {})),
-      );
+      // DB 저장 전 실패한 경우, 방금 올린 새 S3 객체를 되돌린다.
+      await this.s3Service.delete(key).catch(() => {});
       throw error;
     }
 
-    // DB 저장까지 성공한 뒤에는 presigned 발급이 실패해도 데이터를 되돌리지 않는다.
-    return { images: await this.toResponseDtos(created) };
+    // 교체 성공 후 기존 S3 객체를 정리한다. 실패해도 데이터엔 영향이 없다(고아 객체만 남음).
+    if (existing) {
+      await this.s3Service.delete(existing.s3Key).catch(() => {});
+    }
+
+    return { image: await this.toResponseDto(created) };
   };
 
   getImages = async (
@@ -125,11 +124,10 @@ export class TreeImagesService {
     }
   };
 
-  private validateFileTypes = (files: Express.Multer.File[]): void => {
+  private validateFileType = (file: Express.Multer.File): void => {
     const allowed = ALLOWED_IMAGE_MIME_TYPES as readonly string[];
-    const hasInvalid = files.some((file) => !allowed.includes(file.mimetype));
 
-    if (hasInvalid) {
+    if (!allowed.includes(file.mimetype)) {
       throw new AppException(ErrorCode.TREE_IMAGE_UNSUPPORTED_TYPE);
     }
   };
@@ -140,20 +138,19 @@ export class TreeImagesService {
     return `${TREE_IMAGE_KEY_PREFIX}/${treeId}/${randomUUID()}.${ext}`;
   };
 
+  private toResponseDto = async (
+    image: TreeImageRecord,
+  ): Promise<TreeImageResponseDto> => ({
+    imageId: Number(image.id),
+    imageUrl: await this.s3Service.getPresignedUrl(image.s3Key),
+    timelineRecordId:
+      image.timelineRecordId === null ? null : Number(image.timelineRecordId),
+    fileSize: Number(image.fileSize),
+  });
+
   private toResponseDtos = (
     images: TreeImageRecord[],
   ): Promise<TreeImageResponseDto[]> => {
-    return Promise.all(
-      images.map(async (image) => ({
-        imageId: Number(image.id),
-        imageUrl: await this.s3Service.getPresignedUrl(image.s3Key),
-        timelineRecordId:
-          image.timelineRecordId === null
-            ? null
-            : Number(image.timelineRecordId),
-        fileSize: Number(image.fileSize),
-        sortOrder: image.sortOrder,
-      })),
-    );
+    return Promise.all(images.map((image) => this.toResponseDto(image)));
   };
 }

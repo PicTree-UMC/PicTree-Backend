@@ -19,7 +19,4 @@ export class TreeImageResponseDto {
 
   @ApiProperty({ example: 204800, description: '파일 크기(byte)' })
   fileSize!: number;
-
-  @ApiProperty({ example: 0, description: '정렬 순서' })
-  sortOrder!: number;
 }
