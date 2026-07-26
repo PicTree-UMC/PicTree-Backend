@@ -1,5 +1,9 @@
 import { applyDecorators } from '@nestjs/common';
 import {
+  FavoriteTreeListResponseDto,
+  ToggleFavoriteResponseDto,
+} from './dto/favorite-response.dto';
+import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
@@ -110,6 +114,34 @@ export const ApiGetMyTrees = () =>
     }),
   );
 
+export const ApiGetFavoriteTrees = () =>
+  applyDecorators(
+    ApiOperation({ summary: '즐겨찾기 장소 목록 조회' }),
+    protectedTreeResponses(),
+    ApiOkResponse({
+      description: '즐겨찾기 장소 조회 성공',
+      type: FavoriteTreeListResponseDto,
+      schema: {
+        example: {
+          success: true,
+          code: 'FAVORITE200-1',
+          message: '즐겨찾기 장소 조회가 완료되었습니다.',
+          data: {
+            count: 2,
+            favorites: [
+              {
+                treeId: 1,
+                name: '오아시스 만난 곳',
+                description: '길 가다가 오아시스 자만추',
+                visitedAt: '2026-03-30',
+              },
+            ],
+          },
+        },
+      },
+    }),
+  );
+
 export const ApiGetTree = () =>
   applyDecorators(
     ApiOperation({ summary: '나무 상세 조회' }),
@@ -171,6 +203,29 @@ export const ApiUpdateTree = () =>
       description: '수정 요청 값 오류 또는 수정할 값 없음',
       schema: {
         example: failResponse('TREE400', '나무 요청 값이 올바르지 않습니다.'),
+      },
+    }),
+  );
+
+export const ApiToggleFavoriteTree = () =>
+  applyDecorators(
+    ApiOperation({ summary: '즐겨찾기 장소 추가/삭제' }),
+    protectedTreeResponses(),
+    treeIdParam(),
+    treeResourceResponses(),
+    ApiOkResponse({
+      description: '즐겨찾기 상태 변경 성공',
+      type: ToggleFavoriteResponseDto,
+      schema: {
+        example: {
+          success: true,
+          code: 'FAVORITE200-2',
+          message: '즐겨찾기 상태가 변경되었습니다.',
+          data: {
+            treeId: 1,
+            isFavorite: true,
+          },
+        },
       },
     }),
   );

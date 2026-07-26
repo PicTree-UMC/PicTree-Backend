@@ -26,6 +26,14 @@ export interface TreeWithImagesRecord extends TreeRecord {
   images: TreeImageRecord[];
 }
 
+export interface FavoriteTreeRecord {
+  id: bigint;
+  name: string;
+  description: string | null;
+  mood: string;
+  createdAt: Date;
+}
+
 export interface CreateTreeData {
   userId: number;
   name: string;
