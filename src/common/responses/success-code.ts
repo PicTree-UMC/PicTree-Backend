@@ -65,6 +65,13 @@ export const SuccessCode = {
     code: 'FAVORITE200-2',
     message: '즐겨찾기 상태가 변경되었습니다.',
   },
+
+  // Calendar
+  CALENDAR_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'CALENDAR200',
+    message: '여행 캘린더 조회가 완료되었습니다.',
+  },
 } as const;
 
 export type SuccessCodeType = (typeof SuccessCode)[keyof typeof SuccessCode];
