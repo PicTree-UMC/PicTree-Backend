@@ -76,6 +76,7 @@ export class BlogDraftsService {
       request.startDate,
       request.endDate,
     );
+    this.validateDraftContent(request.title, request.content);
     await this.getAvailableUserOrThrow(userId);
     await this.validateTreeIds(userId, request.treeIds);
     const saved = await this.blogDraftsRepository.createDraft({
@@ -321,6 +322,12 @@ export class BlogDraftsService {
     }
 
     return [start, end];
+  };
+
+  private validateDraftContent = (title: string, content: string): void => {
+    if (!title.trim() || !content.trim()) {
+      throw new AppException(ErrorCode.BLOG_DRAFT_EMPTY_CONTENT);
+    }
   };
 
   private toExclusiveEndDate = (endDate: Date): Date => {

@@ -251,6 +251,21 @@ describe('BlogDraftsService', () => {
     });
   });
 
+  it('저장할 제목 또는 본문이 비어 있으면 예외를 던진다', async () => {
+    await expect(
+      service.saveDraft(1, {
+        title: '   ',
+        content: '',
+        startDate: '2026-03-31',
+        endDate: '2026-04-01',
+        treeIds: [1],
+      }),
+    ).rejects.toBeInstanceOf(AppException);
+
+    expect(repository.findUserById).not.toHaveBeenCalled();
+    expect(repository.createDraft).not.toHaveBeenCalled();
+  });
+
   it('초안 생성 시 사용자 선택 종료일을 그대로 응답한다', async () => {
     repository.findUserById.mockResolvedValue({
       id: 1n,
