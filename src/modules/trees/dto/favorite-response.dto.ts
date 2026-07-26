@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { TreeImageResponseDto } from './tree-response.dto';
 
 export class FavoriteTreeResponseDto {
   @ApiProperty({ example: 1, description: '나무 ID' })
@@ -19,6 +20,13 @@ export class FavoriteTreeResponseDto {
     description: '방문일',
   })
   visitedAt!: string;
+
+  @ApiProperty({
+    type: TreeImageResponseDto,
+    nullable: true,
+    description: '장소 대표 이미지',
+  })
+  image!: TreeImageResponseDto | null;
 }
 
 export class FavoriteTreeListResponseDto {

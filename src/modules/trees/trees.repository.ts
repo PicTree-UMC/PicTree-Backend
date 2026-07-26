@@ -72,8 +72,18 @@ export class TreesRepository {
         id: true,
         name: true,
         description: true,
-        mood: true,
         createdAt: true,
+        images: {
+          select: {
+            id: true,
+            timelineRecordId: true,
+            imageUrl: true,
+            sortOrder: true,
+          },
+          orderBy: {
+            sortOrder: 'asc',
+          },
+        },
       },
       orderBy: {
         updatedAt: 'desc',

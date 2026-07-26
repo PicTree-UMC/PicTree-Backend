@@ -230,10 +230,26 @@ export class TreesService {
 
   private toFavoriteTreeResponseDto = (
     tree: FavoriteTreeRecord,
-  ): FavoriteTreeResponseDto => ({
-    treeId: Number(tree.id),
-    name: tree.name,
-    description: tree.description,
-    visitedAt: tree.createdAt.toISOString().slice(0, 10),
-  });
+  ): FavoriteTreeResponseDto => {
+    const firstImage = tree.images[0];
+
+    return {
+      treeId: Number(tree.id),
+      name: tree.name,
+      description: tree.description,
+      visitedAt: tree.createdAt.toISOString().slice(0, 10),
+      image:
+        firstImage == null
+          ? null
+          : {
+              imageId: Number(firstImage.id),
+              imageUrl: firstImage.imageUrl,
+              timelineRecordId:
+                firstImage.timelineRecordId === null
+                  ? null
+                  : Number(firstImage.timelineRecordId),
+              sortOrder: firstImage.sortOrder,
+            },
+    };
+  };
 }

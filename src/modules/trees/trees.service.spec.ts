@@ -29,8 +29,15 @@ describe('TreesService', () => {
     id: 1n,
     name: '오아시스 만난 곳',
     description: '길 가다가 오아시스 자만추',
-    mood: 'HAPPY',
     createdAt: new Date('2026-03-30T10:00:00.000Z'),
+    images: [
+      {
+        id: 11n,
+        timelineRecordId: null,
+        imageUrl: 'https://example.com/tree.jpg',
+        sortOrder: 0,
+      },
+    ],
   };
 
   let repository: jest.Mocked<TreesRepository>;
@@ -67,6 +74,12 @@ describe('TreesService', () => {
           name: '오아시스 만난 곳',
           description: '길 가다가 오아시스 자만추',
           visitedAt: '2026-03-30',
+          image: {
+            imageId: 11,
+            imageUrl: 'https://example.com/tree.jpg',
+            timelineRecordId: null,
+            sortOrder: 0,
+          },
         },
       ],
     });

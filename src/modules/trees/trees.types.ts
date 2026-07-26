@@ -30,8 +30,8 @@ export interface FavoriteTreeRecord {
   id: bigint;
   name: string;
   description: string | null;
-  mood: string;
   createdAt: Date;
+  images: TreeImageRecord[];
 }
 
 export interface CreateTreeData {

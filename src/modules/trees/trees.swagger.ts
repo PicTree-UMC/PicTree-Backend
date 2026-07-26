@@ -134,6 +134,12 @@ export const ApiGetFavoriteTrees = () =>
                 name: '오아시스 만난 곳',
                 description: '길 가다가 오아시스 자만추',
                 visitedAt: '2026-03-30',
+                image: {
+                  imageId: 10,
+                  imageUrl: 'https://.../a.jpg',
+                  timelineRecordId: null,
+                  sortOrder: 0,
+                },
               },
             ],
           },
