@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { S3Module } from './common/s3/s3.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BillingKeysModule } from './modules/billing-keys/billing-keys.module';
 import { PaymentsModule } from './modules/payments/payments.module';
@@ -7,6 +8,8 @@ import { RoutesModule } from './modules/routes/routes.module';
 import { SubscriptionPlansModule } from './modules/subscription-plans/subscription-plans.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { TermsModule } from './modules/terms/terms.module';
+import { TimelinesModule } from './modules/timelines/timelines.module';
+import { TreeImagesModule } from './modules/tree-images/tree-images.module';
 import { TreesModule } from './modules/trees/trees.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -15,6 +18,7 @@ import { PrismaModule } from './prisma/prisma.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    S3Module,
     AuthModule,
     UsersModule,
     TermsModule,
@@ -23,7 +27,9 @@ import { PrismaModule } from './prisma/prisma.module';
     BillingKeysModule,
     SubscriptionsModule,
     TreesModule,
+    TreeImagesModule,
     RoutesModule,
+    TimelinesModule,
   ],
   controllers: [],
   providers: [],
