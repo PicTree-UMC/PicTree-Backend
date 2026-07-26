@@ -2,17 +2,27 @@ import { Injectable } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import { CreateTreeRequestDto } from './dto/create-tree-request.dto';
+import {
+  FavoriteTreeListResponseDto,
+  FavoriteTreeResponseDto,
+  ToggleFavoriteResponseDto,
+} from './dto/favorite-response.dto';
 import { GetTreesQueryDto } from './dto/get-trees-query.dto';
 import { TreeListResponseDto } from './dto/tree-list-response.dto';
 import {
   CreateTreeResponseDto,
+  TreeImageResponseDto,
   TreeResponseDto,
   TreeSummaryResponseDto,
 } from './dto/tree-response.dto';
 import { UpdateTreeRequestDto } from './dto/update-tree-request.dto';
 import { AD_INTERVAL, FREE_PLAN_CODE, TreePagination } from './trees.constant';
 import { TreesRepository } from './trees.repository';
-import { TreeRecord, TreeWithImagesRecord } from './trees.types';
+import {
+  FavoriteTreeRecord,
+  TreeRecord,
+  TreeWithImagesRecord,
+} from './trees.types';
 
 @Injectable()
 export class TreesService {
@@ -72,6 +82,18 @@ export class TreesService {
     return this.toTreeResponseDto(tree);
   };
 
+  getFavoriteTrees = async (
+    userId: number,
+  ): Promise<FavoriteTreeListResponseDto> => {
+    const favorites =
+      await this.treesRepository.findFavoriteTreesByUserId(userId);
+
+    return {
+      count: favorites.length,
+      favorites: favorites.map(this.toFavoriteTreeResponseDto),
+    };
+  };
+
   updateTree = async (
     userId: number,
     treeId: number,
@@ -97,6 +119,22 @@ export class TreesService {
     await this.treesRepository.softDeleteTree(treeId, new Date());
 
     return null;
+  };
+
+  toggleFavorite = async (
+    userId: number,
+    treeId: number,
+  ): Promise<ToggleFavoriteResponseDto> => {
+    const tree = await this.getOwnedTreeOrThrow(userId, treeId);
+    const updated = await this.treesRepository.updateFavoriteStatus(
+      treeId,
+      !tree.isFavorite,
+    );
+
+    return {
+      treeId: Number(updated.id),
+      isFavorite: updated.isFavorite,
+    };
   };
 
   private resolveAdRequired = async (userId: number): Promise<boolean> => {
@@ -181,14 +219,33 @@ export class TreesService {
     mood: tree.mood,
     defaultImage: tree.defaultImage,
     isFavorite: tree.isFavorite,
-    images: tree.images.map((image) => ({
-      imageId: Number(image.id),
-      imageUrl: image.imageUrl,
-      timelineRecordId:
-        image.timelineRecordId === null ? null : Number(image.timelineRecordId),
-      sortOrder: image.sortOrder,
-    })),
+    images: tree.images.map(this.toTreeImageResponseDto),
     createdAt: tree.createdAt,
     updatedAt: tree.updatedAt,
+  });
+
+  private toFavoriteTreeResponseDto = (
+    tree: FavoriteTreeRecord,
+  ): FavoriteTreeResponseDto => {
+    const firstImage = tree.images[0];
+
+    return {
+      treeId: Number(tree.id),
+      name: tree.name,
+      description: tree.description,
+      visitedAt: tree.createdAt.toISOString().slice(0, 10),
+      image:
+        firstImage == null ? null : this.toTreeImageResponseDto(firstImage),
+    };
+  };
+
+  private toTreeImageResponseDto = (
+    image: TreeWithImagesRecord['images'][number],
+  ): TreeImageResponseDto => ({
+    imageId: Number(image.id),
+    imageUrl: image.imageUrl,
+    timelineRecordId:
+      image.timelineRecordId === null ? null : Number(image.timelineRecordId),
+    sortOrder: image.sortOrder,
   });
 }

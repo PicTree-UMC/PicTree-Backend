@@ -53,6 +53,25 @@ export const SuccessCode = {
     code: 'SUBSCRIPTION200',
     message: '구독 자동갱신이 재개되었습니다.',
   },
+
+  // Favorite
+  FAVORITE_LIST_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'FAVORITE200-1',
+    message: '즐겨찾기 장소 조회가 완료되었습니다.',
+  },
+  FAVORITE_TOGGLED: {
+    status: HttpStatus.OK,
+    code: 'FAVORITE200-2',
+    message: '즐겨찾기 상태가 변경되었습니다.',
+  },
+
+  // Calendar
+  CALENDAR_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'CALENDAR200',
+    message: '여행 캘린더 조회가 완료되었습니다.',
+  },
 } as const;
 
 export type SuccessCodeType = (typeof SuccessCode)[keyof typeof SuccessCode];

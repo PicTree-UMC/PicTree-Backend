@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { FREE_PLAN_CODE } from './trees.constant';
 import {
   CreateTreeData,
+  FavoriteTreeRecord,
   TreeRecord,
   TreeWithImagesRecord,
   UpdateTreeData,
@@ -60,6 +61,38 @@ export class TreesRepository {
     });
   };
 
+  findFavoriteTreesByUserId = (
+    userId: number,
+  ): Promise<FavoriteTreeRecord[]> => {
+    return this.prisma.tree.findMany({
+      where: {
+        userId: BigInt(userId),
+        isFavorite: true,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        images: {
+          select: {
+            id: true,
+            timelineRecordId: true,
+            imageUrl: true,
+            sortOrder: true,
+          },
+          orderBy: {
+            sortOrder: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+  };
+
   findTreeWithImagesById = (
     treeId: number,
   ): Promise<TreeWithImagesRecord | null> => {
@@ -87,6 +120,20 @@ export class TreesRepository {
         id: BigInt(treeId),
       },
       data: updateTreeData,
+    });
+  };
+
+  updateFavoriteStatus = (
+    treeId: number,
+    isFavorite: boolean,
+  ): Promise<TreeRecord> => {
+    return this.prisma.tree.update({
+      where: {
+        id: BigInt(treeId),
+      },
+      data: {
+        isFavorite,
+      },
     });
   };
 

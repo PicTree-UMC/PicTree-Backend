@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { S3Module } from './common/s3/s3.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BillingKeysModule } from './modules/billing-keys/billing-keys.module';
+import { CalendarModule } from './modules/calendar/calendar.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { RoutesModule } from './modules/routes/routes.module';
 import { SubscriptionPlansModule } from './modules/subscription-plans/subscription-plans.module';
@@ -20,6 +21,7 @@ import { PrismaModule } from './prisma/prisma.module';
     PrismaModule,
     S3Module,
     AuthModule,
+    CalendarModule,
     UsersModule,
     TermsModule,
     SubscriptionPlansModule,
