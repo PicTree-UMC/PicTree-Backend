@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsDateString,
@@ -35,9 +36,13 @@ export class SaveBlogDraftRequestDto {
   @IsDateString()
   endDate!: string;
 
-  @ApiProperty({ example: [1, 2, 3], description: '선택한 장소 ID 목록' })
+  @ApiProperty({
+    example: [1, 2, 3],
+    description: '선택한 장소 ID 목록 (최대 15개)',
+  })
   @IsArray()
   @ArrayMinSize(1)
+  @ArrayMaxSize(15)
   @Type(() => Number)
   @IsInt({ each: true })
   @Min(1, { each: true })
