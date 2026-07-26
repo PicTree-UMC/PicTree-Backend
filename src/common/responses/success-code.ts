@@ -72,6 +72,33 @@ export const SuccessCode = {
     code: 'CALENDAR200',
     message: '여행 캘린더 조회가 완료되었습니다.',
   },
+
+  // Blog Draft
+  BLOG_DRAFT_GENERATED: {
+    status: HttpStatus.OK,
+    code: 'BLOG200-2',
+    message: 'AI 블로그 초안 생성이 완료되었습니다.',
+  },
+  BLOG_DRAFT_SAVED: {
+    status: HttpStatus.CREATED,
+    code: 'BLOG201',
+    message: 'AI 블로그 초안이 저장되었습니다.',
+  },
+  BLOG_DRAFT_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'BLOG200-1',
+    message: 'AI 블로그 초안 목록 조회가 완료되었습니다.',
+  },
+  BLOG_DRAFT_DETAIL_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'BLOG200-2',
+    message: 'AI 블로그 초안 상세 조회가 완료되었습니다.',
+  },
+  BLOG_DRAFT_DELETED: {
+    status: HttpStatus.OK,
+    code: 'BLOG200-3',
+    message: 'AI 블로그 초안이 삭제되었습니다.',
+  },
 } as const;
 
 export type SuccessCodeType = (typeof SuccessCode)[keyof typeof SuccessCode];

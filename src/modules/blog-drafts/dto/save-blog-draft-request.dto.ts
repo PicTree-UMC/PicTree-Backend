@@ -1,0 +1,50 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsDateString,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  Min,
+} from 'class-validator';
+
+export class SaveBlogDraftRequestDto {
+  @ApiProperty({
+    example: '[여행 기록] 3월 31일 ~ 4월 1일',
+    description: '초안 제목',
+  })
+  @IsString()
+  @IsNotEmpty()
+  title!: string;
+
+  @ApiProperty({
+    example: '생성된 블로그 초안 내용입니다.',
+    description: '초안 본문',
+  })
+  @IsString()
+  @IsNotEmpty()
+  content!: string;
+
+  @ApiProperty({ example: '2026-03-31', description: '시작일' })
+  @IsDateString()
+  startDate!: string;
+
+  @ApiProperty({ example: '2026-04-01', description: '종료일' })
+  @IsDateString()
+  endDate!: string;
+
+  @ApiProperty({
+    example: [1, 2, 3],
+    description: '선택한 장소 ID 목록 (최대 15개)',
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(15)
+  @Type(() => Number)
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  treeIds!: number[];
+}
