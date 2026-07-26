@@ -227,15 +227,12 @@ export class TreesService {
   private toFavoriteTreeResponseDto = (
     tree: FavoriteTreeRecord,
   ): FavoriteTreeResponseDto => {
-    const firstImage = tree.images[0];
-
     return {
       treeId: Number(tree.id),
       name: tree.name,
       description: tree.description,
       visitedAt: tree.createdAt.toISOString().slice(0, 10),
-      image:
-        firstImage == null ? null : this.toTreeImageResponseDto(firstImage),
+      imageUrl: tree.image?.imageUrl ?? null,
     };
   };
 

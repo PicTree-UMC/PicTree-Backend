@@ -64,33 +64,44 @@ export class TreesRepository {
   findFavoriteTreesByUserId = (
     userId: number,
   ): Promise<FavoriteTreeRecord[]> => {
-    return this.prisma.tree.findMany({
-      where: {
-        userId: BigInt(userId),
-        isFavorite: true,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        createdAt: true,
-        images: {
-          select: {
-            id: true,
-            timelineRecordId: true,
-            imageUrl: true,
-            sortOrder: true,
-          },
-          orderBy: {
-            sortOrder: 'asc',
+    return this.prisma.tree
+      .findMany({
+        where: {
+          userId: BigInt(userId),
+          isFavorite: true,
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          images: {
+            select: {
+              id: true,
+              timelineRecordId: true,
+              imageUrl: true,
+              sortOrder: true,
+            },
+            orderBy: {
+              sortOrder: 'asc',
+            },
+            take: 1,
           },
         },
-      },
-      orderBy: {
-        updatedAt: 'desc',
-      },
-    });
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      })
+      .then((trees) =>
+        trees.map((tree) => ({
+          id: tree.id,
+          name: tree.name,
+          description: tree.description,
+          createdAt: tree.createdAt,
+          image: tree.images[0] ?? null,
+        })),
+      );
   };
 
   findTreeWithImagesById = (

@@ -31,7 +31,7 @@ export interface FavoriteTreeRecord {
   name: string;
   description: string | null;
   createdAt: Date;
-  images: TreeImageRecord[];
+  image: TreeImageRecord | null;
 }
 
 export interface CreateTreeData {
