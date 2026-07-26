@@ -1,11 +1,3 @@
-export const TreeMood = {
-  HAPPY: 'HAPPY',
-  SAD: 'SAD',
-  NORMAL: 'NORMAL',
-} as const;
-
-export type TreeMoodType = (typeof TreeMood)[keyof typeof TreeMood];
-
 // 무료 플랜 식별 코드 (subscription_plans.code 기준)
 export const FREE_PLAN_CODE = 'FREE';
 

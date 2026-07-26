@@ -14,7 +14,7 @@ describe('TreesService', () => {
     longitude: new Prisma.Decimal('126.9780'),
     address: '서울시 중구 ...',
     isFavorite: false,
-    mood: 'HAPPY',
+    mood: '😍',
     defaultImage: 'DEFAULT_1',
     createdAt: new Date('2026-03-30T10:00:00.000Z'),
     updatedAt: new Date('2026-03-30T10:00:00.000Z'),
