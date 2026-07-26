@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { AppException } from '../../common/exceptions/app.exception';
 import { TreesRepository } from './trees.repository';
 import { TreesService } from './trees.service';
-import { FavoriteTreeRecord, TreeRecord, TreeWithImagesRecord } from './trees.types';
+import { FavoriteTreeRecord, TreeRecord } from './trees.types';
 
 describe('TreesService', () => {
   const tree: TreeRecord = {
@@ -18,11 +18,6 @@ describe('TreesService', () => {
     defaultImage: 'DEFAULT_1',
     createdAt: new Date('2026-03-30T10:00:00.000Z'),
     updatedAt: new Date('2026-03-30T10:00:00.000Z'),
-  };
-
-  const treeWithImages: TreeWithImagesRecord = {
-    ...tree,
-    images: [],
   };
 
   const favoriteTree: FavoriteTreeRecord = {
