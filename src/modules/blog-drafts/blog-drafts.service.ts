@@ -155,12 +155,19 @@ export class BlogDraftsService {
     user: BlogDraftUserRecord,
     now: Date,
   ): number => {
-    if (
-      user.currentSubscription &&
-      user.currentSubscription.expiresAt > now &&
-      user.currentSubscription.subscriptionPlan.code !== 'FREE'
-    ) {
-      return BLOG_DRAFT_LIMIT.PAID;
+    const planCode = user.currentSubscription?.subscriptionPlan.code;
+
+    if (user.currentSubscription && user.currentSubscription.expiresAt > now) {
+      switch (planCode) {
+        case 'PLUS':
+          return BLOG_DRAFT_LIMIT.PLUS;
+        case 'PRO':
+          return BLOG_DRAFT_LIMIT.PRO;
+        case 'MAX':
+          return BLOG_DRAFT_LIMIT.MAX;
+        default:
+          break;
+      }
     }
 
     return BLOG_DRAFT_LIMIT.FREE;

@@ -42,6 +42,72 @@ describe('BlogDraftsService', () => {
     ).rejects.toBeInstanceOf(AppException);
   });
 
+  it('plus 사용자의 월간 생성 한도를 초과하면 예외를 던진다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: {
+        expiresAt: new Date('2026-08-26T00:00:00.000Z'),
+        subscriptionPlan: {
+          code: 'PLUS',
+        },
+      },
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(5);
+
+    await expect(
+      service.generateDraft(1, {
+        startDate: '2026-03-31',
+        endDate: '2026-04-01',
+        treeIds: [1],
+      }),
+    ).rejects.toBeInstanceOf(AppException);
+  });
+
+  it('pro 사용자의 월간 생성 한도를 초과하면 예외를 던진다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: {
+        expiresAt: new Date('2026-08-26T00:00:00.000Z'),
+        subscriptionPlan: {
+          code: 'PRO',
+        },
+      },
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(20);
+
+    await expect(
+      service.generateDraft(1, {
+        startDate: '2026-03-31',
+        endDate: '2026-04-01',
+        treeIds: [1],
+      }),
+    ).rejects.toBeInstanceOf(AppException);
+  });
+
+  it('max 사용자의 월간 생성 한도를 초과하면 예외를 던진다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: {
+        expiresAt: new Date('2026-08-26T00:00:00.000Z'),
+        subscriptionPlan: {
+          code: 'MAX',
+        },
+      },
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(50);
+
+    await expect(
+      service.generateDraft(1, {
+        startDate: '2026-03-31',
+        endDate: '2026-04-01',
+        treeIds: [1],
+      }),
+    ).rejects.toBeInstanceOf(AppException);
+  });
+
   it('초안 내용을 받아 저장용 블로그 초안을 생성한다', async () => {
     repository.findUserById.mockResolvedValue({
       id: 1n,
