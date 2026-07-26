@@ -9,6 +9,8 @@ describe('BlogDraftsService', () => {
   let service: BlogDraftsService;
 
   beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-26T00:00:00.000Z'));
+
     repository = {
       findUserById: jest.fn(),
       countGeneratedDraftsInRange: jest.fn(),
@@ -23,6 +25,10 @@ describe('BlogDraftsService', () => {
       generate: jest.fn(),
     } as unknown as jest.Mocked<OpenAiBlogDraftService>;
     service = new BlogDraftsService(repository, openAiService);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('무료 사용자의 월간 생성 한도를 초과하면 예외를 던진다', async () => {
@@ -47,6 +53,7 @@ describe('BlogDraftsService', () => {
       id: 1n,
       status: 'ACTIVE',
       currentSubscription: {
+        startedAt: new Date('2026-07-10T00:00:00.000Z'),
         expiresAt: new Date('2026-08-26T00:00:00.000Z'),
         subscriptionPlan: {
           code: 'PLUS',
@@ -69,6 +76,7 @@ describe('BlogDraftsService', () => {
       id: 1n,
       status: 'ACTIVE',
       currentSubscription: {
+        startedAt: new Date('2026-07-10T00:00:00.000Z'),
         expiresAt: new Date('2026-08-26T00:00:00.000Z'),
         subscriptionPlan: {
           code: 'PRO',
@@ -91,6 +99,7 @@ describe('BlogDraftsService', () => {
       id: 1n,
       status: 'ACTIVE',
       currentSubscription: {
+        startedAt: new Date('2026-07-10T00:00:00.000Z'),
         expiresAt: new Date('2026-08-26T00:00:00.000Z'),
         subscriptionPlan: {
           code: 'MAX',
@@ -106,6 +115,94 @@ describe('BlogDraftsService', () => {
         treeIds: [1],
       }),
     ).rejects.toBeInstanceOf(AppException);
+  });
+
+  it('무료 플랜은 매월 1일 기준으로 사용량을 집계한다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: null,
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(0);
+    repository.findGenerateSource.mockResolvedValue({
+      trees: [
+        {
+          id: 1n,
+          name: '포그레인 공원',
+          description: null,
+          address: null,
+          mood: 'HAPPY',
+          defaultImage: 'DEFAULT_1',
+          createdAt: new Date('2026-03-31T10:00:00.000Z'),
+          images: [],
+        },
+      ],
+      timelines: [],
+    });
+    openAiService.generate.mockResolvedValue({
+      title: '제목',
+      content: '본문',
+    });
+    repository.createUsage.mockResolvedValue({ id: 1n });
+
+    await service.generateDraft(1, {
+      startDate: '2026-03-31',
+      endDate: '2026-04-01',
+      treeIds: [1],
+    });
+
+    expect(repository.countGeneratedDraftsInRange).toHaveBeenCalledWith(
+      1,
+      new Date('2026-07-01T00:00:00.000Z'),
+      new Date('2026-08-01T00:00:00.000Z'),
+    );
+  });
+
+  it('유료 플랜은 결제일 기준으로 사용량을 집계한다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: {
+        startedAt: new Date('2026-07-10T00:00:00.000Z'),
+        expiresAt: new Date('2026-08-26T00:00:00.000Z'),
+        subscriptionPlan: {
+          code: 'PLUS',
+        },
+      },
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(0);
+    repository.findGenerateSource.mockResolvedValue({
+      trees: [
+        {
+          id: 1n,
+          name: '포그레인 공원',
+          description: null,
+          address: null,
+          mood: 'HAPPY',
+          defaultImage: 'DEFAULT_1',
+          createdAt: new Date('2026-03-31T10:00:00.000Z'),
+          images: [],
+        },
+      ],
+      timelines: [],
+    });
+    openAiService.generate.mockResolvedValue({
+      title: '제목',
+      content: '본문',
+    });
+    repository.createUsage.mockResolvedValue({ id: 1n });
+
+    await service.generateDraft(1, {
+      startDate: '2026-03-31',
+      endDate: '2026-04-01',
+      treeIds: [1],
+    });
+
+    expect(repository.countGeneratedDraftsInRange).toHaveBeenCalledWith(
+      1,
+      new Date('2026-07-10T00:00:00.000Z'),
+      new Date('2026-08-10T00:00:00.000Z'),
+    );
   });
 
   it('초안 내용을 받아 저장용 블로그 초안을 생성한다', async () => {

@@ -23,6 +23,7 @@ export interface BlogDraftUserRecord {
   id: bigint;
   status: string;
   currentSubscription: {
+    startedAt: Date;
     expiresAt: Date;
     subscriptionPlan: {
       code: string;

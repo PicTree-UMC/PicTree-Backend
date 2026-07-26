@@ -22,6 +22,7 @@ export class BlogDraftsRepository {
         status: true,
         currentSubscription: {
           select: {
+            startedAt: true,
             expiresAt: true,
             subscriptionPlan: {
               select: {

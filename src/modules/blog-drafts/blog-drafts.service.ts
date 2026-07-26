@@ -133,16 +133,11 @@ export class BlogDraftsService {
     user: BlogDraftUserRecord,
   ): Promise<void> => {
     const now = new Date();
-    const monthStart = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
-    );
-    const nextMonthStart = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
-    );
+    const [usageStart, usageEnd] = this.resolveUsageWindow(user, now);
     const used = await this.blogDraftsRepository.countGeneratedDraftsInRange(
       userId,
-      monthStart,
-      nextMonthStart,
+      usageStart,
+      usageEnd,
     );
     const limit = this.resolveMonthlyLimit(user, now);
 
@@ -171,6 +166,74 @@ export class BlogDraftsService {
     }
 
     return BLOG_DRAFT_LIMIT.FREE;
+  };
+
+  private resolveUsageWindow = (
+    user: BlogDraftUserRecord,
+    now: Date,
+  ): [Date, Date] => {
+    if (user.currentSubscription && user.currentSubscription.expiresAt > now) {
+      return this.resolvePaidUsageWindow(
+        user.currentSubscription.startedAt,
+        now,
+      );
+    }
+
+    return [
+      new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
+      new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)),
+    ];
+  };
+
+  private resolvePaidUsageWindow = (
+    startedAt: Date,
+    now: Date,
+  ): [Date, Date] => {
+    const startedDay = startedAt.getUTCDate();
+    const currentMonthAnchor = this.createMonthlyAnchor(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      startedDay,
+    );
+
+    if (now >= currentMonthAnchor) {
+      return [
+        currentMonthAnchor,
+        this.createMonthlyAnchor(
+          now.getUTCFullYear(),
+          now.getUTCMonth() + 1,
+          startedDay,
+        ),
+      ];
+    }
+
+    return [
+      this.createMonthlyAnchor(
+        now.getUTCFullYear(),
+        now.getUTCMonth() - 1,
+        startedDay,
+      ),
+      currentMonthAnchor,
+    ];
+  };
+
+  private createMonthlyAnchor = (
+    year: number,
+    month: number,
+    day: number,
+  ): Date => {
+    const monthStart = new Date(Date.UTC(year, month, 1));
+    const lastDay = new Date(
+      Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+
+    return new Date(
+      Date.UTC(
+        monthStart.getUTCFullYear(),
+        monthStart.getUTCMonth(),
+        Math.min(day, lastDay),
+      ),
+    );
   };
 
   private getDraftOrThrow = async (
