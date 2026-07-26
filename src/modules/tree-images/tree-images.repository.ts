@@ -18,35 +18,45 @@ export class TreeImagesRepository {
     });
   };
 
-  findMaxSortOrder = async (treeId: number): Promise<number> => {
-    const result = await this.prisma.treeImage.aggregate({
-      where: { treeId: BigInt(treeId) },
-      _max: { sortOrder: true },
+  // 나무(또는 타임라인 기록)당 사진은 1장이므로, 기존 사진을 찾아 교체 대상으로 삼는다.
+  findByTreeAndTimeline = (
+    treeId: number,
+    timelineRecordId: number | null,
+  ): Promise<TreeImageRecord | null> => {
+    return this.prisma.treeImage.findFirst({
+      where: {
+        treeId: BigInt(treeId),
+        timelineRecordId:
+          timelineRecordId === null ? null : BigInt(timelineRecordId),
+      },
     });
-
-    return result._max.sortOrder ?? -1;
   };
 
-  createMany = (
-    createTreeImageData: CreateTreeImageData[],
-  ): Promise<TreeImageRecord[]> => {
-    return this.prisma.$transaction(
-      createTreeImageData.map((data) =>
-        this.prisma.treeImage.create({
-          data: {
-            treeId: BigInt(data.treeId),
-            timelineRecordId:
-              data.timelineRecordId === null
-                ? null
-                : BigInt(data.timelineRecordId),
-            imageUrl: data.imageUrl,
-            s3Key: data.s3Key,
-            fileSize: BigInt(data.fileSize),
-            sortOrder: data.sortOrder,
-          },
-        }),
-      ),
-    );
+  // 기존 사진이 있으면 지우고 새 사진을 만든다(교체). 두 작업을 한 트랜잭션으로 묶는다.
+  replace = (
+    oldImageId: bigint | null,
+    data: CreateTreeImageData,
+  ): Promise<TreeImageRecord> => {
+    return this.prisma.$transaction(async (tx) => {
+      if (oldImageId !== null) {
+        await tx.treeImage.delete({ where: { id: oldImageId } });
+      }
+
+      return tx.treeImage.create({
+        data: {
+          treeId: BigInt(data.treeId),
+          timelineRecordId:
+            data.timelineRecordId === null
+              ? null
+              : BigInt(data.timelineRecordId),
+          imageUrl: data.imageUrl,
+          s3Key: data.s3Key,
+          fileSize: BigInt(data.fileSize),
+          // 사진 1장 정책이라 정렬 개념이 없어 0으로 고정한다.
+          sortOrder: 0,
+        },
+      });
+    });
   };
 
   findByTreeId = (
@@ -62,7 +72,7 @@ export class TreeImagesRepository {
 
     return this.prisma.treeImage.findMany({
       where,
-      orderBy: { sortOrder: 'asc' },
+      orderBy: { id: 'asc' },
     });
   };
 

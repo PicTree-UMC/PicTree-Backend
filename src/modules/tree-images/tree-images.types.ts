@@ -15,7 +15,6 @@ export interface CreateTreeImageData {
   imageUrl: string;
   s3Key: string;
   fileSize: number;
-  sortOrder: number;
 }
 
 // 나무 소유권 검증에 필요한 최소 정보

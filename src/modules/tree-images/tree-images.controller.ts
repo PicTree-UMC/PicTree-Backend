@@ -9,11 +9,11 @@ import {
   ParseFilePipeBuilder,
   Post,
   Query,
-  UploadedFiles,
+  UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiResponse } from '../../common/responses/api.response';
 import { SuccessCode } from '../../common/responses/success-code';
@@ -22,12 +22,13 @@ import type { JwtPayload } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { GetTreeImagesQueryDto } from './dto/get-tree-images-query.dto';
 import { TreeImageListResponseDto } from './dto/tree-image-list-response.dto';
+import { TreeImageUploadResponseDto } from './dto/tree-image-upload-response.dto';
 import { UploadTreeImageRequestDto } from './dto/upload-tree-image-request.dto';
-import { MAX_IMAGE_COUNT, MAX_IMAGE_SIZE_BYTES } from './tree-images.constant';
+import { MAX_IMAGE_SIZE_BYTES } from './tree-images.constant';
 import {
   ApiDeleteTreeImage,
   ApiGetTreeImages,
-  ApiUploadTreeImages,
+  ApiUploadTreeImage,
 } from './tree-images.swagger';
 import { TreeImagesService } from './tree-images.service';
 
@@ -39,31 +40,33 @@ export class TreeImagesController {
 
   @Post()
   @UseInterceptors(
-    FilesInterceptor('images', MAX_IMAGE_COUNT, {
+    FileInterceptor('image', {
       // 파일이 메모리에 버퍼링되기 전에 크기를 제한한다.
       limits: { fileSize: MAX_IMAGE_SIZE_BYTES },
     }),
   )
-  @ApiUploadTreeImages()
-  async uploadImages(
+  @ApiUploadTreeImage()
+  async uploadImage(
     @CurrentUser() currentUser: JwtPayload,
     @Param('treeId', ParseIntPipe) treeId: number,
-    @UploadedFiles(
+    @UploadedFile(
       new ParseFilePipeBuilder()
         .addMaxSizeValidator({ maxSize: MAX_IMAGE_SIZE_BYTES })
+        // 파일 없음은 파이프가 아니라 서비스에서 400(TREE_IMAGE_NO_FILE)으로 처리한다.
+        // (true 로 두면 파일 미첨부 시 413 이 나가 Swagger 명세와 어긋난다.)
         .build({
-          fileIsRequired: true,
+          fileIsRequired: false,
           errorHttpStatusCode: HttpStatus.PAYLOAD_TOO_LARGE,
         }),
     )
-    files: Express.Multer.File[],
+    file: Express.Multer.File | undefined,
     // multipart 의 파일 외 필드는 body 로 전달됩니다.
     @Body() uploadTreeImageRequestDto: UploadTreeImageRequestDto,
-  ): Promise<ApiResponse<TreeImageListResponseDto>> {
-    const data = await this.treeImagesService.uploadImages(
+  ): Promise<ApiResponse<TreeImageUploadResponseDto>> {
+    const data = await this.treeImagesService.uploadImage(
       currentUser.userId,
       treeId,
-      files,
+      file,
       uploadTreeImageRequestDto.timelineRecordId,
     );
 
