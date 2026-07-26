@@ -86,7 +86,14 @@ describe('RoutesService', () => {
         expect.objectContaining({
           userId: 10,
           routeName: '아침 산책',
-          points: [expect.objectContaining({ latitude: 37.5665, sequence: 0 })],
+          points: [
+            {
+              latitude: 37.5665,
+              longitude: 126.978,
+              sequence: 0,
+              recordedAt: new Date('2026-07-19T07:00:00.000Z'),
+            },
+          ],
         }),
       );
     });
@@ -131,6 +138,17 @@ describe('RoutesService', () => {
       expect(repository.updateRoute).toHaveBeenCalledWith(1, {
         routeName: '저녁 산책',
       });
+    });
+
+    it('타인의 동선은 수정할 수 없다', async () => {
+      repository.findRouteById.mockResolvedValue({ ...route, userId: 99n });
+
+      const error = await catchAppError(
+        service.updateRoute(10, 1, { routeName: '저녁 산책' }),
+      );
+
+      expect(error.getResponse()).toMatchObject({ code: 'ROUTE403' });
+      expect(repository.updateRoute).not.toHaveBeenCalled();
     });
   });
 
