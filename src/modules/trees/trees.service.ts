@@ -11,6 +11,7 @@ import { GetTreesQueryDto } from './dto/get-trees-query.dto';
 import { TreeListResponseDto } from './dto/tree-list-response.dto';
 import {
   CreateTreeResponseDto,
+  TreeImageResponseDto,
   TreeResponseDto,
   TreeSummaryResponseDto,
 } from './dto/tree-response.dto';
@@ -217,13 +218,7 @@ export class TreesService {
     mood: tree.mood,
     defaultImage: tree.defaultImage,
     isFavorite: tree.isFavorite,
-    images: tree.images.map((image) => ({
-      imageId: Number(image.id),
-      imageUrl: image.imageUrl,
-      timelineRecordId:
-        image.timelineRecordId === null ? null : Number(image.timelineRecordId),
-      sortOrder: image.sortOrder,
-    })),
+    images: tree.images.map(this.toTreeImageResponseDto),
     createdAt: tree.createdAt,
     updatedAt: tree.updatedAt,
   });
@@ -238,18 +233,17 @@ export class TreesService {
       name: tree.name,
       description: tree.description,
       visitedAt: tree.createdAt.toISOString().slice(0, 10),
-      image:
-        firstImage == null
-          ? null
-          : {
-              imageId: Number(firstImage.id),
-              imageUrl: firstImage.imageUrl,
-              timelineRecordId:
-                firstImage.timelineRecordId === null
-                  ? null
-                  : Number(firstImage.timelineRecordId),
-              sortOrder: firstImage.sortOrder,
-            },
+      image: firstImage == null ? null : this.toTreeImageResponseDto(firstImage),
     };
   };
+
+  private toTreeImageResponseDto = (
+    image: TreeWithImagesRecord['images'][number],
+  ): TreeImageResponseDto => ({
+    imageId: Number(image.id),
+    imageUrl: image.imageUrl,
+    timelineRecordId:
+      image.timelineRecordId === null ? null : Number(image.timelineRecordId),
+    sortOrder: image.sortOrder,
+  });
 }
