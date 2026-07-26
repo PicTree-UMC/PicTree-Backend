@@ -65,7 +65,9 @@ export class OpenAiBlogDraftService {
                 '응답은 반드시 JSON 하나만 반환한다.',
                 '형식: {"title":"문자열","content":"문자열"}',
                 'content는 읽기 쉬운 블로그 초안 본문으로 작성한다.',
+                '장소의 mood 값은 사용자가 직접 남긴 감정 이모지다. 이 이모지를 자연스러운 감정 표현의 단서로만 활용한다.',
                 '사진이 있다면 사진 속 장면을 단정하지 말고, 장소/기록 문맥을 바탕으로 자연스럽게 서술한다.',
+                '각 장소 이미지는 장소당 1장만 제공될 수 있다. 이미지가 없어도 다른 장소/기록 정보만으로 자연스럽게 작성한다.',
                 '과도한 꾸밈말, 해시태그, 마크다운 코드블록은 금지한다.',
               ].join('\n'),
             },
@@ -208,15 +210,13 @@ export class OpenAiBlogDraftService {
     endDate: string,
   ): string => {
     const treeLines = source.trees.map((tree, index) => {
-      const imageCount = tree.images.length;
-
       return [
         `${index + 1}. 장소명: ${tree.name}`,
         `- 생성일: ${this.formatDate(tree.createdAt)}`,
         tree.description ? `- 메모: ${tree.description}` : null,
         tree.address ? `- 주소: ${tree.address}` : null,
-        `- 분위기: ${tree.mood}`,
-        `- 사진 수: ${imageCount}`,
+        `- 감정 이모지: ${tree.mood}`,
+        `- 장소 이미지 제공 여부: ${tree.images.length > 0 ? '있음' : '없음'}`,
       ]
         .filter((line): line is string => line !== null)
         .join('\n');
@@ -254,6 +254,8 @@ export class OpenAiBlogDraftService {
       '- 제목은 기간이 드러나는 자연스러운 한국어 제목으로 작성한다.',
       '- 본문은 여행 후기/기록 형태로 작성한다.',
       '- 장소가 여러 개면 소제목 또는 번호를 사용해 구분한다.',
+      '- 장소별 감정 이모지는 분위기와 감정선을 보조하는 힌트로만 반영하고, 이모지 이름을 그대로 노출하지 않는다.',
+      '- 제공된 장소 이미지는 장소당 1장일 수 있으므로, 사진이 적더라도 나머지 장소/기록 정보와 함께 균형 있게 서술한다.',
       '- 제공된 정보만 바탕으로 작성하고, 확인되지 않은 사실은 단정하지 않는다.',
     ].join('\n');
   };
@@ -262,9 +264,9 @@ export class OpenAiBlogDraftService {
     source: BlogDraftGenerateSource,
   ): Promise<BlogDraftSourceImageForPrompt[]> => {
     const images = source.trees.flatMap((tree) =>
-      tree.images.slice(0, 1).map((image) => ({
+      tree.images.map((image) => ({
         s3Key: image.s3Key,
-        caption: `${tree.name} 대표 사진`,
+        caption: `${tree.name} 장소 이미지`,
       })),
     );
 
