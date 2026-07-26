@@ -85,7 +85,8 @@ export class TreesService {
   getFavoriteTrees = async (
     userId: number,
   ): Promise<FavoriteTreeListResponseDto> => {
-    const favorites = await this.treesRepository.findFavoriteTreesByUserId(userId);
+    const favorites =
+      await this.treesRepository.findFavoriteTreesByUserId(userId);
 
     return {
       count: favorites.length,
@@ -233,7 +234,8 @@ export class TreesService {
       name: tree.name,
       description: tree.description,
       visitedAt: tree.createdAt.toISOString().slice(0, 10),
-      image: firstImage == null ? null : this.toTreeImageResponseDto(firstImage),
+      image:
+        firstImage == null ? null : this.toTreeImageResponseDto(firstImage),
     };
   };
 

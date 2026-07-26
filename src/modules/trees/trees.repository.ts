@@ -61,7 +61,9 @@ export class TreesRepository {
     });
   };
 
-  findFavoriteTreesByUserId = (userId: number): Promise<FavoriteTreeRecord[]> => {
+  findFavoriteTreesByUserId = (
+    userId: number,
+  ): Promise<FavoriteTreeRecord[]> => {
     return this.prisma.tree.findMany({
       where: {
         userId: BigInt(userId),

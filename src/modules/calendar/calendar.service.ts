@@ -22,7 +22,7 @@ export class CalendarService {
       end,
     );
     const countByDate = trees.reduce<Map<string, number>>((map, tree) => {
-      const date = this.formatLocalDate(tree.createdAt);
+      const date = this.formatUtcDate(tree.createdAt);
       map.set(date, (map.get(date) ?? 0) + 1);
       return map;
     }, new Map());
@@ -72,11 +72,11 @@ export class CalendarService {
     return `${year}-${monthText}-${dayText}`;
   };
 
-  private formatLocalDate = (date: Date): string => {
+  private formatUtcDate = (date: Date): string => {
     return this.formatDate(
-      date.getFullYear(),
-      date.getMonth() + 1,
-      date.getDate(),
+      date.getUTCFullYear(),
+      date.getUTCMonth() + 1,
+      date.getUTCDate(),
     );
   };
 }

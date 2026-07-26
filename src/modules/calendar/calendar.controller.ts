@@ -22,7 +22,10 @@ export class CalendarController {
     @CurrentUser() currentUser: JwtPayload,
     @Query() query: CalendarQueryDto,
   ): Promise<ApiResponse<CalendarResponseDto>> {
-    const data = await this.calendarService.getCalendar(currentUser.userId, query);
+    const data = await this.calendarService.getCalendar(
+      currentUser.userId,
+      query,
+    );
 
     return ApiResponse.success(SuccessCode.CALENDAR_RETRIEVED, data);
   }
