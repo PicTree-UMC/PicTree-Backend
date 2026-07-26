@@ -30,6 +30,9 @@ type OpenAiResponsesApiResponse = {
   output?: OpenAiResponseItem[];
 };
 
+const OPENAI_REQUEST_TIMEOUT_MS = 20_000;
+const BLOG_DRAFT_TITLE_MAX_LENGTH = 50;
+
 @Injectable()
 export class OpenAiBlogDraftService {
   constructor(
@@ -98,26 +101,33 @@ export class OpenAiBlogDraftService {
     apiKey: string,
     body: Record<string, unknown>,
   ): Promise<OpenAiResponsesApiResponse> => {
-    let response: Response;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      OPENAI_REQUEST_TIMEOUT_MS,
+    );
 
     try {
-      response = await fetch('https://api.openai.com/v1/responses', {
+      const response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
         },
+        signal: controller.signal,
         body: JSON.stringify(body),
       });
+
+      if (!response.ok) {
+        throw new AppException(ErrorCode.BLOG_DRAFT_GENERATION_FAILED);
+      }
+
+      return (await response.json()) as OpenAiResponsesApiResponse;
     } catch {
       throw new AppException(ErrorCode.BLOG_DRAFT_GENERATION_FAILED);
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    if (!response.ok) {
-      throw new AppException(ErrorCode.BLOG_DRAFT_GENERATION_FAILED);
-    }
-
-    return (await response.json()) as OpenAiResponsesApiResponse;
   };
 
   private extractOutputText = (
@@ -159,15 +169,19 @@ export class OpenAiBlogDraftService {
       }
 
       return {
-        title: parsed.title.trim(),
+        title: this.normalizeTitle(parsed.title),
         content: parsed.content.trim(),
       };
     } catch {
       return {
-        title: `[여행기록] ${startDate} ~ ${endDate}`,
+        title: this.normalizeTitle(`[여행기록] ${startDate} ~ ${endDate}`),
         content: text.trim(),
       };
     }
+  };
+
+  private normalizeTitle = (title: string): string => {
+    return title.trim().slice(0, BLOG_DRAFT_TITLE_MAX_LENGTH);
   };
 
   private extractJsonText = (text: string): string => {

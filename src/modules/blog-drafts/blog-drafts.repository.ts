@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   BlogDraftGenerateSource,
@@ -109,21 +110,65 @@ export class BlogDraftsRepository {
     return { trees, timelines };
   };
 
-  createUsage = (userId: number): Promise<{ id: bigint }> => {
-    return this.prisma.blogDraftUsage.create({
-      data: {
-        userId: BigInt(userId),
-      },
-      select: {
-        id: true,
-      },
-    });
+  consumeUsageWithinLimit = async (
+    userId: bigint,
+    start: Date,
+    end: Date,
+    limit: number,
+  ): Promise<void> => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        await this.prisma.$transaction(
+          async (tx) => {
+            const used = await tx.blogDraftUsage.count({
+              where: {
+                userId,
+                createdAt: {
+                  gte: start,
+                  lt: end,
+                },
+              },
+            });
+
+            if (used >= limit) {
+              throw new Error('BLOG_DRAFT_LIMIT_EXCEEDED');
+            }
+
+            await tx.blogDraftUsage.create({
+              data: {
+                userId,
+              },
+            });
+          },
+          {
+            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          },
+        );
+
+        return;
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message === 'BLOG_DRAFT_LIMIT_EXCEEDED'
+        ) {
+          throw error;
+        }
+
+        const prismaError = error as { code?: string } | null;
+
+        if (prismaError?.code === 'P2034' && attempt < 2) {
+          continue;
+        }
+
+        throw error;
+      }
+    }
   };
 
   createDraft = (data: CreateBlogDraftData): Promise<BlogDraftRecord> => {
     return this.prisma.blogDraft.create({
       data: {
-        userId: BigInt(data.userId),
+        userId: data.userId,
         title: data.title,
         content: data.content,
         startDate: data.startDate,
@@ -164,10 +209,14 @@ export class BlogDraftsRepository {
     });
   };
 
-  deleteDraft = (draftId: number): Promise<BlogDraftRecord> => {
-    return this.prisma.blogDraft.delete({
+  deleteDraft = (
+    draftId: number,
+    userId: number,
+  ): Promise<{ count: number }> => {
+    return this.prisma.blogDraft.deleteMany({
       where: {
         id: BigInt(draftId),
+        userId: BigInt(userId),
       },
     });
   };

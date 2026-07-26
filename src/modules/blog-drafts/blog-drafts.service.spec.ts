@@ -15,7 +15,7 @@ describe('BlogDraftsService', () => {
       findUserById: jest.fn(),
       countGeneratedDraftsInRange: jest.fn(),
       findGenerateSource: jest.fn(),
-      createUsage: jest.fn(),
+      consumeUsageWithinLimit: jest.fn(),
       createDraft: jest.fn(),
       findSavedDraftsByUserId: jest.fn(),
       findDraftByIdAndUserId: jest.fn(),
@@ -143,7 +143,7 @@ describe('BlogDraftsService', () => {
       title: '제목',
       content: '본문',
     });
-    repository.createUsage.mockResolvedValue({ id: 1n });
+    repository.consumeUsageWithinLimit.mockResolvedValue();
 
     await service.generateDraft(1, {
       startDate: '2026-03-31',
@@ -190,7 +190,7 @@ describe('BlogDraftsService', () => {
       title: '제목',
       content: '본문',
     });
-    repository.createUsage.mockResolvedValue({ id: 1n });
+    repository.consumeUsageWithinLimit.mockResolvedValue();
 
     await service.generateDraft(1, {
       startDate: '2026-03-31',
@@ -277,7 +277,7 @@ describe('BlogDraftsService', () => {
       title: '[여행 기록] 3월 31일 ~ 4월 1일',
       content: '생성된 블로그 초안 내용입니다.',
     });
-    repository.createUsage.mockResolvedValue({ id: 1n });
+    repository.consumeUsageWithinLimit.mockResolvedValue();
 
     const result = await service.generateDraft(1, {
       startDate: '2026-03-31',
@@ -291,7 +291,12 @@ describe('BlogDraftsService', () => {
       new Date('2026-04-02T00:00:00.000Z'),
       [1],
     );
-    expect(repository.createUsage).toHaveBeenCalledWith(1);
+    expect(repository.consumeUsageWithinLimit).toHaveBeenCalledWith(
+      1n,
+      new Date('2026-07-01T00:00:00.000Z'),
+      new Date('2026-08-01T00:00:00.000Z'),
+      1,
+    );
     expect(result).toEqual({
       title: '[여행 기록] 3월 31일 ~ 4월 1일',
       content: '생성된 블로그 초안 내용입니다.',

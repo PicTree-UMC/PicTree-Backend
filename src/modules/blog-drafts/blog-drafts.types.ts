@@ -67,7 +67,7 @@ export interface BlogDraftGenerateSource {
 }
 
 export interface CreateBlogDraftData {
-  userId: number;
+  userId: bigint;
   title: string;
   content: string;
   startDate: Date;

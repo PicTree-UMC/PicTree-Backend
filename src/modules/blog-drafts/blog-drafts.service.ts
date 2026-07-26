@@ -45,6 +45,10 @@ export class BlogDraftsService {
       request.treeIds,
     );
 
+    if (source.trees.length !== request.treeIds.length) {
+      throw new AppException(ErrorCode.TREE_NOT_FOUND);
+    }
+
     if (source.trees.length === 0 && source.timelines.length === 0) {
       throw new AppException(ErrorCode.BLOG_DRAFT_SOURCE_EMPTY);
     }
@@ -54,7 +58,7 @@ export class BlogDraftsService {
       request.startDate,
       request.endDate,
     );
-    await this.blogDraftsRepository.createUsage(userId);
+    await this.consumeUsageWithinLimit(userId, user, new Date());
 
     return {
       title: generated.title,
@@ -75,7 +79,7 @@ export class BlogDraftsService {
     await this.getAvailableUserOrThrow(userId);
     await this.validateTreeIds(userId, request.treeIds);
     const saved = await this.blogDraftsRepository.createDraft({
-      userId,
+      userId: BigInt(userId),
       title: request.title,
       content: request.content,
       startDate,
@@ -106,8 +110,14 @@ export class BlogDraftsService {
   };
 
   deleteDraft = async (userId: number, draftId: number): Promise<null> => {
-    await this.getDraftOrThrow(userId, draftId);
-    await this.blogDraftsRepository.deleteDraft(draftId);
+    const deleted = await this.blogDraftsRepository.deleteDraft(
+      draftId,
+      userId,
+    );
+
+    if (deleted.count === 0) {
+      throw new AppException(ErrorCode.BLOG_DRAFT_NOT_FOUND);
+    }
 
     return null;
   };
@@ -146,6 +156,33 @@ export class BlogDraftsService {
     }
   };
 
+  private consumeUsageWithinLimit = async (
+    userId: number,
+    user: BlogDraftUserRecord,
+    now: Date,
+  ): Promise<void> => {
+    const [usageStart, usageEnd] = this.resolveUsageWindow(user, now);
+    const limit = this.resolveMonthlyLimit(user, now);
+
+    try {
+      await this.blogDraftsRepository.consumeUsageWithinLimit(
+        BigInt(userId),
+        usageStart,
+        usageEnd,
+        limit,
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === 'BLOG_DRAFT_LIMIT_EXCEEDED'
+      ) {
+        throw new AppException(ErrorCode.BLOG_DRAFT_LIMIT_EXCEEDED);
+      }
+
+      throw error;
+    }
+  };
+
   private resolveMonthlyLimit = (
     user: BlogDraftUserRecord,
     now: Date,
@@ -161,7 +198,7 @@ export class BlogDraftsService {
         case 'MAX':
           return BLOG_DRAFT_LIMIT.MAX;
         default:
-          break;
+          throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
       }
     }
 
