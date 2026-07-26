@@ -26,7 +26,7 @@ export class TreeImagesService {
   uploadImage = async (
     userId: number,
     treeId: number,
-    file: Express.Multer.File,
+    file: Express.Multer.File | undefined,
     timelineRecordId?: number,
   ): Promise<TreeImageUploadResponseDto> => {
     await this.ensureTreeOwnership(userId, treeId);

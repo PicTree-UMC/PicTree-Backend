@@ -52,12 +52,14 @@ export class TreeImagesController {
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addMaxSizeValidator({ maxSize: MAX_IMAGE_SIZE_BYTES })
+        // 파일 없음은 파이프가 아니라 서비스에서 400(TREE_IMAGE_NO_FILE)으로 처리한다.
+        // (true 로 두면 파일 미첨부 시 413 이 나가 Swagger 명세와 어긋난다.)
         .build({
-          fileIsRequired: true,
+          fileIsRequired: false,
           errorHttpStatusCode: HttpStatus.PAYLOAD_TOO_LARGE,
         }),
     )
-    file: Express.Multer.File,
+    file: Express.Multer.File | undefined,
     // multipart 의 파일 외 필드는 body 로 전달됩니다.
     @Body() uploadTreeImageRequestDto: UploadTreeImageRequestDto,
   ): Promise<ApiResponse<TreeImageUploadResponseDto>> {
