@@ -239,7 +239,8 @@ export const ErrorCode = {
   BLOG_DRAFT_LIMIT_EXCEEDED: {
     status: HttpStatus.FORBIDDEN,
     code: 'BLOG403',
-    message: '이번 달 AI 블로그 초안 생성 가능 횟수를 모두 사용했습니다.',
+    message:
+      '이번 이용 기간의 AI 블로그 초안 생성 가능 횟수를 모두 사용했습니다.',
   },
   BLOG_DRAFT_NOT_FOUND: {
     status: HttpStatus.NOT_FOUND,

@@ -109,11 +109,11 @@ export const ApiGenerateBlogDraft = () =>
       },
     }),
     ApiForbiddenResponse({
-      description: '월간 생성 한도 초과',
+      description: '이용 기간 내 생성 한도 초과',
       schema: {
         example: failResponse(
           'BLOG403',
-          '이번 달 AI 블로그 초안 생성 가능 횟수를 모두 사용했습니다.',
+          '이번 이용 기간의 AI 블로그 초안 생성 가능 횟수를 모두 사용했습니다.',
         ),
       },
     }),
@@ -144,9 +144,9 @@ export const ApiSaveBlogDraft = () =>
       },
     }),
     ApiNotFoundResponse({
-      description: '존재하지 않는 초안',
+      description: '존재하지 않는 나무',
       schema: {
-        example: failResponse('BLOG404', 'AI 블로그 초안을 찾을 수 없습니다.'),
+        example: failResponse('TREE404', '존재하지 않는 나무입니다.'),
       },
     }),
     ApiBadRequestResponse({
