@@ -296,7 +296,7 @@ describe('NearbyAlertsService', () => {
         latitude: 37.5,
         longitude: 127,
       }),
-    ).resolves.toEqual({ nearbyCount: 2, sentCount: 2 });
+    ).resolves.toEqual({ nearbyCount: 2, sentCount: 1 });
     expect(webPushService.send).toHaveBeenCalledTimes(2);
     expect(alertsRepository.updateStatus).toHaveBeenCalledWith(
       6n,

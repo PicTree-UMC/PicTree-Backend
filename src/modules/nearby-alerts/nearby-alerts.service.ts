@@ -91,13 +91,13 @@ export class NearbyAlertsService {
           }),
         );
         const delivered = deliveryResults.some(Boolean);
-        if (delivered) {
-          sentCount += 1;
-        }
         await this.nearbyAlertsRepository.updateStatus(
           log.id,
           delivered ? NearbyAlertStatus.SENT : NearbyAlertStatus.FAILED,
         );
+        if (delivered) {
+          sentCount += 1;
+        }
       } catch (error) {
         this.logTreeProcessingError(tree.id, error);
       }
