@@ -131,7 +131,7 @@ describe('BlogDraftsService', () => {
           name: '포그레인 공원',
           description: null,
           address: null,
-          mood: 'HAPPY',
+          mood: '😍',
           defaultImage: 'DEFAULT_1',
           createdAt: new Date('2026-03-31T10:00:00.000Z'),
           images: [],
@@ -178,7 +178,7 @@ describe('BlogDraftsService', () => {
           name: '포그레인 공원',
           description: null,
           address: null,
-          mood: 'HAPPY',
+          mood: '😍',
           defaultImage: 'DEFAULT_1',
           createdAt: new Date('2026-03-31T10:00:00.000Z'),
           images: [],
@@ -218,7 +218,7 @@ describe('BlogDraftsService', () => {
           name: '포그레인 공원',
           description: null,
           address: null,
-          mood: 'HAPPY',
+          mood: '😍',
           defaultImage: 'DEFAULT_1',
           createdAt: new Date('2026-03-31T10:00:00.000Z'),
           images: [],
@@ -251,6 +251,48 @@ describe('BlogDraftsService', () => {
     });
   });
 
+  it('저장할 제목이 비어 있으면 BLOG400 예외를 던진다', async () => {
+    try {
+      await service.saveDraft(1, {
+        title: '   ',
+        content: '본문',
+        startDate: '2026-03-31',
+        endDate: '2026-04-01',
+        treeIds: [1],
+      });
+      throw new Error('Expected AppException');
+    } catch (error) {
+      expect(error).toBeInstanceOf(AppException);
+      expect((error as AppException).getResponse()).toMatchObject({
+        code: 'BLOG400',
+      });
+    }
+
+    expect(repository.findUserById).not.toHaveBeenCalled();
+    expect(repository.createDraft).not.toHaveBeenCalled();
+  });
+
+  it('저장할 본문이 비어 있으면 BLOG400 예외를 던진다', async () => {
+    try {
+      await service.saveDraft(1, {
+        title: '제목',
+        content: '   ',
+        startDate: '2026-03-31',
+        endDate: '2026-04-01',
+        treeIds: [1],
+      });
+      throw new Error('Expected AppException');
+    } catch (error) {
+      expect(error).toBeInstanceOf(AppException);
+      expect((error as AppException).getResponse()).toMatchObject({
+        code: 'BLOG400',
+      });
+    }
+
+    expect(repository.findUserById).not.toHaveBeenCalled();
+    expect(repository.createDraft).not.toHaveBeenCalled();
+  });
+
   it('초안 생성 시 사용자 선택 종료일을 그대로 응답한다', async () => {
     repository.findUserById.mockResolvedValue({
       id: 1n,
@@ -265,7 +307,7 @@ describe('BlogDraftsService', () => {
           name: '포그레인 공원',
           description: null,
           address: null,
-          mood: 'HAPPY',
+          mood: '😍',
           defaultImage: 'DEFAULT_1',
           createdAt: new Date('2026-03-31T10:00:00.000Z'),
           images: [],

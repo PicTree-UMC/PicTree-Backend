@@ -231,6 +231,11 @@ export const ErrorCode = {
     code: 'BLOG400',
     message: 'AI 블로그 초안 요청 값이 올바르지 않습니다.',
   },
+  BLOG_DRAFT_EMPTY_CONTENT: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'BLOG400',
+    message: '저장할 AI 블로그 초안 내용이 없습니다.',
+  },
   BLOG_DRAFT_SOURCE_EMPTY: {
     status: HttpStatus.BAD_REQUEST,
     code: 'BLOG400',

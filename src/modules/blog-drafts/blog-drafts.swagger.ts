@@ -152,7 +152,20 @@ export const ApiSaveBlogDraft = () =>
     ApiBadRequestResponse({
       description: '요청 값 오류',
       schema: {
-        example: failResponse('COMMON400', '잘못된 요청입니다.'),
+        examples: {
+          invalid: {
+            value: failResponse(
+              'BLOG400',
+              'AI 블로그 초안 요청 값이 올바르지 않습니다.',
+            ),
+          },
+          empty: {
+            value: failResponse(
+              'BLOG400',
+              '저장할 AI 블로그 초안 내용이 없습니다.',
+            ),
+          },
+        },
       },
     }),
   );
