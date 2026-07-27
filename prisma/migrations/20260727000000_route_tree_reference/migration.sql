@@ -7,6 +7,10 @@ ALTER TABLE `routes`
     DROP COLUMN `started_at`,
     DROP COLUMN `ended_at`;
 
+-- 기존 route_points 는 좌표 형식이라 나무 참조 구조로 이관할 수 없어 정리한다.
+-- (동선 기능 출시 전이라 실데이터 없음. tree_id NOT NULL 추가가 안전하도록 선행)
+DELETE FROM `route_points`;
+
 -- AlterTable: route_points 를 좌표에서 나무 참조로 변경
 ALTER TABLE `route_points`
     DROP COLUMN `latitude`,

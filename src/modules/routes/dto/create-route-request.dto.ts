@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsInt,
@@ -10,7 +11,10 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { ROUTE_POINT_MIN_COUNT } from '../routes.constant';
+import {
+  ROUTE_POINT_MAX_COUNT,
+  ROUTE_POINT_MIN_COUNT,
+} from '../routes.constant';
 
 export class CreateRoutePointRequestDto {
   @ApiProperty({ example: 1, description: '나무(장소) ID' })
@@ -41,6 +45,7 @@ export class CreateRouteRequestDto {
   })
   @IsArray()
   @ArrayMinSize(ROUTE_POINT_MIN_COUNT)
+  @ArrayMaxSize(ROUTE_POINT_MAX_COUNT)
   @ValidateNested({ each: true })
   @Type(() => CreateRoutePointRequestDto)
   points!: CreateRoutePointRequestDto[];

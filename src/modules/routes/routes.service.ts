@@ -157,6 +157,12 @@ export class RoutesService {
     }
   };
 
+  // UTC 저장값을 KST(UTC+9) 기준 YYYY-MM-DD 로 변환한다.
+  private toKstDateString = (date: Date): string => {
+    const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+    return kst.toISOString().slice(0, 10);
+  };
+
   private toRouteSummaryResponseDto = (
     route: RouteListItemRecord,
   ): RouteSummaryResponseDto => {
@@ -164,15 +170,14 @@ export class RoutesService {
     const livePoints = route.points.filter(
       (point) => point.tree.deletedAt === null,
     );
-    // 기록 날짜: 동선에 속한 장소들 중 가장 이른 기록일 (장소들의 날짜)
+    // 기록 날짜: 동선에 속한 장소들 중 가장 이른 기록일 (KST 기준 날짜)
     const recordDate =
       livePoints.length > 0
-        ? [...livePoints]
-            .sort(
+        ? this.toKstDateString(
+            [...livePoints].sort(
               (a, b) => a.tree.createdAt.getTime() - b.tree.createdAt.getTime(),
-            )[0]
-            .tree.createdAt.toISOString()
-            .slice(0, 10)
+            )[0].tree.createdAt,
+          )
         : null;
 
     return {
