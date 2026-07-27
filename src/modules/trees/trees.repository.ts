@@ -5,6 +5,7 @@ import { FREE_PLAN_CODE } from './trees.constant';
 import {
   CreateTreeData,
   FavoriteTreeRecord,
+  NearbyTreeRecord,
   TreeRecord,
   TreeWithImagesRecord,
   UpdateTreeData,
@@ -184,4 +185,27 @@ export class TreesRepository {
 
     return user?.currentSubscription?.subscriptionPlan.code ?? FREE_PLAN_CODE;
   };
+
+  findNearbyTrees = (
+    latitude: number,
+    longitude: number,
+    radiusM: number,
+  ): Promise<NearbyTreeRecord[]> =>
+    this.prisma.$queryRaw<NearbyTreeRecord[]>(Prisma.sql`
+      SELECT
+        id,
+        name,
+        latitude,
+        longitude,
+        mood,
+        default_image AS defaultImage,
+        ST_Distance_Sphere(
+          POINT(longitude, latitude),
+          POINT(${longitude}, ${latitude})
+        ) AS distanceM
+      FROM trees
+      WHERE deleted_at IS NULL
+      HAVING distanceM <= ${radiusM}
+      ORDER BY distanceM ASC, id ASC
+    `);
 }

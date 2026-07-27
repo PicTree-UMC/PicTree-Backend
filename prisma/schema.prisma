@@ -35,6 +35,8 @@ model User {
   trees                 Tree[]
   routes                Route[]
   timelineRecords       TimelineRecord[]
+  pushSubscriptions     PushSubscription[]
+  nearbyAlertLogs       NearbyAlertLog[]
 
   @@unique([currentSubscriptionId, id])
   @@map("users")
@@ -235,6 +237,7 @@ model Tree {
   user            User             @relation(fields: [userId], references: [id])
   images          TreeImage[]
   timelineRecords TimelineRecord[]
+  nearbyAlertLogs NearbyAlertLog[]
 
   @@index([userId])
   @@map("trees")
@@ -294,6 +297,13 @@ enum TimelineCategory {
   ETC
 }
 
+enum NearbyAlertStatus {
+  PENDING
+  SENT
+  OPENED
+  FAILED
+}
+
 model BlogDraft {
   id        BigInt   @id @default(autoincrement()) @db.BigInt
   userId    BigInt   @map("user_id") @db.BigInt
@@ -337,4 +347,40 @@ model TimelineRecord {
   @@index([userId, visitedAt, id])
   @@index([treeId])
   @@map("timeline_records")
+}
+
+model PushSubscription {
+  id           BigInt   @id @default(autoincrement()) @db.BigInt
+  userId       BigInt   @map("user_id") @db.BigInt
+  endpoint     String   @db.Text
+  endpointHash String   @unique @map("endpoint_hash") @db.Char(64)
+  p256dhKey    String   @map("p256dh_key") @db.VarChar(255)
+  authKey      String   @map("auth_key") @db.VarChar(255)
+  userAgent    String?  @map("user_agent") @db.VarChar(255)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, isActive])
+  @@map("push_subscriptions")
+}
+
+model NearbyAlertLog {
+  id        BigInt            @id @default(autoincrement()) @db.BigInt
+  userId    BigInt            @map("user_id") @db.BigInt
+  treeId    BigInt            @map("tree_id") @db.BigInt
+  distanceM Int               @map("distance_m")
+  alertDate DateTime          @map("alert_date") @db.Date
+  status    NearbyAlertStatus @default(PENDING)
+  sentAt    DateTime?         @map("sent_at")
+  openedAt  DateTime?         @map("opened_at")
+  user      User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  tree      Tree              @relation(fields: [treeId], references: [id], onDelete: Restrict)
+
+  // 사용자·나무별 하루 한 번만 근처 알림을 생성한다.
+  @@unique([userId, treeId, alertDate])
+  @@index([userId, sentAt])
+  @@index([treeId])
+  @@map("nearby_alert_logs")
 }

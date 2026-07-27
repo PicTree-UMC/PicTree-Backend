@@ -14,3 +14,5 @@ export const TreePagination = {
   DEFAULT_SIZE: 20,
   MAX_SIZE: 100,
 } as const;
+
+export const NEARBY_TREE_RADIUS_M = 100;

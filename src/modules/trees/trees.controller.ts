@@ -17,11 +17,13 @@ import { AccessTokenGuard } from '../auth/access-token.guard';
 import type { JwtPayload } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { CreateTreeRequestDto } from './dto/create-tree-request.dto';
+import { GetNearbyTreesQueryDto } from './dto/get-nearby-trees-query.dto';
 import {
   FavoriteTreeListResponseDto,
   ToggleFavoriteResponseDto,
 } from './dto/favorite-response.dto';
 import { GetTreesQueryDto } from './dto/get-trees-query.dto';
+import { NearbyTreeResponseDto } from './dto/nearby-tree-response.dto';
 import { TreeListResponseDto } from './dto/tree-list-response.dto';
 import {
   CreateTreeResponseDto,
@@ -32,6 +34,7 @@ import {
   ApiCreateTree,
   ApiDeleteTree,
   ApiGetFavoriteTrees,
+  ApiGetNearbyTrees,
   ApiGetMyTrees,
   ApiGetTree,
   ApiToggleFavoriteTree,
@@ -69,6 +72,16 @@ export class TreesController {
       currentUser.userId,
       getTreesQueryDto,
     );
+
+    return ApiResponse.success(SuccessCode.OK, data);
+  }
+
+  @Get('nearby')
+  @ApiGetNearbyTrees()
+  async getNearbyTrees(
+    @Query() query: GetNearbyTreesQueryDto,
+  ): Promise<ApiResponse<NearbyTreeResponseDto[]>> {
+    const data = await this.treesService.getNearbyTrees(query);
 
     return ApiResponse.success(SuccessCode.OK, data);
   }

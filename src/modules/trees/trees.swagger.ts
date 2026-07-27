@@ -182,6 +182,40 @@ export const ApiGetTree = () =>
     }),
   );
 
+export const ApiGetNearbyTrees = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '근처 나무 조회',
+      description: '현재 위치를 기준으로 반경 100m 이내의 나무를 조회합니다.',
+    }),
+    protectedTreeResponses(),
+    ApiOkResponse({
+      description: '거리순 근처 나무 조회 성공',
+      schema: {
+        example: {
+          success: true,
+          code: 'COMMON200',
+          message: '요청이 성공했습니다.',
+          data: [
+            {
+              treeId: 1,
+              name: '우리 동네 벚나무',
+              latitude: 37.5665,
+              longitude: 126.978,
+              mood: 'HAPPY',
+              defaultImage: 'DEFAULT_1',
+              distanceM: 42,
+            },
+          ],
+        },
+      },
+    }),
+    ApiBadRequestResponse({
+      description: '위치 또는 반경 요청 값 오류',
+      schema: { example: failResponse('COMMON400', '잘못된 요청입니다.') },
+    }),
+  );
+
 export const ApiUpdateTree = () =>
   applyDecorators(
     ApiOperation({ summary: '나무 정보 수정' }),

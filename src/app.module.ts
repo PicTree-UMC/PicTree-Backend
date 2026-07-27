@@ -5,7 +5,9 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BillingKeysModule } from './modules/billing-keys/billing-keys.module';
 import { BlogDraftsModule } from './modules/blog-drafts/blog-drafts.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
+import { NearbyAlertsModule } from './modules/nearby-alerts/nearby-alerts.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { PushSubscriptionsModule } from './modules/push-subscriptions/push-subscriptions.module';
 import { RoutesModule } from './modules/routes/routes.module';
 import { SubscriptionPlansModule } from './modules/subscription-plans/subscription-plans.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
@@ -28,7 +30,9 @@ import { PrismaModule } from './prisma/prisma.module';
     TermsModule,
     SubscriptionPlansModule,
     PaymentsModule,
+    PushSubscriptionsModule,
     BillingKeysModule,
+    NearbyAlertsModule,
     SubscriptionsModule,
     TreesModule,
     TreeImagesModule,
