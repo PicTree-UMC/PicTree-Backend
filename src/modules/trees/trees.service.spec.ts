@@ -132,6 +132,23 @@ describe('TreesService', () => {
         expect.objectContaining({ userId: 10, mood: '😍' }),
       );
     });
+
+    it('defaultImage 를 생략하면 서버 기본값을 적용한다', async () => {
+      repository.countTreesByUserId.mockResolvedValue(1);
+      repository.findUserPlanCode.mockResolvedValue('FREE');
+      const dtoWithoutImage: CreateTreeRequestDto = {
+        name: '벚나무',
+        latitude: 37.5665,
+        longitude: 126.978,
+        mood: '😍',
+      };
+
+      await service.createTree(10, dtoWithoutImage);
+
+      expect(repository.createTree).toHaveBeenCalledWith(
+        expect.objectContaining({ defaultImage: 'DEFAULT_1' }),
+      );
+    });
   });
 
   describe('소유권 검증', () => {
