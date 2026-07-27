@@ -12,7 +12,11 @@ import {
 import { UpdateRouteRequestDto } from './dto/update-route-request.dto';
 import { RoutePagination } from './routes.constant';
 import { RoutesRepository } from './routes.repository';
-import { RouteRecord, RouteWithPointsRecord } from './routes.types';
+import {
+  RouteListItemRecord,
+  RouteRecord,
+  RouteWithPointsRecord,
+} from './routes.types';
 
 @Injectable()
 export class RoutesService {
@@ -22,17 +26,14 @@ export class RoutesService {
     userId: number,
     createRouteRequestDto: CreateRouteRequestDto,
   ): Promise<CreateRouteResponseDto> => {
+    await this.ensureTreesOwned(userId, createRouteRequestDto.points);
+
     const route = await this.routesRepository.createRoute({
       userId,
       routeName: createRouteRequestDto.routeName,
-      totalDistanceM: createRouteRequestDto.totalDistanceM ?? null,
-      startedAt: createRouteRequestDto.startedAt,
-      endedAt: createRouteRequestDto.endedAt ?? null,
       points: createRouteRequestDto.points.map((point) => ({
-        latitude: point.latitude,
-        longitude: point.longitude,
+        treeId: point.treeId,
         sequence: point.sequence,
-        recordedAt: point.recordedAt,
       })),
     });
 
@@ -95,6 +96,22 @@ export class RoutesService {
     return null;
   };
 
+  // 동선 노드로 넘어온 나무가 모두 본인 소유이면서 살아있는지 검증한다.
+  private ensureTreesOwned = async (
+    userId: number,
+    points: CreateRouteRequestDto['points'],
+  ): Promise<void> => {
+    const treeIds = [...new Set(points.map((point) => point.treeId))];
+    const ownedCount = await this.routesRepository.countOwnedTrees(
+      treeIds,
+      userId,
+    );
+
+    if (ownedCount !== treeIds.length) {
+      throw new AppException(ErrorCode.ROUTE_INVALID_REQUEST);
+    }
+  };
+
   private getOwnedRouteOrThrow = async (
     userId: number,
     routeId: number,
@@ -140,27 +157,59 @@ export class RoutesService {
     }
   };
 
+  // UTC 저장값을 KST(UTC+9) 기준 YYYY-MM-DD 로 변환한다.
+  private toKstDateString = (date: Date): string => {
+    const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+    return kst.toISOString().slice(0, 10);
+  };
+
   private toRouteSummaryResponseDto = (
-    route: RouteRecord,
-  ): RouteSummaryResponseDto => ({
-    routeId: Number(route.id),
-    routeName: route.routeName,
-    totalDistanceM: route.totalDistanceM,
-    startedAt: route.startedAt,
-  });
+    route: RouteListItemRecord,
+  ): RouteSummaryResponseDto => {
+    // 소프트 삭제된 나무는 카드에서 제외한다.
+    const livePoints = route.points.filter(
+      (point) => point.tree.deletedAt === null,
+    );
+    // 기록 날짜: 동선에 속한 장소들 중 가장 이른 기록일 (KST 기준 날짜)
+    const recordDate =
+      livePoints.length > 0
+        ? this.toKstDateString(
+            [...livePoints].sort(
+              (a, b) => a.tree.createdAt.getTime() - b.tree.createdAt.getTime(),
+            )[0].tree.createdAt,
+          )
+        : null;
+
+    return {
+      routeId: Number(route.id),
+      routeName: route.routeName,
+      recordDate,
+      placeCount: livePoints.length,
+      places: livePoints.map((point) => ({
+        name: point.tree.name,
+        mood: point.tree.mood,
+      })),
+      createdAt: route.createdAt,
+    };
+  };
 
   private toRouteResponseDto = (
     route: RouteWithPointsRecord,
   ): RouteResponseDto => ({
     routeId: Number(route.id),
     routeName: route.routeName,
-    totalDistanceM: route.totalDistanceM,
-    startedAt: route.startedAt,
-    endedAt: route.endedAt,
-    points: route.points.map((point) => ({
-      latitude: Number(point.latitude),
-      longitude: Number(point.longitude),
-      sequence: point.sequence,
-    })),
+    createdAt: route.createdAt,
+    // 소프트 삭제된 나무는 동선에서 제외한다.
+    points: route.points
+      .filter((point) => point.tree.deletedAt === null)
+      .map((point) => ({
+        treeId: Number(point.tree.id),
+        name: point.tree.name,
+        mood: point.tree.mood,
+        description: point.tree.description,
+        latitude: Number(point.tree.latitude),
+        longitude: Number(point.tree.longitude),
+        sequence: point.sequence,
+      })),
   });
 }

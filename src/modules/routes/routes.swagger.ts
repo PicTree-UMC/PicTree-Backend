@@ -72,8 +72,11 @@ export const ApiCreateRoute = () =>
       },
     }),
     ApiBadRequestResponse({
-      description: '요청 값 오류 (좌표 누락 등)',
-      schema: { example: failResponse('COMMON400', '잘못된 요청입니다.') },
+      description:
+        '요청 값 오류 (노드 누락, 존재하지 않거나 타인 소유의 나무 등)',
+      schema: {
+        example: failResponse('ROUTE400', '동선 요청 값이 올바르지 않습니다.'),
+      },
     }),
   );
 
@@ -93,8 +96,13 @@ export const ApiGetMyRoutes = () =>
               {
                 routeId: 1,
                 routeName: '아침 산책',
-                totalDistanceM: 1200,
-                startedAt: '2026-07-19T07:00:00.000Z',
+                recordDate: '2026-04-01',
+                placeCount: 2,
+                places: [
+                  { name: '포그레인 공원', mood: '😀' },
+                  { name: '오아시스 만난 곳', mood: '😍' },
+                ],
+                createdAt: '2026-07-19T07:00:00.000Z',
               },
             ],
             page: 1,
@@ -123,10 +131,18 @@ export const ApiGetRoute = () =>
           data: {
             routeId: 1,
             routeName: '아침 산책',
-            totalDistanceM: 1200,
-            startedAt: '2026-07-19T07:00:00.000Z',
-            endedAt: '2026-07-19T07:30:00.000Z',
-            points: [{ latitude: 37.5665, longitude: 126.978, sequence: 0 }],
+            createdAt: '2026-07-19T07:00:00.000Z',
+            points: [
+              {
+                treeId: 1,
+                name: '오아시스 만난 곳',
+                mood: '😍',
+                description: '갤러거 형제 자만추',
+                latitude: 37.5665,
+                longitude: 126.978,
+                sequence: 0,
+              },
+            ],
           },
         },
       },
@@ -166,7 +182,7 @@ export const ApiDeleteRoute = () =>
     routeIdParam(),
     routeResourceResponses(),
     ApiOkResponse({
-      description: '동선 삭제 성공 (좌표도 함께 삭제)',
+      description: '동선 삭제 성공 (노드도 함께 삭제)',
       schema: {
         example: {
           success: true,
