@@ -4,36 +4,41 @@ export interface RouteRecord {
   id: bigint;
   userId: bigint;
   routeName: string;
-  totalDistanceM: number | null;
-  startedAt: Date;
-  endedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface RoutePointRecord {
-  latitude: Prisma.Decimal;
-  longitude: Prisma.Decimal;
+// 목록 조회용: 동선 + 장소 개수
+export interface RouteWithCountRecord extends RouteRecord {
+  _count: { points: number };
+}
+
+// 동선 노드 = 나무 참조 + 응답에 필요한 나무 정보
+export interface RoutePointWithTreeRecord {
   sequence: number;
+  tree: {
+    id: bigint;
+    name: string;
+    mood: string;
+    description: string | null;
+    latitude: Prisma.Decimal;
+    longitude: Prisma.Decimal;
+    deletedAt: Date | null;
+  };
 }
 
 export interface RouteWithPointsRecord extends RouteRecord {
-  points: RoutePointRecord[];
+  points: RoutePointWithTreeRecord[];
 }
 
 export interface CreateRoutePointData {
-  latitude: number;
-  longitude: number;
+  treeId: number;
   sequence: number;
-  recordedAt: Date;
 }
 
 export interface CreateRouteData {
   userId: number;
   routeName: string;
-  totalDistanceM: number | null;
-  startedAt: Date;
-  endedAt: Date | null;
   points: CreateRoutePointData[];
 }
 

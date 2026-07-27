@@ -12,7 +12,11 @@ import {
 import { UpdateRouteRequestDto } from './dto/update-route-request.dto';
 import { RoutePagination } from './routes.constant';
 import { RoutesRepository } from './routes.repository';
-import { RouteRecord, RouteWithPointsRecord } from './routes.types';
+import {
+  RouteRecord,
+  RouteWithCountRecord,
+  RouteWithPointsRecord,
+} from './routes.types';
 
 @Injectable()
 export class RoutesService {
@@ -22,17 +26,14 @@ export class RoutesService {
     userId: number,
     createRouteRequestDto: CreateRouteRequestDto,
   ): Promise<CreateRouteResponseDto> => {
+    await this.ensureTreesOwned(userId, createRouteRequestDto.points);
+
     const route = await this.routesRepository.createRoute({
       userId,
       routeName: createRouteRequestDto.routeName,
-      totalDistanceM: createRouteRequestDto.totalDistanceM ?? null,
-      startedAt: createRouteRequestDto.startedAt,
-      endedAt: createRouteRequestDto.endedAt ?? null,
       points: createRouteRequestDto.points.map((point) => ({
-        latitude: point.latitude,
-        longitude: point.longitude,
+        treeId: point.treeId,
         sequence: point.sequence,
-        recordedAt: point.recordedAt,
       })),
     });
 
@@ -95,6 +96,22 @@ export class RoutesService {
     return null;
   };
 
+  // 동선 노드로 넘어온 나무가 모두 본인 소유이면서 살아있는지 검증한다.
+  private ensureTreesOwned = async (
+    userId: number,
+    points: CreateRouteRequestDto['points'],
+  ): Promise<void> => {
+    const treeIds = [...new Set(points.map((point) => point.treeId))];
+    const ownedCount = await this.routesRepository.countOwnedTrees(
+      treeIds,
+      userId,
+    );
+
+    if (ownedCount !== treeIds.length) {
+      throw new AppException(ErrorCode.ROUTE_INVALID_REQUEST);
+    }
+  };
+
   private getOwnedRouteOrThrow = async (
     userId: number,
     routeId: number,
@@ -141,12 +158,12 @@ export class RoutesService {
   };
 
   private toRouteSummaryResponseDto = (
-    route: RouteRecord,
+    route: RouteWithCountRecord,
   ): RouteSummaryResponseDto => ({
     routeId: Number(route.id),
     routeName: route.routeName,
-    totalDistanceM: route.totalDistanceM,
-    startedAt: route.startedAt,
+    placeCount: route._count.points,
+    createdAt: route.createdAt,
   });
 
   private toRouteResponseDto = (
@@ -154,13 +171,18 @@ export class RoutesService {
   ): RouteResponseDto => ({
     routeId: Number(route.id),
     routeName: route.routeName,
-    totalDistanceM: route.totalDistanceM,
-    startedAt: route.startedAt,
-    endedAt: route.endedAt,
-    points: route.points.map((point) => ({
-      latitude: Number(point.latitude),
-      longitude: Number(point.longitude),
-      sequence: point.sequence,
-    })),
+    createdAt: route.createdAt,
+    // 소프트 삭제된 나무는 동선에서 제외한다.
+    points: route.points
+      .filter((point) => point.tree.deletedAt === null)
+      .map((point) => ({
+        treeId: Number(point.tree.id),
+        name: point.tree.name,
+        mood: point.tree.mood,
+        description: point.tree.description,
+        latitude: Number(point.tree.latitude),
+        longitude: Number(point.tree.longitude),
+        sequence: point.sequence,
+      })),
   });
 }

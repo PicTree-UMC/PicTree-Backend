@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateRouteData,
   RouteRecord,
+  RouteWithCountRecord,
   RouteWithPointsRecord,
   UpdateRouteData,
 } from './routes.types';
@@ -17,17 +18,23 @@ export class RoutesRepository {
       data: {
         userId: BigInt(createRouteData.userId),
         routeName: createRouteData.routeName,
-        totalDistanceM: createRouteData.totalDistanceM,
-        startedAt: createRouteData.startedAt,
-        endedAt: createRouteData.endedAt,
         points: {
           create: createRouteData.points.map((point) => ({
-            latitude: point.latitude,
-            longitude: point.longitude,
+            treeId: BigInt(point.treeId),
             sequence: point.sequence,
-            recordedAt: point.recordedAt,
           })),
         },
+      },
+    });
+  };
+
+  // 동선 생성 시 검증용: 본인 소유이면서 삭제되지 않은 나무 개수
+  countOwnedTrees = (treeIds: number[], userId: number): Promise<number> => {
+    return this.prisma.tree.count({
+      where: {
+        id: { in: treeIds.map((id) => BigInt(id)) },
+        userId: BigInt(userId),
+        deletedAt: null,
       },
     });
   };
@@ -36,7 +43,7 @@ export class RoutesRepository {
     userId: number,
     page: number,
     size: number,
-  ): Promise<[RouteRecord[], number]> => {
+  ): Promise<[RouteWithCountRecord[], number]> => {
     const where: Prisma.RouteWhereInput = {
       userId: BigInt(userId),
     };
@@ -45,10 +52,13 @@ export class RoutesRepository {
       this.prisma.route.findMany({
         where,
         orderBy: {
-          startedAt: 'desc',
+          createdAt: 'desc',
         },
         skip: (page - 1) * size,
         take: size,
+        include: {
+          _count: { select: { points: true } },
+        },
       }),
       this.prisma.route.count({ where }),
     ]);
@@ -73,6 +83,20 @@ export class RoutesRepository {
         points: {
           orderBy: {
             sequence: 'asc',
+          },
+          select: {
+            sequence: true,
+            tree: {
+              select: {
+                id: true,
+                name: true,
+                mood: true,
+                description: true,
+                latitude: true,
+                longitude: true,
+                deletedAt: true,
+              },
+            },
           },
         },
       },
