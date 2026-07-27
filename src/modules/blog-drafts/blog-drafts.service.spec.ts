@@ -251,16 +251,43 @@ describe('BlogDraftsService', () => {
     });
   });
 
-  it('저장할 제목 또는 본문이 비어 있으면 예외를 던진다', async () => {
-    await expect(
-      service.saveDraft(1, {
+  it('저장할 제목이 비어 있으면 BLOG400 예외를 던진다', async () => {
+    try {
+      await service.saveDraft(1, {
         title: '   ',
-        content: '',
+        content: '본문',
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: [1],
-      }),
-    ).rejects.toBeInstanceOf(AppException);
+      });
+      throw new Error('Expected AppException');
+    } catch (error) {
+      expect(error).toBeInstanceOf(AppException);
+      expect((error as AppException).getResponse()).toMatchObject({
+        code: 'BLOG400',
+      });
+    }
+
+    expect(repository.findUserById).not.toHaveBeenCalled();
+    expect(repository.createDraft).not.toHaveBeenCalled();
+  });
+
+  it('저장할 본문이 비어 있으면 BLOG400 예외를 던진다', async () => {
+    try {
+      await service.saveDraft(1, {
+        title: '제목',
+        content: '   ',
+        startDate: '2026-03-31',
+        endDate: '2026-04-01',
+        treeIds: [1],
+      });
+      throw new Error('Expected AppException');
+    } catch (error) {
+      expect(error).toBeInstanceOf(AppException);
+      expect((error as AppException).getResponse()).toMatchObject({
+        code: 'BLOG400',
+      });
+    }
 
     expect(repository.findUserById).not.toHaveBeenCalled();
     expect(repository.createDraft).not.toHaveBeenCalled();
