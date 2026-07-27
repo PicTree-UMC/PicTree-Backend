@@ -149,6 +149,39 @@ export const ApiGetRoute = () =>
     }),
   );
 
+export const ApiGetRouteImages = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '동선 사진 앨범 조회',
+      description:
+        '동선에 속한 장소들의 대표 사진을 방문 순서로 반환한다. 사진 없는 장소는 imageUrl=null (프론트에서 로고 표시).',
+    }),
+    protectedRouteResponses(),
+    routeIdParam(),
+    routeResourceResponses(),
+    ApiOkResponse({
+      description: '동선 사진 앨범 조회 성공',
+      schema: {
+        example: {
+          success: true,
+          code: 'COMMON200',
+          message: '요청이 성공했습니다.',
+          data: {
+            images: [
+              {
+                treeId: 1,
+                name: '오아시스 만난 곳',
+                imageUrl:
+                  'https://pictree-images-prod.s3.ap-northeast-2.amazonaws.com/...',
+              },
+              { treeId: 2, name: '쇼핑', imageUrl: null },
+            ],
+          },
+        },
+      },
+    }),
+  );
+
 export const ApiUpdateRoute = () =>
   applyDecorators(
     ApiOperation({ summary: '동선 이름 수정' }),
