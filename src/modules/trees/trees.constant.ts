@@ -1,3 +1,6 @@
+// 나무 기본 이미지 식별자 (화면에서 선택하지 않을 때 서버가 부여)
+export const DEFAULT_TREE_IMAGE = 'DEFAULT_1';
+
 // 무료 플랜 식별 코드 (subscription_plans.code 기준)
 export const FREE_PLAN_CODE = 'FREE';
 

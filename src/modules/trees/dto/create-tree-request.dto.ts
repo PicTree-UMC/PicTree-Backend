@@ -60,13 +60,15 @@ export class CreateTreeRequestDto {
   @MaxLength(20)
   mood!: string;
 
-  @ApiProperty({
+  // 화면에 나무 그림 선택 UI가 없어 자동 부여되므로, 미전달 시 서버 기본값을 적용한다.
+  @ApiPropertyOptional({
     example: 'DEFAULT_1',
     maxLength: 20,
-    description: '기본 이미지 (사진 없을 때 노출)',
+    description: '기본 이미지 (미전달 시 서버 기본값). 사진 없을 때 노출',
   })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)
-  defaultImage!: string;
+  defaultImage?: string;
 }

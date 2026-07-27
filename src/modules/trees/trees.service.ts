@@ -16,7 +16,12 @@ import {
   TreeSummaryResponseDto,
 } from './dto/tree-response.dto';
 import { UpdateTreeRequestDto } from './dto/update-tree-request.dto';
-import { AD_INTERVAL, FREE_PLAN_CODE, TreePagination } from './trees.constant';
+import {
+  AD_INTERVAL,
+  DEFAULT_TREE_IMAGE,
+  FREE_PLAN_CODE,
+  TreePagination,
+} from './trees.constant';
 import { TreesRepository } from './trees.repository';
 import {
   FavoriteTreeRecord,
@@ -40,7 +45,7 @@ export class TreesService {
       longitude: createTreeRequestDto.longitude,
       address: createTreeRequestDto.address ?? null,
       mood: createTreeRequestDto.mood,
-      defaultImage: createTreeRequestDto.defaultImage,
+      defaultImage: createTreeRequestDto.defaultImage ?? DEFAULT_TREE_IMAGE,
     });
 
     const adRequired = await this.resolveAdRequired(userId);
