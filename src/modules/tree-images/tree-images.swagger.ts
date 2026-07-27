@@ -28,7 +28,6 @@ const imageExample = {
   imageUrl: 'https://pictree-images-prod.s3.ap-northeast-2.amazonaws.com/...',
   timelineRecordId: null,
   fileSize: 204800,
-  sortOrder: 0,
 };
 
 const protectedResponses = () =>
@@ -59,9 +58,13 @@ const protectedResponses = () =>
 const treeIdParam = () =>
   ApiParam({ name: 'treeId', example: 1, description: '나무 ID' });
 
-export const ApiUploadTreeImages = () =>
+export const ApiUploadTreeImage = () =>
   applyDecorators(
-    ApiOperation({ summary: '나무 사진 업로드' }),
+    ApiOperation({
+      summary: '나무 사진 업로드',
+      description:
+        '나무(또는 타임라인 기록)당 사진은 1장입니다. 이미 있으면 교체됩니다.',
+    }),
     protectedResponses(),
     treeIdParam(),
     ApiConsumes('multipart/form-data'),
@@ -69,17 +72,17 @@ export const ApiUploadTreeImages = () =>
       schema: {
         type: 'object',
         properties: {
-          images: {
-            type: 'array',
-            items: { type: 'string', format: 'binary' },
-            description: '업로드할 사진 파일 (복수 가능)',
+          image: {
+            type: 'string',
+            format: 'binary',
+            description: '업로드할 사진 파일 (1장)',
           },
           timelineRecordId: {
             type: 'number',
             description: '특정 타임라인 기록의 사진일 때만',
           },
         },
-        required: ['images'],
+        required: ['image'],
       },
     }),
     ApiCreatedResponse({
@@ -89,7 +92,7 @@ export const ApiUploadTreeImages = () =>
           success: true,
           code: 'COMMON201',
           message: '생성되었습니다.',
-          data: { images: [imageExample] },
+          data: { image: imageExample },
         },
       },
     }),

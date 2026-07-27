@@ -18,6 +18,10 @@ import type { JwtPayload } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { CreateTreeRequestDto } from './dto/create-tree-request.dto';
 import { GetNearbyTreesQueryDto } from './dto/get-nearby-trees-query.dto';
+import {
+  FavoriteTreeListResponseDto,
+  ToggleFavoriteResponseDto,
+} from './dto/favorite-response.dto';
 import { GetTreesQueryDto } from './dto/get-trees-query.dto';
 import { NearbyTreeResponseDto } from './dto/nearby-tree-response.dto';
 import { TreeListResponseDto } from './dto/tree-list-response.dto';
@@ -29,9 +33,11 @@ import { UpdateTreeRequestDto } from './dto/update-tree-request.dto';
 import {
   ApiCreateTree,
   ApiDeleteTree,
+  ApiGetFavoriteTrees,
   ApiGetNearbyTrees,
   ApiGetMyTrees,
   ApiGetTree,
+  ApiToggleFavoriteTree,
   ApiUpdateTree,
 } from './trees.swagger';
 import { TreesService } from './trees.service';
@@ -80,6 +86,16 @@ export class TreesController {
     return ApiResponse.success(SuccessCode.OK, data);
   }
 
+  @Get('favorites')
+  @ApiGetFavoriteTrees()
+  async getFavoriteTrees(
+    @CurrentUser() currentUser: JwtPayload,
+  ): Promise<ApiResponse<FavoriteTreeListResponseDto>> {
+    const data = await this.treesService.getFavoriteTrees(currentUser.userId);
+
+    return ApiResponse.success(SuccessCode.FAVORITE_LIST_RETRIEVED, data);
+  }
+
   @Get(':treeId')
   @ApiGetTree()
   async getTree(
@@ -105,6 +121,20 @@ export class TreesController {
     );
 
     return ApiResponse.success(SuccessCode.OK, null);
+  }
+
+  @Patch(':treeId/favorite')
+  @ApiToggleFavoriteTree()
+  async toggleFavorite(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('treeId', ParseIntPipe) treeId: number,
+  ): Promise<ApiResponse<ToggleFavoriteResponseDto>> {
+    const data = await this.treesService.toggleFavorite(
+      currentUser.userId,
+      treeId,
+    );
+
+    return ApiResponse.success(SuccessCode.FAVORITE_TOGGLED, data);
   }
 
   @Delete(':treeId')

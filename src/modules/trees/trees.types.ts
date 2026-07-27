@@ -36,6 +36,14 @@ export interface NearbyTreeRecord {
   distanceM: number;
 }
 
+export interface FavoriteTreeRecord {
+  id: bigint;
+  name: string;
+  description: string | null;
+  createdAt: Date;
+  image: TreeImageRecord | null;
+}
+
 export interface CreateTreeData {
   userId: number;
   name: string;

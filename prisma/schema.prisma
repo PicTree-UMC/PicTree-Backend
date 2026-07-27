@@ -29,6 +29,8 @@ model User {
   currentSubscription   UserSubscription?    @relation("CurrentUserSubscription", fields: [currentSubscriptionId, id], references: [id, userId])
   subscriptions         UserSubscription[]   @relation("UserSubscriptions")
   billingKeys           BillingKey[]
+  blogDrafts            BlogDraft[]
+  blogDraftUsages       BlogDraftUsage[]
   payments              Payment[]
   trees                 Tree[]
   routes                Route[]
@@ -300,6 +302,31 @@ enum NearbyAlertStatus {
   SENT
   OPENED
   FAILED
+}
+
+model BlogDraft {
+  id        BigInt   @id @default(autoincrement()) @db.BigInt
+  userId    BigInt   @map("user_id") @db.BigInt
+  title     String   @db.VarChar(50)
+  content   String   @db.Text
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@map("ai_blog_drafts")
+}
+
+model BlogDraftUsage {
+  id        BigInt   @id @default(autoincrement()) @db.BigInt
+  userId    BigInt   @map("user_id") @db.BigInt
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@map("ai_blog_draft_usages")
 }
 
 model TimelineRecord {

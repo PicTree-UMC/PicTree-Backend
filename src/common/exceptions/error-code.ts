@@ -225,6 +225,39 @@ export const ErrorCode = {
     message: '자동갱신을 재개할 수 없는 구독입니다.',
   },
 
+  // Blog Draft
+  BLOG_DRAFT_INVALID_REQUEST: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'BLOG400',
+    message: 'AI 블로그 초안 요청 값이 올바르지 않습니다.',
+  },
+  BLOG_DRAFT_SOURCE_EMPTY: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'BLOG400',
+    message: '선택한 기간에 블로그 초안을 생성할 데이터가 없습니다.',
+  },
+  BLOG_DRAFT_LIMIT_EXCEEDED: {
+    status: HttpStatus.FORBIDDEN,
+    code: 'BLOG403',
+    message:
+      '이번 이용 기간의 AI 블로그 초안 생성 가능 횟수를 모두 사용했습니다.',
+  },
+  BLOG_DRAFT_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'BLOG404',
+    message: 'AI 블로그 초안을 찾을 수 없습니다.',
+  },
+  BLOG_DRAFT_OPENAI_CONFIG_MISSING: {
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    code: 'BLOG500',
+    message: 'OpenAI 설정이 누락되었습니다.',
+  },
+  BLOG_DRAFT_GENERATION_FAILED: {
+    status: HttpStatus.BAD_GATEWAY,
+    code: 'BLOG502',
+    message: 'AI 블로그 초안 생성에 실패했습니다.',
+  },
+
   // Tree
   TREE_INVALID_REQUEST: {
     status: HttpStatus.BAD_REQUEST,
