@@ -372,6 +372,15 @@ describe('RoutesService', () => {
       expect(result.images[0].treeId).toBe(1);
     });
 
+    it('존재하지 않는 동선이면 ROUTE404 를 던진다', async () => {
+      repository.findRouteById.mockResolvedValue(null);
+
+      const error = await catchAppError(service.getRouteImages(10, 1));
+
+      expect(error.getResponse()).toMatchObject({ code: 'ROUTE404' });
+      expect(repository.findRoutePointsWithImages).not.toHaveBeenCalled();
+    });
+
     it('타인의 동선이면 ROUTE403 을 던진다', async () => {
       repository.findRouteById.mockResolvedValue({ ...route, userId: 99n });
 
