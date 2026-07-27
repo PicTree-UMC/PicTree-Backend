@@ -3,8 +3,8 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateRouteData,
+  RouteListItemRecord,
   RouteRecord,
-  RouteWithCountRecord,
   RouteWithPointsRecord,
   UpdateRouteData,
 } from './routes.types';
@@ -43,7 +43,7 @@ export class RoutesRepository {
     userId: number,
     page: number,
     size: number,
-  ): Promise<[RouteWithCountRecord[], number]> => {
+  ): Promise<[RouteListItemRecord[], number]> => {
     const where: Prisma.RouteWhereInput = {
       userId: BigInt(userId),
     };
@@ -57,7 +57,20 @@ export class RoutesRepository {
         skip: (page - 1) * size,
         take: size,
         include: {
-          _count: { select: { points: true } },
+          points: {
+            orderBy: { sequence: 'asc' },
+            select: {
+              sequence: true,
+              tree: {
+                select: {
+                  name: true,
+                  mood: true,
+                  createdAt: true,
+                  deletedAt: true,
+                },
+              },
+            },
+          },
         },
       }),
       this.prisma.route.count({ where }),

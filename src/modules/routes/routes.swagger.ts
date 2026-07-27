@@ -96,7 +96,12 @@ export const ApiGetMyRoutes = () =>
               {
                 routeId: 1,
                 routeName: '아침 산책',
+                recordDate: '2026-04-01',
                 placeCount: 2,
+                places: [
+                  { name: '포그레인 공원', mood: '😀' },
+                  { name: '오아시스 만난 곳', mood: '😍' },
+                ],
                 createdAt: '2026-07-19T07:00:00.000Z',
               },
             ],

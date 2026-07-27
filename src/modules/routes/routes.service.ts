@@ -13,8 +13,8 @@ import { UpdateRouteRequestDto } from './dto/update-route-request.dto';
 import { RoutePagination } from './routes.constant';
 import { RoutesRepository } from './routes.repository';
 import {
+  RouteListItemRecord,
   RouteRecord,
-  RouteWithCountRecord,
   RouteWithPointsRecord,
 } from './routes.types';
 
@@ -158,13 +158,35 @@ export class RoutesService {
   };
 
   private toRouteSummaryResponseDto = (
-    route: RouteWithCountRecord,
-  ): RouteSummaryResponseDto => ({
-    routeId: Number(route.id),
-    routeName: route.routeName,
-    placeCount: route._count.points,
-    createdAt: route.createdAt,
-  });
+    route: RouteListItemRecord,
+  ): RouteSummaryResponseDto => {
+    // 소프트 삭제된 나무는 카드에서 제외한다.
+    const livePoints = route.points.filter(
+      (point) => point.tree.deletedAt === null,
+    );
+    // 기록 날짜: 동선에 속한 장소들 중 가장 이른 기록일 (장소들의 날짜)
+    const recordDate =
+      livePoints.length > 0
+        ? [...livePoints]
+            .sort(
+              (a, b) => a.tree.createdAt.getTime() - b.tree.createdAt.getTime(),
+            )[0]
+            .tree.createdAt.toISOString()
+            .slice(0, 10)
+        : null;
+
+    return {
+      routeId: Number(route.id),
+      routeName: route.routeName,
+      recordDate,
+      placeCount: livePoints.length,
+      places: livePoints.map((point) => ({
+        name: point.tree.name,
+        mood: point.tree.mood,
+      })),
+      createdAt: route.createdAt,
+    };
+  };
 
   private toRouteResponseDto = (
     route: RouteWithPointsRecord,

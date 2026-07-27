@@ -32,6 +32,14 @@ export class RoutePointResponseDto {
   sequence!: number;
 }
 
+export class RouteSummaryPlaceDto {
+  @ApiProperty({ example: '오아시스 만난 곳', description: '장소명' })
+  name!: string;
+
+  @ApiProperty({ example: '😍', description: '기분 이모지' })
+  mood!: string;
+}
+
 export class RouteSummaryResponseDto {
   @ApiProperty({ example: 1, description: '동선 ID' })
   routeId!: number;
@@ -39,8 +47,21 @@ export class RouteSummaryResponseDto {
   @ApiProperty({ example: '아침 산책', description: '동선 이름' })
   routeName!: string;
 
+  @ApiProperty({
+    example: '2026-04-01',
+    nullable: true,
+    description: '기록 날짜 (장소들의 날짜, YYYY-MM-DD)',
+  })
+  recordDate!: string | null;
+
   @ApiProperty({ example: 2, description: '장소 개수' })
   placeCount!: number;
+
+  @ApiProperty({
+    type: [RouteSummaryPlaceDto],
+    description: '장소 목록 (방문 순서)',
+  })
+  places!: RouteSummaryPlaceDto[];
 
   @ApiProperty({
     example: '2026-07-19T07:00:00.000Z',

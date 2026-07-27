@@ -4,8 +4,8 @@ import { CreateRouteRequestDto } from './dto/create-route-request.dto';
 import { RoutesRepository } from './routes.repository';
 import { RoutesService } from './routes.service';
 import {
+  RouteListItemRecord,
   RouteRecord,
-  RouteWithCountRecord,
   RouteWithPointsRecord,
 } from './routes.types';
 
@@ -112,22 +112,80 @@ describe('RoutesService', () => {
   });
 
   describe('getMyRoutes', () => {
-    it('동선 목록을 장소 개수와 함께 반환한다', async () => {
-      const routeWithCount: RouteWithCountRecord = {
+    it('동선 목록을 장소 정보·기록날짜와 함께 반환한다', async () => {
+      const listItem: RouteListItemRecord = {
         ...route,
-        _count: { points: 2 },
+        points: [
+          {
+            sequence: 0,
+            tree: {
+              name: '포그레인 공원',
+              mood: '😀',
+              createdAt: new Date('2026-04-01T09:00:00.000Z'),
+              deletedAt: null,
+            },
+          },
+          {
+            sequence: 1,
+            tree: {
+              name: '오아시스 만난 곳',
+              mood: '😍',
+              createdAt: new Date('2026-04-01T10:00:00.000Z'),
+              deletedAt: null,
+            },
+          },
+        ],
       };
-      repository.findRoutesByUserId.mockResolvedValue([[routeWithCount], 1]);
+      repository.findRoutesByUserId.mockResolvedValue([[listItem], 1]);
 
       const result = await service.getMyRoutes(10, {});
 
       expect(result.items[0]).toEqual({
         routeId: 1,
         routeName: '아침 산책',
+        recordDate: '2026-04-01',
         placeCount: 2,
+        places: [
+          { name: '포그레인 공원', mood: '😀' },
+          { name: '오아시스 만난 곳', mood: '😍' },
+        ],
         createdAt: route.createdAt,
       });
       expect(result.total).toBe(1);
+    });
+
+    it('소프트 삭제된 나무는 목록 카드에서 제외한다', async () => {
+      const listItem: RouteListItemRecord = {
+        ...route,
+        points: [
+          {
+            sequence: 0,
+            tree: {
+              name: '살아있는 곳',
+              mood: '😀',
+              createdAt: new Date('2026-04-01T09:00:00.000Z'),
+              deletedAt: null,
+            },
+          },
+          {
+            sequence: 1,
+            tree: {
+              name: '삭제된 곳',
+              mood: '😢',
+              createdAt: new Date('2026-04-01T10:00:00.000Z'),
+              deletedAt: new Date('2026-04-02T00:00:00.000Z'),
+            },
+          },
+        ],
+      };
+      repository.findRoutesByUserId.mockResolvedValue([[listItem], 1]);
+
+      const result = await service.getMyRoutes(10, {});
+
+      expect(result.items[0].placeCount).toBe(1);
+      expect(result.items[0].places).toEqual([
+        { name: '살아있는 곳', mood: '😀' },
+      ]);
     });
   });
 
