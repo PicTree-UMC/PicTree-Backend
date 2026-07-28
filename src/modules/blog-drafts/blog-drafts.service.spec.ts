@@ -251,7 +251,7 @@ describe('BlogDraftsService', () => {
     });
   });
 
-  it('저장할 제목이 비어 있으면 BLOG400 예외를 던진다', async () => {
+  it('저장할 제목이 비어 있으면 BLOG400-3 예외를 던진다', async () => {
     try {
       await service.saveDraft(1, {
         title: '   ',
@@ -264,7 +264,7 @@ describe('BlogDraftsService', () => {
     } catch (error) {
       expect(error).toBeInstanceOf(AppException);
       expect((error as AppException).getResponse()).toMatchObject({
-        code: 'BLOG400',
+        code: 'BLOG400-3',
       });
     }
 
@@ -272,7 +272,7 @@ describe('BlogDraftsService', () => {
     expect(repository.createDraft).not.toHaveBeenCalled();
   });
 
-  it('저장할 본문이 비어 있으면 BLOG400 예외를 던진다', async () => {
+  it('저장할 본문이 비어 있으면 BLOG400-3 예외를 던진다', async () => {
     try {
       await service.saveDraft(1, {
         title: '제목',
@@ -285,7 +285,7 @@ describe('BlogDraftsService', () => {
     } catch (error) {
       expect(error).toBeInstanceOf(AppException);
       expect((error as AppException).getResponse()).toMatchObject({
-        code: 'BLOG400',
+        code: 'BLOG400-3',
       });
     }
 
