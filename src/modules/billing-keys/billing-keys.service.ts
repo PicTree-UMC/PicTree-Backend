@@ -4,6 +4,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import {
+  BILLING_CUSTOMER_KEY_MAX_LENGTH,
   BILLING_CUSTOMER_KEY_PREFIX,
   BillingKeyProvider,
   BillingKeyStatus,
@@ -193,8 +194,10 @@ export class BillingKeysService {
     const digest = createHmac('sha256', secret)
       .update(`user:${userId}`)
       .digest('hex');
+    const digestLength =
+      BILLING_CUSTOMER_KEY_MAX_LENGTH - BILLING_CUSTOMER_KEY_PREFIX.length;
 
-    return `${BILLING_CUSTOMER_KEY_PREFIX}${digest}`;
+    return `${BILLING_CUSTOMER_KEY_PREFIX}${digest.slice(0, digestLength)}`;
   };
 
   private validateTossBillingKey = (

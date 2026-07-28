@@ -8,3 +8,5 @@ export const BillingKeyStatus = {
 } as const;
 
 export const BILLING_CUSTOMER_KEY_PREFIX = 'BILLING_';
+
+export const BILLING_CUSTOMER_KEY_MAX_LENGTH = 50;
