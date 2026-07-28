@@ -1,13 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsDateString,
   IsInt,
   Min,
 } from 'class-validator';
+import { BLOG_DRAFT_MAX_TREE_COUNT } from '../blog-drafts.constant';
 
 export class GenerateBlogDraftRequestDto {
   @ApiProperty({ example: '2026-03-31', description: '시작일' })
@@ -20,11 +20,10 @@ export class GenerateBlogDraftRequestDto {
 
   @ApiProperty({
     example: [1, 2, 3],
-    description: '선택한 장소 ID 목록 (최대 15개)',
+    description: `선택한 장소 ID 목록 (최대 ${BLOG_DRAFT_MAX_TREE_COUNT}개)`,
   })
   @IsArray()
   @ArrayMinSize(1)
-  @ArrayMaxSize(15)
   @Type(() => Number)
   @IsInt({ each: true })
   @Min(1, { each: true })
