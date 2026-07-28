@@ -1,9 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  FavoriteTreeListResponseDto,
-  ToggleFavoriteResponseDto,
-} from './dto/favorite-response.dto';
-import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
@@ -120,7 +116,6 @@ export const ApiGetFavoriteTrees = () =>
     protectedTreeResponses(),
     ApiOkResponse({
       description: '즐겨찾기 장소 조회 성공',
-      type: FavoriteTreeListResponseDto,
       schema: {
         example: {
           success: true,
@@ -250,7 +245,6 @@ export const ApiToggleFavoriteTree = () =>
     treeResourceResponses(),
     ApiOkResponse({
       description: '즐겨찾기 상태 변경 성공',
-      type: ToggleFavoriteResponseDto,
       schema: {
         example: {
           success: true,
