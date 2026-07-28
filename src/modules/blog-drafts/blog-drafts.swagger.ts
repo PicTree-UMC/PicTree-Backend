@@ -8,6 +8,7 @@ import {
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiCreatedResponse,
   ApiOperation,
   ApiParam,
   ApiUnauthorizedResponse,
@@ -144,7 +145,7 @@ export const ApiSaveBlogDraft = () =>
     ApiOperation({ summary: 'AI 블로그 초안 저장' }),
     protectedResponses(),
     ApiBody({ type: SaveBlogDraftRequestDto }),
-    ApiOkResponse({
+    ApiCreatedResponse({
       description: '초안 저장 성공',
       schema: {
         example: {
