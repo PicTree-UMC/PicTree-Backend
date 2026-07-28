@@ -42,7 +42,7 @@ export class TreeSummaryResponseDto {
   @ApiProperty({ example: 126.978, description: '경도' })
   longitude!: number;
 
-  @ApiProperty({ example: 'HAPPY', description: '기분 이모지' })
+  @ApiProperty({ example: '😍', description: '기분 이모지' })
   mood!: string;
 
   @ApiProperty({ example: 'DEFAULT_1', description: '기본 이미지' })
@@ -79,7 +79,7 @@ export class TreeResponseDto {
   })
   address!: string | null;
 
-  @ApiProperty({ example: 'HAPPY', description: '기분 이모지' })
+  @ApiProperty({ example: '😍', description: '기분 이모지' })
   mood!: string;
 
   @ApiProperty({ example: 'DEFAULT_1', description: '기본 이미지' })

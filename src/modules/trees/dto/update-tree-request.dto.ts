@@ -1,14 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
   ValidateIf,
 } from 'class-validator';
-import { TreeMood } from '../trees.constant';
-import type { TreeMoodType } from '../trees.constant';
 
 export class UpdateTreeRequestDto {
   @ApiPropertyOptional({
@@ -45,13 +42,15 @@ export class UpdateTreeRequestDto {
   address?: string | null;
 
   @ApiPropertyOptional({
-    example: 'SAD',
-    enum: TreeMood,
+    example: '😢',
+    maxLength: 20,
     description: '변경할 기분 이모지',
   })
   @ValidateIf((_, value) => value !== undefined)
-  @IsIn(Object.values(TreeMood))
-  mood?: TreeMoodType;
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  mood?: string;
 
   @ApiPropertyOptional({
     example: 'DEFAULT_2',

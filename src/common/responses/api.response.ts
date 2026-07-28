@@ -22,11 +22,6 @@ export class ApiResponse<T> {
     successCode: SuccessCodeType,
     data: T | null = null,
   ): ApiResponse<T> {
-    return new ApiResponse(
-      true,
-      successCode.code,
-      successCode.message,
-      data,
-    );
+    return new ApiResponse(true, successCode.code, successCode.message, data);
   }
 }

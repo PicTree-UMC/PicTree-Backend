@@ -6,8 +6,8 @@
 #   ./scripts/deploy.sh            # develop 브랜치 배포 (기본값)
 #   ./scripts/deploy.sh main       # 특정 브랜치 배포
 #
-# 스키마가 변경된 배포에서는 이 스크립트 실행 전에 마이그레이션을 먼저 적용합니다.
-#   npx prisma migrate deploy
+# 새 이미지 빌드 후 Prisma 마이그레이션을 적용하고 애플리케이션을 교체합니다.
+# 마이그레이션이 실패하면 기존 컨테이너는 계속 실행됩니다.
 #
 set -euo pipefail
 
@@ -24,7 +24,7 @@ log() { printf '\n▶ %s\n' "$1"; }
 
 cd "$APP_DIR"
 
-log "1/5 최신 코드 받기 (${BRANCH})"
+log "1/6 최신 코드 받기 (${BRANCH})"
 git fetch origin "$BRANCH"
 git checkout "$BRANCH"
 git reset --hard "origin/${BRANCH}"
@@ -35,13 +35,19 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-log "2/5 이미지 빌드"
+log "2/6 이미지 빌드"
 docker build -t "$IMAGE_NAME" .
 
-log "3/5 기존 컨테이너 정리"
+log "3/6 Prisma 마이그레이션 적용"
+docker run --rm \
+  --env-file .env \
+  "$IMAGE_NAME" \
+  ./node_modules/.bin/prisma migrate deploy
+
+log "4/6 기존 컨테이너 정리"
 docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
 
-log "4/5 새 컨테이너 실행"
+log "5/6 새 컨테이너 실행"
 docker run -d \
   --name "$CONTAINER_NAME" \
   --restart unless-stopped \
@@ -49,7 +55,7 @@ docker run -d \
   -p "${HOST_PORT}:${CONTAINER_PORT}" \
   "$IMAGE_NAME" >/dev/null
 
-log "5/5 헬스체크 (최대 ${HEALTH_TIMEOUT}초)"
+log "6/6 헬스체크 (최대 ${HEALTH_TIMEOUT}초)"
 deadline=$(( $(date +%s) + HEALTH_TIMEOUT ))
 while [ "$(date +%s)" -lt "$deadline" ]; do
   status=$(curl -s -o /dev/null -w '%{http_code}' \
@@ -57,7 +63,9 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
     "http://${HOST_PORT}${HEALTH_PATH}" || true)
   if [ "$status" = "200" ]; then
     echo "✅ 배포 성공 (HTTP ${status})"
+    # 미사용 이미지와 빌드 캐시를 정리해 디스크가 차는 것을 방지합니다.
     docker image prune -f >/dev/null 2>&1 || true
+    docker builder prune -af --keep-storage 1g >/dev/null 2>&1 || true
     exit 0
   fi
   sleep 1

@@ -6,14 +6,38 @@ export class CreateRouteResponseDto {
 }
 
 export class RoutePointResponseDto {
+  @ApiProperty({ example: 1, description: '나무(장소) ID' })
+  treeId!: number;
+
+  @ApiProperty({ example: '오아시스 만난 곳', description: '장소명' })
+  name!: string;
+
+  @ApiProperty({ example: '😍', description: '기분 이모지' })
+  mood!: string;
+
+  @ApiProperty({
+    example: '갤러거 형제 자만추',
+    nullable: true,
+    description: '한줄평',
+  })
+  description!: string | null;
+
   @ApiProperty({ example: 37.5665, description: '위도' })
   latitude!: number;
 
   @ApiProperty({ example: 126.978, description: '경도' })
   longitude!: number;
 
-  @ApiProperty({ example: 0, description: '좌표 순서' })
+  @ApiProperty({ example: 0, description: '방문 순서' })
   sequence!: number;
+}
+
+export class RouteSummaryPlaceDto {
+  @ApiProperty({ example: '오아시스 만난 곳', description: '장소명' })
+  name!: string;
+
+  @ApiProperty({ example: '😍', description: '기분 이모지' })
+  mood!: string;
 }
 
 export class RouteSummaryResponseDto {
@@ -24,18 +48,27 @@ export class RouteSummaryResponseDto {
   routeName!: string;
 
   @ApiProperty({
-    example: 1200,
+    example: '2026-04-01',
     nullable: true,
-    description: '총 이동 거리(m)',
+    description: '기록 날짜 (장소들의 날짜, YYYY-MM-DD)',
   })
-  totalDistanceM!: number | null;
+  recordDate!: string | null;
+
+  @ApiProperty({ example: 2, description: '장소 개수' })
+  placeCount!: number;
+
+  @ApiProperty({
+    type: [RouteSummaryPlaceDto],
+    description: '장소 목록 (방문 순서)',
+  })
+  places!: RouteSummaryPlaceDto[];
 
   @ApiProperty({
     example: '2026-07-19T07:00:00.000Z',
     format: 'date-time',
-    description: '동선 시작 시각',
+    description: '저장일',
   })
-  startedAt!: Date;
+  createdAt!: Date;
 }
 
 export class RouteResponseDto {
@@ -46,30 +79,15 @@ export class RouteResponseDto {
   routeName!: string;
 
   @ApiProperty({
-    example: 1200,
-    nullable: true,
-    description: '총 이동 거리(m)',
-  })
-  totalDistanceM!: number | null;
-
-  @ApiProperty({
     example: '2026-07-19T07:00:00.000Z',
     format: 'date-time',
-    description: '동선 시작 시각',
+    description: '저장일',
   })
-  startedAt!: Date;
-
-  @ApiProperty({
-    example: '2026-07-19T07:30:00.000Z',
-    format: 'date-time',
-    nullable: true,
-    description: '동선 종료 시각',
-  })
-  endedAt!: Date | null;
+  createdAt!: Date;
 
   @ApiProperty({
     type: [RoutePointResponseDto],
-    description: '동선 좌표 목록 (순서 오름차순)',
+    description: '동선 노드 목록 (방문 순서 오름차순, 삭제된 나무 제외)',
   })
   points!: RoutePointResponseDto[];
 }

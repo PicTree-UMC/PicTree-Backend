@@ -4,6 +4,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { FREE_PLAN_CODE } from './trees.constant';
 import {
   CreateTreeData,
+  FavoriteTreeRecord,
+  NearbyTreeRecord,
   TreeRecord,
   TreeWithImagesRecord,
   UpdateTreeData,
@@ -60,6 +62,49 @@ export class TreesRepository {
     });
   };
 
+  findFavoriteTreesByUserId = (
+    userId: number,
+  ): Promise<FavoriteTreeRecord[]> => {
+    return this.prisma.tree
+      .findMany({
+        where: {
+          userId: BigInt(userId),
+          isFavorite: true,
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          images: {
+            select: {
+              id: true,
+              timelineRecordId: true,
+              imageUrl: true,
+              sortOrder: true,
+            },
+            orderBy: {
+              sortOrder: 'asc',
+            },
+            take: 1,
+          },
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      })
+      .then((trees) =>
+        trees.map((tree) => ({
+          id: tree.id,
+          name: tree.name,
+          description: tree.description,
+          createdAt: tree.createdAt,
+          image: tree.images[0] ?? null,
+        })),
+      );
+  };
+
   findTreeWithImagesById = (
     treeId: number,
   ): Promise<TreeWithImagesRecord | null> => {
@@ -87,6 +132,20 @@ export class TreesRepository {
         id: BigInt(treeId),
       },
       data: updateTreeData,
+    });
+  };
+
+  updateFavoriteStatus = (
+    treeId: number,
+    isFavorite: boolean,
+  ): Promise<TreeRecord> => {
+    return this.prisma.tree.update({
+      where: {
+        id: BigInt(treeId),
+      },
+      data: {
+        isFavorite,
+      },
     });
   };
 
@@ -126,4 +185,27 @@ export class TreesRepository {
 
     return user?.currentSubscription?.subscriptionPlan.code ?? FREE_PLAN_CODE;
   };
+
+  findNearbyTrees = (
+    latitude: number,
+    longitude: number,
+    radiusM: number,
+  ): Promise<NearbyTreeRecord[]> =>
+    this.prisma.$queryRaw<NearbyTreeRecord[]>(Prisma.sql`
+      SELECT
+        id,
+        name,
+        latitude,
+        longitude,
+        mood,
+        default_image AS defaultImage,
+        ST_Distance_Sphere(
+          POINT(longitude, latitude),
+          POINT(${longitude}, ${latitude})
+        ) AS distanceM
+      FROM trees
+      WHERE deleted_at IS NULL
+      HAVING distanceM <= ${radiusM}
+      ORDER BY distanceM ASC, id ASC
+    `);
 }

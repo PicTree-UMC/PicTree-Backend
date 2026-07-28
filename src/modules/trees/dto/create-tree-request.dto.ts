@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -10,8 +9,6 @@ import {
   Min,
 } from 'class-validator';
 import { Coordinate } from '../../../common/constants/coordinate.constant';
-import { TreeMood } from '../trees.constant';
-import type { TreeMoodType } from '../trees.constant';
 
 export class CreateTreeRequestDto {
   @ApiProperty({
@@ -56,17 +53,22 @@ export class CreateTreeRequestDto {
   @MaxLength(255)
   address?: string;
 
-  @ApiProperty({ example: 'HAPPY', enum: TreeMood, description: '기분 이모지' })
-  @IsIn(Object.values(TreeMood))
-  mood!: TreeMoodType;
-
-  @ApiProperty({
-    example: 'DEFAULT_1',
-    maxLength: 20,
-    description: '기본 이미지 (사진 없을 때 노출)',
-  })
+  // 기분은 AI 글쓰기의 입력 지표로, 유저가 고른 이모지 문자를 그대로 저장한다.
+  @ApiProperty({ example: '😍', maxLength: 20, description: '기분 이모지' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)
-  defaultImage!: string;
+  mood!: string;
+
+  // 화면에 나무 그림 선택 UI가 없어 자동 부여되므로, 미전달 시 서버 기본값을 적용한다.
+  @ApiPropertyOptional({
+    example: 'DEFAULT_1',
+    maxLength: 20,
+    description: '기본 이미지 (미전달 시 서버 기본값). 사진 없을 때 노출',
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  defaultImage?: string;
 }

@@ -225,6 +225,44 @@ export const ErrorCode = {
     message: '자동갱신을 재개할 수 없는 구독입니다.',
   },
 
+  // Blog Draft
+  BLOG_DRAFT_INVALID_REQUEST: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'BLOG400',
+    message: 'AI 블로그 초안 요청 값이 올바르지 않습니다.',
+  },
+  BLOG_DRAFT_EMPTY_CONTENT: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'BLOG400',
+    message: '저장할 AI 블로그 초안 내용이 없습니다.',
+  },
+  BLOG_DRAFT_SOURCE_EMPTY: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'BLOG400',
+    message: '선택한 기간에 블로그 초안을 생성할 데이터가 없습니다.',
+  },
+  BLOG_DRAFT_LIMIT_EXCEEDED: {
+    status: HttpStatus.FORBIDDEN,
+    code: 'BLOG403',
+    message:
+      '이번 이용 기간의 AI 블로그 초안 생성 가능 횟수를 모두 사용했습니다.',
+  },
+  BLOG_DRAFT_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'BLOG404',
+    message: 'AI 블로그 초안을 찾을 수 없습니다.',
+  },
+  BLOG_DRAFT_OPENAI_CONFIG_MISSING: {
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    code: 'BLOG500',
+    message: 'OpenAI 설정이 누락되었습니다.',
+  },
+  BLOG_DRAFT_GENERATION_FAILED: {
+    status: HttpStatus.BAD_GATEWAY,
+    code: 'BLOG502',
+    message: 'AI 블로그 초안 생성에 실패했습니다.',
+  },
+
   // Tree
   TREE_INVALID_REQUEST: {
     status: HttpStatus.BAD_REQUEST,
@@ -269,6 +307,64 @@ export const ErrorCode = {
     status: HttpStatus.NOT_FOUND,
     code: 'TIMELINE404',
     message: '타임라인을 찾을 수 없습니다.',
+  },
+
+  // Push Subscription
+  PUSH_SUBSCRIPTION_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'PUSH_SUBSCRIPTION404',
+    message: '푸시 구독을 찾을 수 없습니다.',
+  },
+  PUSH_SUBSCRIPTION_ENDPOINT_INVALID: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'PUSH_SUBSCRIPTION400',
+    message: '허용되지 않은 푸시 구독 endpoint입니다.',
+  },
+  PUSH_CONFIG_MISSING: {
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    code: 'PUSH500',
+    message: 'Web Push 설정이 누락되었습니다.',
+  },
+
+  // Nearby Alert
+  NEARBY_ALERT_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'NEARBY_ALERT404',
+    message: '근처 나무 알림 기록을 찾을 수 없습니다.',
+  },
+
+  // Tree Image
+  TREE_IMAGE_NO_FILE: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'TREE_IMAGE400',
+    message: '업로드할 이미지 파일이 없습니다.',
+  },
+  TREE_IMAGE_UNSUPPORTED_TYPE: {
+    status: HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+    code: 'TREE_IMAGE415',
+    message: '지원하지 않는 이미지 형식입니다.',
+  },
+  TREE_IMAGE_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    code: 'TREE_IMAGE404',
+    message: '존재하지 않는 사진입니다.',
+  },
+
+  // S3
+  S3_CONFIG_MISSING: {
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    code: 'S3500',
+    message: 'S3 설정이 누락되었습니다.',
+  },
+  S3_UPLOAD_FAILED: {
+    status: HttpStatus.BAD_GATEWAY,
+    code: 'S3502',
+    message: '이미지 업로드에 실패했습니다.',
+  },
+  S3_DELETE_FAILED: {
+    status: HttpStatus.BAD_GATEWAY,
+    code: 'S3502',
+    message: '이미지 삭제에 실패했습니다.',
   },
 } as const;
 
