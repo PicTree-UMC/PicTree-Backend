@@ -31,6 +31,26 @@ describe('BlogDraftsService', () => {
     jest.useRealTimers();
   });
 
+  it('초안 생성 장소가 15개를 초과하면 BLOG400-1 예외를 던진다', async () => {
+    try {
+      await service.generateDraft(1, {
+        startDate: '2026-03-31',
+        endDate: '2026-04-01',
+        treeIds: Array.from({ length: 16 }, (_, index) => index + 1),
+      });
+      throw new Error('Expected AppException');
+    } catch (error) {
+      expect(error).toBeInstanceOf(AppException);
+      expect((error as AppException).getResponse()).toMatchObject({
+        code: 'BLOG400-1',
+      });
+    }
+
+    expect(repository.findUserById).not.toHaveBeenCalled();
+    expect(repository.findGenerateSource).not.toHaveBeenCalled();
+    expect(openAiService.generate).not.toHaveBeenCalled();
+  });
+
   it('무료 사용자의 월간 생성 한도를 초과하면 예외를 던진다', async () => {
     repository.findUserById.mockResolvedValue({
       id: 1n,
@@ -251,7 +271,7 @@ describe('BlogDraftsService', () => {
     });
   });
 
-  it('저장할 제목이 비어 있으면 BLOG400 예외를 던진다', async () => {
+  it('저장할 제목이 비어 있으면 BLOG400-3 예외를 던진다', async () => {
     try {
       await service.saveDraft(1, {
         title: '   ',
@@ -264,7 +284,7 @@ describe('BlogDraftsService', () => {
     } catch (error) {
       expect(error).toBeInstanceOf(AppException);
       expect((error as AppException).getResponse()).toMatchObject({
-        code: 'BLOG400',
+        code: 'BLOG400-3',
       });
     }
 
@@ -272,7 +292,7 @@ describe('BlogDraftsService', () => {
     expect(repository.createDraft).not.toHaveBeenCalled();
   });
 
-  it('저장할 본문이 비어 있으면 BLOG400 예외를 던진다', async () => {
+  it('저장할 본문이 비어 있으면 BLOG400-3 예외를 던진다', async () => {
     try {
       await service.saveDraft(1, {
         title: '제목',
@@ -285,7 +305,7 @@ describe('BlogDraftsService', () => {
     } catch (error) {
       expect(error).toBeInstanceOf(AppException);
       expect((error as AppException).getResponse()).toMatchObject({
-        code: 'BLOG400',
+        code: 'BLOG400-3',
       });
     }
 

@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
-import { BLOG_DRAFT_LIMIT } from './blog-drafts.constant';
+import {
+  BLOG_DRAFT_LIMIT,
+  BLOG_DRAFT_MAX_TREE_COUNT,
+} from './blog-drafts.constant';
 import {
   BlogDraftDetailResponseDto,
   BlogDraftListResponseDto,
@@ -30,6 +33,7 @@ export class BlogDraftsService {
     userId: number,
     request: GenerateBlogDraftRequestDto,
   ): Promise<GeneratedBlogDraftResponseDto> => {
+    this.validateGenerateRequest(request);
     const [startDate, storedEndDate] = this.parseStoredDateRange(
       request.startDate,
       request.endDate,
@@ -322,6 +326,14 @@ export class BlogDraftsService {
     }
 
     return [start, end];
+  };
+
+  private validateGenerateRequest = (
+    request: GenerateBlogDraftRequestDto,
+  ): void => {
+    if (request.treeIds.length > BLOG_DRAFT_MAX_TREE_COUNT) {
+      throw new AppException(ErrorCode.BLOG_DRAFT_INVALID_REQUEST);
+    }
   };
 
   private validateDraftContent = (title: string, content: string): void => {

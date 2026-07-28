@@ -8,6 +8,7 @@ import {
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiCreatedResponse,
   ApiOperation,
   ApiParam,
   ApiUnauthorizedResponse,
@@ -19,6 +20,14 @@ const failResponse = (code: string, message: string) => ({
   success: false,
   code,
   message,
+});
+
+const jsonExamples = (
+  examples: Record<string, { summary: string; value: unknown }>,
+) => ({
+  'application/json': {
+    examples,
+  },
 });
 
 const protectedResponses = () =>
@@ -91,22 +100,22 @@ export const ApiGenerateBlogDraft = () =>
     }),
     ApiBadRequestResponse({
       description: '요청 값 오류 또는 생성 데이터 없음',
-      schema: {
-        examples: {
-          invalid: {
-            value: failResponse(
-              'BLOG400',
-              'AI 블로그 초안 요청 값이 올바르지 않습니다.',
-            ),
-          },
-          empty: {
-            value: failResponse(
-              'BLOG400',
-              '선택한 기간에 블로그 초안을 생성할 데이터가 없습니다.',
-            ),
-          },
+      content: jsonExamples({
+        invalid: {
+          summary: '요청 값 오류',
+          value: failResponse(
+            'BLOG400-1',
+            'AI 블로그 초안 요청 값이 올바르지 않습니다.',
+          ),
         },
-      },
+        empty: {
+          summary: '생성 데이터 없음',
+          value: failResponse(
+            'BLOG400-2',
+            '선택한 기간에 블로그 초안을 생성할 데이터가 없습니다.',
+          ),
+        },
+      }),
     }),
     ApiForbiddenResponse({
       description: '이용 기간 내 생성 한도 초과',
@@ -115,6 +124,12 @@ export const ApiGenerateBlogDraft = () =>
           'BLOG403',
           '이번 이용 기간의 AI 블로그 초안 생성 가능 횟수를 모두 사용했습니다.',
         ),
+      },
+    }),
+    ApiNotFoundResponse({
+      description: '존재하지 않는 나무 포함',
+      schema: {
+        example: failResponse('TREE404', '존재하지 않는 나무입니다.'),
       },
     }),
     ApiBadGatewayResponse({
@@ -130,7 +145,7 @@ export const ApiSaveBlogDraft = () =>
     ApiOperation({ summary: 'AI 블로그 초안 저장' }),
     protectedResponses(),
     ApiBody({ type: SaveBlogDraftRequestDto }),
-    ApiOkResponse({
+    ApiCreatedResponse({
       description: '초안 저장 성공',
       schema: {
         example: {
@@ -151,22 +166,22 @@ export const ApiSaveBlogDraft = () =>
     }),
     ApiBadRequestResponse({
       description: '요청 값 오류',
-      schema: {
-        examples: {
-          invalid: {
-            value: failResponse(
-              'BLOG400',
-              'AI 블로그 초안 요청 값이 올바르지 않습니다.',
-            ),
-          },
-          empty: {
-            value: failResponse(
-              'BLOG400',
-              '저장할 AI 블로그 초안 내용이 없습니다.',
-            ),
-          },
+      content: jsonExamples({
+        invalid: {
+          summary: '요청 값 오류',
+          value: failResponse(
+            'BLOG400-1',
+            'AI 블로그 초안 요청 값이 올바르지 않습니다.',
+          ),
         },
-      },
+        empty: {
+          summary: '저장할 내용 없음',
+          value: failResponse(
+            'BLOG400-3',
+            '저장할 AI 블로그 초안 내용이 없습니다.',
+          ),
+        },
+      }),
     }),
   );
 
