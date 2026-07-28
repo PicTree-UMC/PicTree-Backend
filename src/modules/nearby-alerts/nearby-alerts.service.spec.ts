@@ -1,5 +1,6 @@
 import { NearbyAlertStatus, Prisma } from '@prisma/client';
 import { AppException } from '../../common/exceptions/app.exception';
+import { ErrorCode } from '../../common/exceptions/error-code';
 import { PushSubscriptionsRepository } from '../push-subscriptions/push-subscriptions.repository';
 import { PushSubscriptionRecord } from '../push-subscriptions/push-subscriptions.types';
 import { TreesRepository } from '../trees/trees.repository';
@@ -179,13 +180,7 @@ describe('NearbyAlertsService', () => {
       .mockResolvedValueOnce(log)
       .mockResolvedValueOnce({ ...log, id: 6n, treeId: 3n });
     webPushService.send
-      .mockRejectedValueOnce(
-        new AppException({
-          status: 500,
-          code: 'PUSH_CONFIG_MISSING',
-          message: '푸시 알림 설정이 누락되었습니다.',
-        }),
-      )
+      .mockRejectedValueOnce(new AppException(ErrorCode.PUSH_CONFIG_MISSING))
       .mockResolvedValueOnce(true);
     alertsRepository.updateStatus.mockResolvedValue({
       ...log,
