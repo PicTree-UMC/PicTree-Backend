@@ -85,7 +85,8 @@ describe('BillingKeysService', () => {
 
     expect(firstKey).toBe(sameUserKey);
     expect(firstKey).not.toBe(otherUserKey);
-    expect(firstKey).toMatch(/^BILLING_[a-f0-9]{64}$/);
+    expect(firstKey).toHaveLength(50);
+    expect(firstKey).toMatch(/^BILLING_[a-f0-9]{42}$/);
   });
 
   it('서버가 발급한 customerKey가 아니면 토스에 요청하지 않는다', async () => {
