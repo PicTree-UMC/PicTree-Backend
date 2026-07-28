@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { AppException } from '../../common/exceptions/app.exception';
+import { S3Service } from '../../common/s3/s3.service';
 import { CreateRouteRequestDto } from './dto/create-route-request.dto';
 import { RoutesRepository } from './routes.repository';
 import { RoutesService } from './routes.service';
@@ -56,6 +57,7 @@ describe('RoutesService', () => {
   };
 
   let repository: jest.Mocked<RoutesRepository>;
+  let s3Service: jest.Mocked<S3Service>;
   let service: RoutesService;
 
   beforeEach(() => {
@@ -65,11 +67,18 @@ describe('RoutesService', () => {
       findRoutesByUserId: jest.fn(),
       findRouteById: jest.fn(),
       findRouteWithPointsById: jest.fn(),
+      findRoutePointsWithImages: jest.fn(),
       updateRoute: jest.fn(),
       deleteRoute: jest.fn(),
     } as unknown as jest.Mocked<RoutesRepository>;
 
-    service = new RoutesService(repository);
+    s3Service = {
+      upload: jest.fn(),
+      delete: jest.fn(),
+      getPresignedUrl: jest.fn(),
+    } as unknown as jest.Mocked<S3Service>;
+
+    service = new RoutesService(repository, s3Service);
   });
 
   describe('createRoute', () => {
@@ -302,6 +311,83 @@ describe('RoutesService', () => {
 
       expect(error.getResponse()).toMatchObject({ code: 'ROUTE403' });
       expect(repository.deleteRoute).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getRouteImages', () => {
+    it('장소들의 대표 사진을 방문 순서로 반환하고 사진 없으면 null 이다', async () => {
+      repository.findRouteById.mockResolvedValue(route);
+      repository.findRoutePointsWithImages.mockResolvedValue([
+        {
+          tree: {
+            id: 1n,
+            name: '오아시스 만난 곳',
+            deletedAt: null,
+            images: [{ s3Key: 'trees/1/a.jpg' }],
+          },
+        },
+        { tree: { id: 2n, name: '쇼핑', deletedAt: null, images: [] } },
+      ]);
+      s3Service.getPresignedUrl.mockImplementation((key) =>
+        Promise.resolve(`https://signed/${key}`),
+      );
+
+      const result = await service.getRouteImages(10, 1);
+
+      expect(result.images).toEqual([
+        {
+          treeId: 1,
+          name: '오아시스 만난 곳',
+          imageUrl: 'https://signed/trees/1/a.jpg',
+        },
+        { treeId: 2, name: '쇼핑', imageUrl: null },
+      ]);
+    });
+
+    it('소프트 삭제된 나무는 제외한다', async () => {
+      repository.findRouteById.mockResolvedValue(route);
+      repository.findRoutePointsWithImages.mockResolvedValue([
+        {
+          tree: {
+            id: 1n,
+            name: '살아있는 곳',
+            deletedAt: null,
+            images: [{ s3Key: 'trees/1/a.jpg' }],
+          },
+        },
+        {
+          tree: {
+            id: 2n,
+            name: '삭제된 곳',
+            deletedAt: new Date('2026-07-20T00:00:00.000Z'),
+            images: [{ s3Key: 'trees/2/b.jpg' }],
+          },
+        },
+      ]);
+      s3Service.getPresignedUrl.mockResolvedValue('https://signed');
+
+      const result = await service.getRouteImages(10, 1);
+
+      expect(result.images).toHaveLength(1);
+      expect(result.images[0].treeId).toBe(1);
+    });
+
+    it('존재하지 않는 동선이면 ROUTE404 를 던진다', async () => {
+      repository.findRouteById.mockResolvedValue(null);
+
+      const error = await catchAppError(service.getRouteImages(10, 1));
+
+      expect(error.getResponse()).toMatchObject({ code: 'ROUTE404' });
+      expect(repository.findRoutePointsWithImages).not.toHaveBeenCalled();
+    });
+
+    it('타인의 동선이면 ROUTE403 을 던진다', async () => {
+      repository.findRouteById.mockResolvedValue({ ...route, userId: 99n });
+
+      const error = await catchAppError(service.getRouteImages(10, 1));
+
+      expect(error.getResponse()).toMatchObject({ code: 'ROUTE403' });
+      expect(repository.findRoutePointsWithImages).not.toHaveBeenCalled();
     });
   });
 });

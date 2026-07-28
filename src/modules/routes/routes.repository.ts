@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateRouteData,
   RouteListItemRecord,
+  RoutePointImageRecord,
   RouteRecord,
   RouteWithPointsRecord,
   UpdateRouteData,
@@ -109,6 +110,31 @@ export class RoutesRepository {
                 longitude: true,
                 deletedAt: true,
               },
+            },
+          },
+        },
+      },
+    });
+  };
+
+  // 동선 사진 앨범: 노드를 방문 순서로, 각 나무의 대표 사진(timelineRecordId=null) 1장 포함
+  findRoutePointsWithImages = (
+    routeId: number,
+  ): Promise<RoutePointImageRecord[]> => {
+    return this.prisma.routePoint.findMany({
+      where: { routeId: BigInt(routeId) },
+      orderBy: { sequence: 'asc' },
+      select: {
+        tree: {
+          select: {
+            id: true,
+            name: true,
+            deletedAt: true,
+            images: {
+              where: { timelineRecordId: null },
+              orderBy: { id: 'asc' },
+              take: 1,
+              select: { s3Key: true },
             },
           },
         },

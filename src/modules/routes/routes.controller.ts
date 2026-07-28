@@ -18,6 +18,7 @@ import type { JwtPayload } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { CreateRouteRequestDto } from './dto/create-route-request.dto';
 import { GetRoutesQueryDto } from './dto/get-routes-query.dto';
+import { RouteImageListResponseDto } from './dto/route-image-response.dto';
 import { RouteListResponseDto } from './dto/route-list-response.dto';
 import {
   CreateRouteResponseDto,
@@ -30,6 +31,7 @@ import {
   ApiDeleteRoute,
   ApiGetMyRoutes,
   ApiGetRoute,
+  ApiGetRouteImages,
   ApiUpdateRoute,
 } from './routes.swagger';
 
@@ -74,6 +76,20 @@ export class RoutesController {
     @Param('routeId', ParseIntPipe) routeId: number,
   ): Promise<ApiResponse<RouteResponseDto>> {
     const data = await this.routesService.getRoute(currentUser.userId, routeId);
+
+    return ApiResponse.success(SuccessCode.OK, data);
+  }
+
+  @Get(':routeId/images')
+  @ApiGetRouteImages()
+  async getRouteImages(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('routeId', ParseIntPipe) routeId: number,
+  ): Promise<ApiResponse<RouteImageListResponseDto>> {
+    const data = await this.routesService.getRouteImages(
+      currentUser.userId,
+      routeId,
+    );
 
     return ApiResponse.success(SuccessCode.OK, data);
   }

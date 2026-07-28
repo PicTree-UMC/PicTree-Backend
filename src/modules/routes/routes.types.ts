@@ -39,6 +39,16 @@ export interface RouteWithPointsRecord extends RouteRecord {
   points: RoutePointWithTreeRecord[];
 }
 
+// 동선 사진 앨범용: 노드의 나무 + 대표 사진(0~1장)
+export interface RoutePointImageRecord {
+  tree: {
+    id: bigint;
+    name: string;
+    deletedAt: Date | null;
+    images: { s3Key: string }[];
+  };
+}
+
 export interface CreateRoutePointData {
   treeId: number;
   sequence: number;

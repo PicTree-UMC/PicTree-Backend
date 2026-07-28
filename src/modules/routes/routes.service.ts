@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
+import { S3Service } from '../../common/s3/s3.service';
 import { CreateRouteRequestDto } from './dto/create-route-request.dto';
 import { GetRoutesQueryDto } from './dto/get-routes-query.dto';
+import { RouteImageListResponseDto } from './dto/route-image-response.dto';
 import { RouteListResponseDto } from './dto/route-list-response.dto';
 import {
   CreateRouteResponseDto,
@@ -20,7 +22,10 @@ import {
 
 @Injectable()
 export class RoutesService {
-  constructor(private readonly routesRepository: RoutesRepository) {}
+  constructor(
+    private readonly routesRepository: RoutesRepository,
+    private readonly s3Service: S3Service,
+  ) {}
 
   createRoute = async (
     userId: number,
@@ -94,6 +99,32 @@ export class RoutesService {
     await this.routesRepository.deleteRoute(routeId);
 
     return null;
+  };
+
+  getRouteImages = async (
+    userId: number,
+    routeId: number,
+  ): Promise<RouteImageListResponseDto> => {
+    await this.getOwnedRouteOrThrow(userId, routeId);
+
+    const points =
+      await this.routesRepository.findRoutePointsWithImages(routeId);
+
+    // 소프트 삭제된 나무는 제외. 사진 없는 장소는 imageUrl=null (프론트에서 로고 표시).
+    const images = await Promise.all(
+      points
+        .filter((point) => point.tree.deletedAt === null)
+        .map(async (point) => ({
+          treeId: Number(point.tree.id),
+          name: point.tree.name,
+          imageUrl:
+            point.tree.images.length > 0
+              ? await this.s3Service.getPresignedUrl(point.tree.images[0].s3Key)
+              : null,
+        })),
+    );
+
+    return { images };
   };
 
   // 동선 노드로 넘어온 나무가 모두 본인 소유이면서 살아있는지 검증한다.
