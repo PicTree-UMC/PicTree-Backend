@@ -117,6 +117,12 @@ export const ApiGenerateBlogDraft = () =>
         ),
       },
     }),
+    ApiNotFoundResponse({
+      description: '존재하지 않는 나무 포함',
+      schema: {
+        example: failResponse('TREE404', '존재하지 않는 나무입니다.'),
+      },
+    }),
     ApiBadGatewayResponse({
       description: 'OpenAI 초안 생성 실패',
       schema: {
