@@ -143,6 +143,30 @@ describe('BlogDraftsService', () => {
     ).rejects.toBeInstanceOf(AppException);
   });
 
+  it('FREE 구독 플랜은 무료 사용자 한도로 처리한다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: {
+        startedAt: new Date('2026-07-10T00:00:00.000Z'),
+        expiresAt: new Date('2026-08-26T00:00:00.000Z'),
+        subscriptionPlan: {
+          code: 'FREE',
+        },
+      },
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(1);
+
+    await expect(
+      service.generateDraft(1, {
+        startDate: '2026-03-31',
+        endDate: '2026-04-01',
+        treeIds: [1],
+        tone: BlogDraftTone.RECORD,
+      }),
+    ).rejects.toBeInstanceOf(AppException);
+  });
+
   it('무료 플랜은 매월 1일 기준으로 사용량을 집계한다', async () => {
     repository.findUserById.mockResolvedValue({
       id: 1n,

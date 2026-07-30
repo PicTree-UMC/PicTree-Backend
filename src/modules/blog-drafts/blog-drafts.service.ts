@@ -204,8 +204,9 @@ export class BlogDraftsService {
           return BLOG_DRAFT_LIMIT.PRO;
         case 'MAX':
           return BLOG_DRAFT_LIMIT.MAX;
+        case 'FREE':
         default:
-          throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
+          return BLOG_DRAFT_LIMIT.FREE;
       }
     }
 
