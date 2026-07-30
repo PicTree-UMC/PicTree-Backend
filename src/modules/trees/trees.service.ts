@@ -29,6 +29,7 @@ import {
 import { TreesRepository } from './trees.repository';
 import {
   FavoriteTreeRecord,
+  TreeListItemRecord,
   TreeRecord,
   TreeWithImagesRecord,
 } from './trees.types';
@@ -77,7 +78,9 @@ export class TreesService {
     );
 
     return {
-      items: trees.map(this.toTreeSummaryResponseDto),
+      items: await Promise.all(
+        trees.map((tree) => this.toTreeSummaryResponseDto(tree)),
+      ),
       page,
       size,
       total,
@@ -229,15 +232,20 @@ export class TreesService {
     }
   };
 
-  private toTreeSummaryResponseDto = (
-    tree: TreeRecord,
-  ): TreeSummaryResponseDto => ({
+  private toTreeSummaryResponseDto = async (
+    tree: TreeListItemRecord,
+  ): Promise<TreeSummaryResponseDto> => ({
     treeId: Number(tree.id),
     name: tree.name,
     latitude: Number(tree.latitude),
     longitude: Number(tree.longitude),
     mood: tree.mood,
     defaultImage: tree.defaultImage,
+    // 사진이 있으면 presigned URL, 없으면 null (프론트에서 기본 이미지 표시)
+    imageUrl:
+      tree.images.length > 0
+        ? await this.s3Service.getPresignedUrl(tree.images[0].s3Key)
+        : null,
     isFavorite: tree.isFavorite,
   });
 

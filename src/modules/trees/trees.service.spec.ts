@@ -229,6 +229,32 @@ describe('TreesService', () => {
     });
   });
 
+  describe('getMyTrees', () => {
+    it('사진이 있으면 목록에 presigned URL 을 반환한다', async () => {
+      repository.findTreesByUserId.mockResolvedValue([
+        [{ ...tree, images: [{ s3Key: 'trees/1/a.jpg' }] }],
+        1,
+      ]);
+
+      const result = await service.getMyTrees(10, {});
+
+      expect(s3Service.getPresignedUrl).toHaveBeenCalledWith('trees/1/a.jpg');
+      expect(result.items[0].imageUrl).toBe('https://signed/trees/1/a.jpg');
+    });
+
+    it('사진이 없으면 imageUrl 은 null 이다', async () => {
+      repository.findTreesByUserId.mockResolvedValue([
+        [{ ...tree, images: [] }],
+        1,
+      ]);
+
+      const result = await service.getMyTrees(10, {});
+
+      expect(result.items[0].imageUrl).toBeNull();
+      expect(s3Service.getPresignedUrl).not.toHaveBeenCalled();
+    });
+  });
+
   it('나무 상세의 사진 URL 을 presigned 로 발급한다', async () => {
     repository.findTreeWithImagesById.mockResolvedValue({
       ...treeWithImages,
