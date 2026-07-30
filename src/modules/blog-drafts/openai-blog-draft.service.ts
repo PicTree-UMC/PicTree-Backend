@@ -65,9 +65,9 @@ export class OpenAiBlogDraftService {
               text: [
                 '너는 여행/장소 기록을 바탕으로 한국어 블로그 초안을 작성하는 도우미다.',
                 '응답은 반드시 JSON 하나만 반환한다.',
-                '형식: {"title":"문자열","content":"문자열"}',
-                'content는 읽기 쉬운 블로그 초안 본문으로 작성한다.',
-                'content는 장소별로 번호 없이 장소명과 내용만 나누어 작성한다.',
+                '형식: {"title":"문자열","items":[{"placeName":"장소명","content":"장소별 본문"}]}',
+                'items는 장소별 블로그 초안 본문 배열로 작성한다.',
+                '각 item은 placeName과 content를 반드시 포함한다.',
                 '한국인이 직접 쓴 여행 블로그처럼, 정보 나열보다 경험을 이야기하듯 작성한다.',
                 '이 글은 AI가 작성한 안내문이 아니라, 실제 20대 한국인이 하루를 기록한 개인 블로그처럼 작성한다.',
                 '너무 완벽하게 정리된 문장보다, 약간의 여운이 있는 자연스러운 문장을 선호한다.',
@@ -169,26 +169,61 @@ export class OpenAiBlogDraftService {
 
     try {
       const parsed = JSON.parse(jsonText) as Partial<OpenAiGeneratedDraft>;
+      const items = this.normalizeGeneratedItems(parsed.items);
 
       if (
         typeof parsed.title !== 'string' ||
         !parsed.title.trim() ||
-        typeof parsed.content !== 'string' ||
-        !parsed.content.trim()
+        items.length === 0
       ) {
         throw new Error('invalid response');
       }
 
       return {
         title: this.normalizeTitle(parsed.title),
-        content: parsed.content.trim(),
+        items,
       };
     } catch {
       return {
         title: this.normalizeTitle(`[여행기록] ${startDate} ~ ${endDate}`),
-        content: text.trim(),
+        items: [
+          {
+            placeName: '여행 기록',
+            content: text.trim(),
+          },
+        ],
       };
     }
+  };
+
+  private normalizeGeneratedItems = (
+    items: OpenAiGeneratedDraft['items'] | undefined,
+  ): OpenAiGeneratedDraft['items'] => {
+    if (!Array.isArray(items)) {
+      return [];
+    }
+
+    return items
+      .map((item) => {
+        if (
+          typeof item?.placeName !== 'string' ||
+          typeof item?.content !== 'string'
+        ) {
+          return null;
+        }
+
+        const placeName = item.placeName.trim();
+        const content = item.content.trim();
+
+        if (!placeName || !content) {
+          return null;
+        }
+
+        return { placeName, content };
+      })
+      .filter((item): item is OpenAiGeneratedDraft['items'][number] => {
+        return item !== null;
+      });
   };
 
   private normalizeTitle = (title: string): string => {
@@ -274,9 +309,9 @@ export class OpenAiBlogDraftService {
       '- 좋은 제목 예시: 수빈이랑 서울 데이트 / 오랜만에 수빈이랑 힐링! / 오늘도 추억 하나 추가 :) / 귀여운 것만 잔뜩 보고 온 하루 / 수빈이랑 놀면 시간이 왜 이렇게 빨라',
       '- 본문은 한국인이 실제 네이버 블로그나 개인 블로그에 남긴 여행 후기처럼 작성한다.',
       '- 정보 나열이 아니라 실제 사람이 하루를 회상하며 적는 느낌을 유지한다.',
-      '- 본문은 반드시 "장소명\\n내용\\n\\n장소명\\n내용" 형식으로 장소마다 문단을 나누어 작성한다.',
-      '- 본문에 "1.", "2." 같은 장소 번호는 절대 붙이지 않는다.',
-      '- 각 장소 섹션의 장소명은 장소 데이터의 순서를 그대로 따른다.',
+      '- items 배열은 장소마다 하나의 item으로 작성한다.',
+      '- 각 item의 placeName은 장소 데이터의 장소명을 그대로 사용한다.',
+      '- 각 item의 content에는 장소 번호나 장소명을 다시 쓰지 않고, 해당 장소 설명만 작성한다.',
       '- 각 장소 설명에는 가능하면 어디를 갔는지, 그곳에서 무엇을 했는지, 그래서 어떤 기분이나 기억이 남았는지의 흐름이 자연스럽게 보이도록 작성한다.',
       '- 장소별 감정 이모지는 절대 그대로 복사하지 말고 분위기와 감정선을 보조하는 힌트로만 반영한다.',
       '- 감정 이모지를 본문에 절대 그대로 복사하지 않는다.',

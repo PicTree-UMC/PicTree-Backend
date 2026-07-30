@@ -16,6 +16,7 @@ import { GenerateBlogDraftRequestDto } from './dto/generate-blog-draft-request.d
 import { SaveBlogDraftRequestDto } from './dto/save-blog-draft-request.dto';
 import { BlogDraftsRepository } from './blog-drafts.repository';
 import {
+  BlogDraftItem,
   BlogDraftRecord,
   BlogDraftSummaryRecord,
   BlogDraftUserRecord,
@@ -67,7 +68,7 @@ export class BlogDraftsService {
 
     return {
       title: generated.title,
-      content: generated.content,
+      items: generated.items,
       startDate: request.startDate,
       endDate: request.endDate,
     };
@@ -81,13 +82,13 @@ export class BlogDraftsService {
       request.startDate,
       request.endDate,
     );
-    this.validateDraftContent(request.title, request.content);
+    this.validateDraftContent(request.title, request.items);
     await this.getAvailableUserOrThrow(userId);
     await this.validateTreeIds(userId, request.treeIds);
     const saved = await this.blogDraftsRepository.createDraft({
       userId: BigInt(userId),
       title: request.title,
-      content: request.content,
+      content: JSON.stringify(request.items),
       startDate,
       endDate,
     });
@@ -337,8 +338,15 @@ export class BlogDraftsService {
     }
   };
 
-  private validateDraftContent = (title: string, content: string): void => {
-    if (!title.trim() || !content.trim()) {
+  private validateDraftContent = (
+    title: string,
+    items: BlogDraftItem[],
+  ): void => {
+    if (
+      !title.trim() ||
+      items.length === 0 ||
+      items.some((item) => !item.placeName.trim() || !item.content.trim())
+    ) {
       throw new AppException(ErrorCode.BLOG_DRAFT_EMPTY_CONTENT);
     }
   };
@@ -352,11 +360,48 @@ export class BlogDraftsService {
   ): BlogDraftDetailResponseDto => ({
     draftId: Number(draft.id),
     title: draft.title,
-    content: draft.content,
+    items: this.parseDraftItems(draft.content),
     startDate: draft.startDate.toISOString().slice(0, 10),
     endDate: draft.endDate.toISOString().slice(0, 10),
     createdAt: draft.createdAt.toISOString().slice(0, 19),
   });
+
+  private parseDraftItems = (content: string): BlogDraftItem[] => {
+    try {
+      const parsed = JSON.parse(content) as unknown;
+
+      if (!Array.isArray(parsed)) {
+        return [{ placeName: '여행 기록', content }];
+      }
+
+      const items = parsed
+        .map((item) => {
+          if (
+            typeof item?.placeName !== 'string' ||
+            typeof item?.content !== 'string'
+          ) {
+            return null;
+          }
+
+          const placeName = item.placeName.trim();
+          const itemContent = item.content.trim();
+
+          if (!placeName || !itemContent) {
+            return null;
+          }
+
+          return {
+            placeName,
+            content: itemContent,
+          };
+        })
+        .filter((item): item is BlogDraftItem => item !== null);
+
+      return items.length > 0 ? items : [{ placeName: '여행 기록', content }];
+    } catch {
+      return [{ placeName: '여행 기록', content }];
+    }
+  };
 
   private toBlogDraftSummaryResponseDto = (
     draft: BlogDraftSummaryRecord,

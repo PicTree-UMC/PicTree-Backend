@@ -167,7 +167,7 @@ describe('BlogDraftsService', () => {
     });
     openAiService.generate.mockResolvedValue({
       title: '제목',
-      content: '본문',
+      items: [{ placeName: '포그레인 공원', content: '본문' }],
     });
     repository.consumeUsageWithinLimit.mockResolvedValue();
 
@@ -215,7 +215,7 @@ describe('BlogDraftsService', () => {
     });
     openAiService.generate.mockResolvedValue({
       title: '제목',
-      content: '본문',
+      items: [{ placeName: '포그레인 공원', content: '본문' }],
     });
     repository.consumeUsageWithinLimit.mockResolvedValue();
 
@@ -258,7 +258,9 @@ describe('BlogDraftsService', () => {
       id: 1n,
       userId: 1n,
       title: '제목',
-      content: '본문',
+      content: JSON.stringify([
+        { placeName: '포그레인 공원', content: '본문' },
+      ]),
       startDate: new Date('2026-03-31T00:00:00.000Z'),
       endDate: new Date('2026-04-01T00:00:00.000Z'),
       createdAt: new Date('2026-04-02T10:00:00.000Z'),
@@ -267,13 +269,19 @@ describe('BlogDraftsService', () => {
 
     const result = await service.saveDraft(1, {
       title: '제목',
-      content: '본문',
+      items: [{ placeName: '포그레인 공원', content: '본문' }],
       startDate: '2026-03-31',
       endDate: '2026-04-01',
       treeIds: [1],
     });
 
-    expect(repository.createDraft).toHaveBeenCalled();
+    expect(repository.createDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: JSON.stringify([
+          { placeName: '포그레인 공원', content: '본문' },
+        ]),
+      }),
+    );
     expect(result).toEqual({
       draftId: 1,
     });
@@ -283,7 +291,7 @@ describe('BlogDraftsService', () => {
     try {
       await service.saveDraft(1, {
         title: '   ',
-        content: '본문',
+        items: [{ placeName: '포그레인 공원', content: '본문' }],
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: [1],
@@ -304,7 +312,7 @@ describe('BlogDraftsService', () => {
     try {
       await service.saveDraft(1, {
         title: '제목',
-        content: '   ',
+        items: [{ placeName: '포그레인 공원', content: '   ' }],
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: [1],
@@ -345,7 +353,12 @@ describe('BlogDraftsService', () => {
     });
     openAiService.generate.mockResolvedValue({
       title: '[여행 기록] 3월 31일 ~ 4월 1일',
-      content: '생성된 블로그 초안 내용입니다.',
+      items: [
+        {
+          placeName: '포그레인 공원',
+          content: '생성된 블로그 초안 내용입니다.',
+        },
+      ],
     });
     repository.consumeUsageWithinLimit.mockResolvedValue();
 
@@ -370,7 +383,12 @@ describe('BlogDraftsService', () => {
     );
     expect(result).toEqual({
       title: '[여행 기록] 3월 31일 ~ 4월 1일',
-      content: '생성된 블로그 초안 내용입니다.',
+      items: [
+        {
+          placeName: '포그레인 공원',
+          content: '생성된 블로그 초안 내용입니다.',
+        },
+      ],
       startDate: '2026-03-31',
       endDate: '2026-04-01',
     });

@@ -9,7 +9,23 @@ import {
   IsNotEmpty,
   IsString,
   Min,
+  ValidateNested,
 } from 'class-validator';
+
+export class SaveBlogDraftItemRequestDto {
+  @ApiProperty({ example: '포그레인 공원', description: '장소명' })
+  @IsString()
+  @IsNotEmpty()
+  placeName!: string;
+
+  @ApiProperty({
+    example: '해 질 무렵 공원을 걸었음. 조용해서 산책하기 좋았음.',
+    description: '장소별 초안 본문',
+  })
+  @IsString()
+  @IsNotEmpty()
+  content!: string;
+}
 
 export class SaveBlogDraftRequestDto {
   @ApiProperty({
@@ -21,12 +37,14 @@ export class SaveBlogDraftRequestDto {
   title!: string;
 
   @ApiProperty({
-    example: '생성된 블로그 초안 내용입니다.',
-    description: '초안 본문',
+    type: [SaveBlogDraftItemRequestDto],
+    description: '장소별 초안 본문 목록',
   })
-  @IsString()
-  @IsNotEmpty()
-  content!: string;
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => SaveBlogDraftItemRequestDto)
+  items!: SaveBlogDraftItemRequestDto[];
 
   @ApiProperty({ example: '2026-03-31', description: '시작일' })
   @IsDateString()
