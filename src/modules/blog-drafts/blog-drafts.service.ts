@@ -377,10 +377,7 @@ export class BlogDraftsService {
 
       const items = parsed
         .map((item) => {
-          if (
-            typeof item?.placeName !== 'string' ||
-            typeof item?.content !== 'string'
-          ) {
+          if (!this.isDraftItemLike(item)) {
             return null;
           }
 
@@ -402,6 +399,21 @@ export class BlogDraftsService {
     } catch {
       return [{ placeName: '여행 기록', content }];
     }
+  };
+
+  private isDraftItemLike = (
+    item: unknown,
+  ): item is { placeName: string; content: string } => {
+    if (typeof item !== 'object' || item === null) {
+      return false;
+    }
+
+    const draftItem = item as Record<string, unknown>;
+
+    return (
+      typeof draftItem.placeName === 'string' &&
+      typeof draftItem.content === 'string'
+    );
   };
 
   private toBlogDraftSummaryResponseDto = (
