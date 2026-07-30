@@ -238,6 +238,7 @@ describe('TreesService', () => {
 
       const result = await service.getMyTrees(10, {});
 
+      expect(s3Service.getPresignedUrl).toHaveBeenCalledWith('trees/1/a.jpg');
       expect(result.items[0].imageUrl).toBe('https://signed/trees/1/a.jpg');
     });
 
