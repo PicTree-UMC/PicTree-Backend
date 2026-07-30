@@ -13,6 +13,7 @@ import {
   BlogDraftSourceImageForPrompt,
   OpenAiGeneratedDraft,
 } from './blog-drafts.types';
+import { BlogDraftTone } from './dto/generate-blog-draft-request.dto';
 
 type OpenAiResponseOutputText = {
   type: 'output_text';
@@ -44,6 +45,7 @@ export class OpenAiBlogDraftService {
     source: BlogDraftGenerateSource,
     startDate: string,
     endDate: string,
+    tone: BlogDraftTone,
   ): Promise<OpenAiGeneratedDraft> => {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
 
@@ -88,6 +90,7 @@ export class OpenAiBlogDraftService {
                 sourceImages,
                 startDate,
                 endDate,
+                tone,
               ),
             },
             ...sourceImages.map<BlogDraftImagePart>((image) => ({
@@ -213,6 +216,7 @@ export class OpenAiBlogDraftService {
     images: BlogDraftSourceImageForPrompt[],
     startDate: string,
     endDate: string,
+    tone: BlogDraftTone,
   ): string => {
     const treeLines = source.trees.map((tree, index) => {
       return [
@@ -255,6 +259,9 @@ export class OpenAiBlogDraftService {
       '사진 요약:',
       imageLines.length > 0 ? imageLines.join('\n') : '- 없음',
       '',
+      '선택한 어체:',
+      this.getToneInstruction(tone),
+      '',
       '요구사항:',
       '- 제목은 내용을 요약하는 문장이 아니라 실제 한국인이 블로그에 붙일 법한 제목으로 작성한다.',
       '- 제목에는 날짜, 장소, 함께한 사람, 핵심 추억 등을 자연스럽게 활용할 수 있다.',
@@ -282,6 +289,36 @@ export class OpenAiBlogDraftService {
       '- 제공된 장소 이미지는 장소당 1장이므로, 나머지 장소/기록 정보와 함께 균형 있게 서술한다.',
       '- 제공된 정보만 바탕으로 작성하고, 확인되지 않은 사실은 절대 단정하지 않는다.',
     ].join('\n');
+  };
+
+  private getToneInstruction = (tone: BlogDraftTone): string => {
+    switch (tone) {
+      case BlogDraftTone.CALM:
+        return [
+          '- 차분한 "~했다"체로 작성한다.',
+          '- 문장을 정돈된 회고처럼 마무리하되, 지나치게 딱딱한 보고서 문체는 피한다.',
+          '- 예시: "해 질 무렵 골목을 걸으며 하루를 정리하였다."',
+        ].join('\n');
+      case BlogDraftTone.SIMPLE:
+        return [
+          '- 담백한 "~했어요"체로 작성한다.',
+          '- 과한 감정 표현이나 꾸밈말은 줄이고, 방문한 장소와 느낀 점을 편안하게 정리한다.',
+          '- 예시: "저녁에 골목을 걸었어요. 조용하고 좋았어요."',
+        ].join('\n');
+      case BlogDraftTone.WITTY:
+        return [
+          '- SNS에 편하게 올리거나 친구에게 말하듯 유쾌한 문체로 작성한다.',
+          '- 재미있었던 순간이나 소소한 에피소드를 가볍고 생동감 있게 표현한다.',
+          '- 예시: "와 이 골목 미쳤다! 노을 보러 또 와야지."',
+        ].join('\n');
+      case BlogDraftTone.RECORD:
+      default:
+        return [
+          '- 기록 중심의 "~했음"체로 작성한다.',
+          '- 어디를 갔고, 무엇을 했고, 어떤 기억이 남았는지의 흐름이 잘 보이게 쓴다.',
+          '- 예시: "해 질 무렵 골목을 걸었음. 조용해서 산책하기 좋았음."',
+        ].join('\n');
+    }
   };
 
   private toPromptImages = async (

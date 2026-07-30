@@ -1,6 +1,7 @@
 import { AppException } from '../../common/exceptions/app.exception';
 import { BlogDraftsRepository } from './blog-drafts.repository';
 import { BlogDraftsService } from './blog-drafts.service';
+import { BlogDraftTone } from './dto/generate-blog-draft-request.dto';
 import { OpenAiBlogDraftService } from './openai-blog-draft.service';
 
 describe('BlogDraftsService', () => {
@@ -37,6 +38,7 @@ describe('BlogDraftsService', () => {
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: Array.from({ length: 16 }, (_, index) => index + 1),
+        tone: BlogDraftTone.RECORD,
       });
       throw new Error('Expected AppException');
     } catch (error) {
@@ -64,6 +66,7 @@ describe('BlogDraftsService', () => {
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: [1],
+        tone: BlogDraftTone.RECORD,
       }),
     ).rejects.toBeInstanceOf(AppException);
   });
@@ -87,6 +90,7 @@ describe('BlogDraftsService', () => {
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: [1],
+        tone: BlogDraftTone.RECORD,
       }),
     ).rejects.toBeInstanceOf(AppException);
   });
@@ -110,6 +114,7 @@ describe('BlogDraftsService', () => {
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: [1],
+        tone: BlogDraftTone.RECORD,
       }),
     ).rejects.toBeInstanceOf(AppException);
   });
@@ -133,6 +138,7 @@ describe('BlogDraftsService', () => {
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: [1],
+        tone: BlogDraftTone.RECORD,
       }),
     ).rejects.toBeInstanceOf(AppException);
   });
@@ -169,6 +175,7 @@ describe('BlogDraftsService', () => {
       startDate: '2026-03-31',
       endDate: '2026-04-01',
       treeIds: [1],
+      tone: BlogDraftTone.RECORD,
     });
 
     expect(repository.countGeneratedDraftsInRange).toHaveBeenCalledWith(
@@ -216,6 +223,7 @@ describe('BlogDraftsService', () => {
       startDate: '2026-03-31',
       endDate: '2026-04-01',
       treeIds: [1],
+      tone: BlogDraftTone.RECORD,
     });
 
     expect(repository.countGeneratedDraftsInRange).toHaveBeenCalledWith(
@@ -345,6 +353,7 @@ describe('BlogDraftsService', () => {
       startDate: '2026-03-31',
       endDate: '2026-04-01',
       treeIds: [1],
+      tone: BlogDraftTone.RECORD,
     });
 
     expect(repository.findGenerateSource).toHaveBeenCalledWith(

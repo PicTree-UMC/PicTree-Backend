@@ -61,6 +61,7 @@ export class BlogDraftsService {
       source,
       request.startDate,
       request.endDate,
+      request.tone,
     );
     await this.consumeUsageWithinLimit(userId, user, new Date());
 
