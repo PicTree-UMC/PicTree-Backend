@@ -13,6 +13,7 @@ import {
   BlogDraftSourceImageForPrompt,
   OpenAiGeneratedDraft,
 } from './blog-drafts.types';
+import { BlogDraftTone } from './dto/generate-blog-draft-request.dto';
 
 type OpenAiResponseOutputText = {
   type: 'output_text';
@@ -44,6 +45,7 @@ export class OpenAiBlogDraftService {
     source: BlogDraftGenerateSource,
     startDate: string,
     endDate: string,
+    tone: BlogDraftTone,
   ): Promise<OpenAiGeneratedDraft> => {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
 
@@ -63,12 +65,13 @@ export class OpenAiBlogDraftService {
               text: [
                 '너는 여행/장소 기록을 바탕으로 한국어 블로그 초안을 작성하는 도우미다.',
                 '응답은 반드시 JSON 하나만 반환한다.',
-                '형식: {"title":"문자열","content":"문자열"}',
-                'content는 읽기 쉬운 블로그 초안 본문으로 작성한다.',
-                'content는 장소별로 번호를 붙인 섹션 형식으로 작성한다.',
+                '형식: {"title":"문자열","items":[{"placeName":"장소명","content":"장소별 본문"}]}',
+                'items는 장소별 블로그 초안 본문 배열로 작성한다.',
+                '각 item은 placeName과 content를 반드시 포함한다.',
                 '한국인이 직접 쓴 여행 블로그처럼, 정보 나열보다 경험을 이야기하듯 작성한다.',
                 '이 글은 AI가 작성한 안내문이 아니라, 실제 20대 한국인이 하루를 기록한 개인 블로그처럼 작성한다.',
-                '너무 완벽하게 정리된 문장보다, 약간의 여운과 구어체가 섞인 자연스러운 문장을 선호한다.',
+                '너무 완벽하게 정리된 문장보다, 약간의 여운이 있는 자연스러운 문장을 선호한다.',
+                '단, 사용자가 선택한 어체의 문장 종결 규칙은 반드시 지킨다.',
                 'AI가 작성한 것처럼 모든 문장을 지나치게 매끄럽고 비슷한 길이로 쓰지 않는다.',
                 '장소의 mood 값은 사용자가 직접 남긴 감정 이모지다. 이 이모지를 자연스러운 감정 표현의 단서로만 활용한다.',
                 '사진이 있다면 사진 속 장면을 단정하지 말고, 장소/기록 문맥을 바탕으로 자연스럽게 서술한다.',
@@ -88,6 +91,7 @@ export class OpenAiBlogDraftService {
                 sourceImages,
                 startDate,
                 endDate,
+                tone,
               ),
             },
             ...sourceImages.map<BlogDraftImagePart>((image) => ({
@@ -165,26 +169,61 @@ export class OpenAiBlogDraftService {
 
     try {
       const parsed = JSON.parse(jsonText) as Partial<OpenAiGeneratedDraft>;
+      const items = this.normalizeGeneratedItems(parsed.items);
 
       if (
         typeof parsed.title !== 'string' ||
         !parsed.title.trim() ||
-        typeof parsed.content !== 'string' ||
-        !parsed.content.trim()
+        items.length === 0
       ) {
         throw new Error('invalid response');
       }
 
       return {
         title: this.normalizeTitle(parsed.title),
-        content: parsed.content.trim(),
+        items,
       };
     } catch {
       return {
         title: this.normalizeTitle(`[여행기록] ${startDate} ~ ${endDate}`),
-        content: text.trim(),
+        items: [
+          {
+            placeName: '여행 기록',
+            content: text.trim(),
+          },
+        ],
       };
     }
+  };
+
+  private normalizeGeneratedItems = (
+    items: OpenAiGeneratedDraft['items'] | undefined,
+  ): OpenAiGeneratedDraft['items'] => {
+    if (!Array.isArray(items)) {
+      return [];
+    }
+
+    return items
+      .map((item) => {
+        if (
+          typeof item?.placeName !== 'string' ||
+          typeof item?.content !== 'string'
+        ) {
+          return null;
+        }
+
+        const placeName = item.placeName.trim();
+        const content = item.content.trim();
+
+        if (!placeName || !content) {
+          return null;
+        }
+
+        return { placeName, content };
+      })
+      .filter((item): item is OpenAiGeneratedDraft['items'][number] => {
+        return item !== null;
+      });
   };
 
   private normalizeTitle = (title: string): string => {
@@ -213,6 +252,7 @@ export class OpenAiBlogDraftService {
     images: BlogDraftSourceImageForPrompt[],
     startDate: string,
     endDate: string,
+    tone: BlogDraftTone,
   ): string => {
     const treeLines = source.trees.map((tree, index) => {
       return [
@@ -255,6 +295,11 @@ export class OpenAiBlogDraftService {
       '사진 요약:',
       imageLines.length > 0 ? imageLines.join('\n') : '- 없음',
       '',
+      '선택한 어체:',
+      this.getToneInstruction(tone),
+      '- 위 선택 어체의 문장 종결 규칙은 본문 전체에서 최우선으로 적용한다.',
+      '- 선택 어체와 충돌하는 다른 문체나 어미를 섞어 쓰지 않는다.',
+      '',
       '요구사항:',
       '- 제목은 내용을 요약하는 문장이 아니라 실제 한국인이 블로그에 붙일 법한 제목으로 작성한다.',
       '- 제목에는 날짜, 장소, 함께한 사람, 핵심 추억 등을 자연스럽게 활용할 수 있다.',
@@ -264,15 +309,15 @@ export class OpenAiBlogDraftService {
       '- 좋은 제목 예시: 수빈이랑 서울 데이트 / 오랜만에 수빈이랑 힐링! / 오늘도 추억 하나 추가 :) / 귀여운 것만 잔뜩 보고 온 하루 / 수빈이랑 놀면 시간이 왜 이렇게 빨라',
       '- 본문은 한국인이 실제 네이버 블로그나 개인 블로그에 남긴 여행 후기처럼 작성한다.',
       '- 정보 나열이 아니라 실제 사람이 하루를 회상하며 적는 느낌을 유지한다.',
-      '- 본문은 반드시 "1. 장소명\\n내용\\n\\n2. 장소명\\n내용" 형식으로 장소마다 문단을 나누어 작성한다.',
-      '- 각 장소 섹션의 번호와 장소명은 장소 데이터의 순서를 그대로 따른다.',
+      '- items 배열은 장소마다 하나의 item으로 작성한다.',
+      '- 각 item의 placeName은 장소 데이터의 장소명을 그대로 사용한다.',
+      '- 각 item의 content에는 장소 번호나 장소명을 다시 쓰지 않고, 해당 장소 설명만 작성한다.',
       '- 각 장소 설명에는 가능하면 어디를 갔는지, 그곳에서 무엇을 했는지, 그래서 어떤 기분이나 기억이 남았는지의 흐름이 자연스럽게 보이도록 작성한다.',
       '- 장소별 감정 이모지는 절대 그대로 복사하지 말고 분위기와 감정선을 보조하는 힌트로만 반영한다.',
       '- 감정 이모지를 본문에 절대 그대로 복사하지 않는다.',
       '- 이모지는 본문에서 절대 사용하지 않는다.',
-      '- 문장 길이와 어미를 다양하게 섞고, 모든 문체를 통일하지 않는다.',
-      '- "~했음"체는 장소 메모에 없을 경우에는 절대 사용하지 않는다. 만약 "~했음"체가 많다면 장소 개수의 1/3 정도로만 사용하도록 조절한다.',
-      '- "~했다."만 반복하지 말고 "~했다", "~해서 좋았다", "~인 듯", "~인 것 같다", "~였다!" 같은 표현을 상황에 맞게 자연스럽게 섞는다.',
+      '- 문장 길이는 자연스럽게 조절하되, 문장 종결 방식은 선택한 어체 규칙을 따른다.',
+      '- 선택한 어체가 기록, 담백, 차분인 경우 본문에서 다른 종결 어미를 섞지 않는다.',
       '- "특히", "또한", "한편", "무엇보다" 같은 연결어를 반복해서 사용하지 않는다.',
       '- 약간의 여운이나 담백한 표현을 사용할 수 있다.',
       '- !, ~, …는 자연스러운 맥락에서만 사용할 수 있다.',
@@ -282,6 +327,44 @@ export class OpenAiBlogDraftService {
       '- 제공된 장소 이미지는 장소당 1장이므로, 나머지 장소/기록 정보와 함께 균형 있게 서술한다.',
       '- 제공된 정보만 바탕으로 작성하고, 확인되지 않은 사실은 절대 단정하지 않는다.',
     ].join('\n');
+  };
+
+  private getToneInstruction = (tone: BlogDraftTone): string => {
+    switch (tone) {
+      case BlogDraftTone.CALM:
+        return [
+          '- 차분한 "~했다"체로 작성한다.',
+          '- 모든 문장은 원칙적으로 "~했다", "~였다", "~하였다", "~되었다"처럼 다체로 끝낸다.',
+          '- "~했음", "~했어요", "~야지", "~다!" 같은 다른 어체의 종결은 사용하지 않는다.',
+          '- 문장을 정돈된 회고처럼 마무리하되, 지나치게 딱딱한 보고서 문체는 피한다.',
+          '- 예시: "해 질 무렵 골목을 걸으며 하루를 정리하였다."',
+        ].join('\n');
+      case BlogDraftTone.SIMPLE:
+        return [
+          '- 담백한 "~했어요"체로 작성한다.',
+          '- 모든 문장은 원칙적으로 "~했어요", "~였어요", "~좋았어요", "~같았어요"처럼 요체로 끝낸다.',
+          '- "~했음", "~했다", "~야지", "~다!" 같은 다른 어체의 종결은 사용하지 않는다.',
+          '- 과한 감정 표현이나 꾸밈말은 줄이고, 방문한 장소와 느낀 점을 편안하게 정리한다.',
+          '- 예시: "저녁에 골목을 걸었어요. 조용하고 좋았어요."',
+        ].join('\n');
+      case BlogDraftTone.WITTY:
+        return [
+          '- SNS에 편하게 기록하듯 유쾌한 문체로 작성한다.',
+          '- 사람에게 직접 말을 거는 "~했어"체가 아니라, "~했음"체와 "~했다"체를 자연스럽게 섞어 쓴다.',
+          '- 감탄사나 문장부호(!, ~, …), ㅋㅋ, ㅎㅎ 같은 표현을 자연스럽게 붙여 생동감 있게 쓴다.',
+          '- "와", "미쳤다", "졸귀", "짱" 같은 가벼운 감탄 표현은 상황에 맞으면 사용할 수 있다.',
+          '- 예시: "와 이 골목 미쳤다! 노을 보면서 걷는데 분위기 짱 좋았음 ㅋㅋ"',
+        ].join('\n');
+      case BlogDraftTone.RECORD:
+      default:
+        return [
+          '- 기록 중심의 "~했음"체로 작성한다.',
+          '- 모든 문장은 원칙적으로 "~했음", "~였음", "~좋았음", "~같았음"처럼 음체로 끝낸다.',
+          '- "~했어요", "~했다", "~야지", "~다!" 같은 다른 어체의 종결은 사용하지 않는다.',
+          '- 어디를 갔고, 무엇을 했고, 어떤 기억이 남았는지의 흐름이 잘 보이게 쓴다.',
+          '- 예시: "해 질 무렵 골목을 걸었음. 조용해서 산책하기 좋았음."',
+        ].join('\n');
+    }
   };
 
   private toPromptImages = async (

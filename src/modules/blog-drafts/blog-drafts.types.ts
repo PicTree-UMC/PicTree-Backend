@@ -74,9 +74,14 @@ export interface CreateBlogDraftData {
   endDate: Date;
 }
 
+export interface BlogDraftItem {
+  placeName: string;
+  content: string;
+}
+
 export interface OpenAiGeneratedDraft {
   title: string;
-  content: string;
+  items: BlogDraftItem[];
 }
 
 export type BlogDraftImagePart = {

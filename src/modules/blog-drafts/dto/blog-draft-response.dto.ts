@@ -1,5 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+export class BlogDraftItemResponseDto {
+  @ApiProperty({ example: '포그레인 공원', description: '장소명' })
+  placeName!: string;
+
+  @ApiProperty({
+    example: '해 질 무렵 공원을 걸었음. 조용해서 산책하기 좋았음.',
+    description: '장소별 초안 본문',
+  })
+  content!: string;
+}
+
 export class GeneratedBlogDraftResponseDto {
   @ApiProperty({
     example: '[여행 기록] 3월 31일 ~ 4월 1일',
@@ -8,10 +19,10 @@ export class GeneratedBlogDraftResponseDto {
   title!: string;
 
   @ApiProperty({
-    example: '생성된 블로그 초안 내용입니다.',
-    description: '초안 본문',
+    type: [BlogDraftItemResponseDto],
+    description: '장소별 초안 본문 목록',
   })
-  content!: string;
+  items!: BlogDraftItemResponseDto[];
 
   @ApiProperty({ example: '2026-03-31', description: '시작일' })
   startDate!: string;
@@ -67,10 +78,10 @@ export class BlogDraftDetailResponseDto {
   title!: string;
 
   @ApiProperty({
-    example: '생성된 AI 블로그 초안 내용입니다.',
-    description: '초안 본문',
+    type: [BlogDraftItemResponseDto],
+    description: '장소별 초안 본문 목록',
   })
-  content!: string;
+  items!: BlogDraftItemResponseDto[];
 
   @ApiProperty({ example: '2026-03-31', description: '시작일' })
   startDate!: string;

@@ -1,6 +1,7 @@
 import { AppException } from '../../common/exceptions/app.exception';
 import { BlogDraftsRepository } from './blog-drafts.repository';
 import { BlogDraftsService } from './blog-drafts.service';
+import { BlogDraftTone } from './dto/generate-blog-draft-request.dto';
 import { OpenAiBlogDraftService } from './openai-blog-draft.service';
 
 describe('BlogDraftsService', () => {
@@ -37,6 +38,7 @@ describe('BlogDraftsService', () => {
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: Array.from({ length: 16 }, (_, index) => index + 1),
+        tone: BlogDraftTone.RECORD,
       });
       throw new Error('Expected AppException');
     } catch (error) {
@@ -64,6 +66,7 @@ describe('BlogDraftsService', () => {
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: [1],
+        tone: BlogDraftTone.RECORD,
       }),
     ).rejects.toBeInstanceOf(AppException);
   });
@@ -87,6 +90,7 @@ describe('BlogDraftsService', () => {
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: [1],
+        tone: BlogDraftTone.RECORD,
       }),
     ).rejects.toBeInstanceOf(AppException);
   });
@@ -110,6 +114,7 @@ describe('BlogDraftsService', () => {
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: [1],
+        tone: BlogDraftTone.RECORD,
       }),
     ).rejects.toBeInstanceOf(AppException);
   });
@@ -133,6 +138,31 @@ describe('BlogDraftsService', () => {
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: [1],
+        tone: BlogDraftTone.RECORD,
+      }),
+    ).rejects.toBeInstanceOf(AppException);
+  });
+
+  it('FREE 구독 플랜은 무료 사용자 한도로 처리한다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: {
+        startedAt: new Date('2026-07-10T00:00:00.000Z'),
+        expiresAt: new Date('2026-08-26T00:00:00.000Z'),
+        subscriptionPlan: {
+          code: 'FREE',
+        },
+      },
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(1);
+
+    await expect(
+      service.generateDraft(1, {
+        startDate: '2026-03-31',
+        endDate: '2026-04-01',
+        treeIds: [1],
+        tone: BlogDraftTone.RECORD,
       }),
     ).rejects.toBeInstanceOf(AppException);
   });
@@ -161,7 +191,7 @@ describe('BlogDraftsService', () => {
     });
     openAiService.generate.mockResolvedValue({
       title: '제목',
-      content: '본문',
+      items: [{ placeName: '포그레인 공원', content: '본문' }],
     });
     repository.consumeUsageWithinLimit.mockResolvedValue();
 
@@ -169,6 +199,7 @@ describe('BlogDraftsService', () => {
       startDate: '2026-03-31',
       endDate: '2026-04-01',
       treeIds: [1],
+      tone: BlogDraftTone.RECORD,
     });
 
     expect(repository.countGeneratedDraftsInRange).toHaveBeenCalledWith(
@@ -208,7 +239,7 @@ describe('BlogDraftsService', () => {
     });
     openAiService.generate.mockResolvedValue({
       title: '제목',
-      content: '본문',
+      items: [{ placeName: '포그레인 공원', content: '본문' }],
     });
     repository.consumeUsageWithinLimit.mockResolvedValue();
 
@@ -216,6 +247,7 @@ describe('BlogDraftsService', () => {
       startDate: '2026-03-31',
       endDate: '2026-04-01',
       treeIds: [1],
+      tone: BlogDraftTone.RECORD,
     });
 
     expect(repository.countGeneratedDraftsInRange).toHaveBeenCalledWith(
@@ -250,7 +282,9 @@ describe('BlogDraftsService', () => {
       id: 1n,
       userId: 1n,
       title: '제목',
-      content: '본문',
+      content: JSON.stringify([
+        { placeName: '포그레인 공원', content: '본문' },
+      ]),
       startDate: new Date('2026-03-31T00:00:00.000Z'),
       endDate: new Date('2026-04-01T00:00:00.000Z'),
       createdAt: new Date('2026-04-02T10:00:00.000Z'),
@@ -259,13 +293,19 @@ describe('BlogDraftsService', () => {
 
     const result = await service.saveDraft(1, {
       title: '제목',
-      content: '본문',
+      items: [{ placeName: '포그레인 공원', content: '본문' }],
       startDate: '2026-03-31',
       endDate: '2026-04-01',
       treeIds: [1],
     });
 
-    expect(repository.createDraft).toHaveBeenCalled();
+    expect(repository.createDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: JSON.stringify([
+          { placeName: '포그레인 공원', content: '본문' },
+        ]),
+      }),
+    );
     expect(result).toEqual({
       draftId: 1,
     });
@@ -275,7 +315,7 @@ describe('BlogDraftsService', () => {
     try {
       await service.saveDraft(1, {
         title: '   ',
-        content: '본문',
+        items: [{ placeName: '포그레인 공원', content: '본문' }],
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: [1],
@@ -296,7 +336,7 @@ describe('BlogDraftsService', () => {
     try {
       await service.saveDraft(1, {
         title: '제목',
-        content: '   ',
+        items: [{ placeName: '포그레인 공원', content: '   ' }],
         startDate: '2026-03-31',
         endDate: '2026-04-01',
         treeIds: [1],
@@ -337,7 +377,12 @@ describe('BlogDraftsService', () => {
     });
     openAiService.generate.mockResolvedValue({
       title: '[여행 기록] 3월 31일 ~ 4월 1일',
-      content: '생성된 블로그 초안 내용입니다.',
+      items: [
+        {
+          placeName: '포그레인 공원',
+          content: '생성된 블로그 초안 내용입니다.',
+        },
+      ],
     });
     repository.consumeUsageWithinLimit.mockResolvedValue();
 
@@ -345,6 +390,7 @@ describe('BlogDraftsService', () => {
       startDate: '2026-03-31',
       endDate: '2026-04-01',
       treeIds: [1],
+      tone: BlogDraftTone.RECORD,
     });
 
     expect(repository.findGenerateSource).toHaveBeenCalledWith(
@@ -361,7 +407,12 @@ describe('BlogDraftsService', () => {
     );
     expect(result).toEqual({
       title: '[여행 기록] 3월 31일 ~ 4월 1일',
-      content: '생성된 블로그 초안 내용입니다.',
+      items: [
+        {
+          placeName: '포그레인 공원',
+          content: '생성된 블로그 초안 내용입니다.',
+        },
+      ],
       startDate: '2026-03-31',
       endDate: '2026-04-01',
     });

@@ -91,7 +91,16 @@ export const ApiGenerateBlogDraft = () =>
           message: 'AI 블로그 초안 생성이 완료되었습니다.',
           data: {
             title: '[여행 기록] 3월 31일 ~ 4월 1일',
-            content: '생성된 블로그 초안 내용입니다.',
+            items: [
+              {
+                placeName: '포그레인 공원',
+                content: '해 질 무렵 공원을 걸었음. 조용해서 산책하기 좋았음.',
+              },
+              {
+                placeName: '피자 맛집',
+                content: '저녁으로 피자를 먹었음. 기다린 만큼 맛있었음.',
+              },
+            ],
             startDate: '2026-03-31',
             endDate: '2026-04-01',
           },
@@ -200,7 +209,16 @@ export const ApiGetBlogDraft = () =>
           data: {
             draftId: 1,
             title: '[여행 기록] 3월 31일 ~ 4월 1일',
-            content: '생성된 AI 블로그 초안 내용입니다.',
+            items: [
+              {
+                placeName: '포그레인 공원',
+                content: '해 질 무렵 공원을 걸었음. 조용해서 산책하기 좋았음.',
+              },
+              {
+                placeName: '피자 맛집',
+                content: '저녁으로 피자를 먹었음. 기다린 만큼 맛있었음.',
+              },
+            ],
             startDate: '2026-03-31',
             endDate: '2026-04-01',
             createdAt: '2026-04-01T12:00:00',
