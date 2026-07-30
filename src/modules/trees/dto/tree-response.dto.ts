@@ -15,7 +15,10 @@ export class TreeImageResponseDto {
   @ApiProperty({ example: 10, description: '사진 ID' })
   imageId!: number;
 
-  @ApiProperty({ example: 'https://.../a.jpg', description: '사진 URL' })
+  @ApiProperty({
+    example: 'https://.../a.jpg?X-Amz-Signature=...',
+    description: '사진 조회용 임시 서명 URL (presigned)',
+  })
   imageUrl!: string;
 
   @ApiProperty({
@@ -24,9 +27,6 @@ export class TreeImageResponseDto {
     description: '연결된 타임라인 기록 ID (없으면 장소 대표 사진)',
   })
   timelineRecordId!: number | null;
-
-  @ApiProperty({ example: 0, description: '정렬 순서' })
-  sortOrder!: number;
 }
 
 export class TreeSummaryResponseDto {
