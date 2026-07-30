@@ -96,7 +96,7 @@ export const ApiGetMyRoutes = () =>
               {
                 routeId: 1,
                 routeName: '아침 산책',
-                recordDate: '2026-04-01',
+                recordDates: ['2026-03-31', '2026-04-01'],
                 placeCount: 2,
                 places: [
                   { name: '포그레인 공원', mood: '😀' },
@@ -140,6 +140,7 @@ export const ApiGetRoute = () =>
                 description: '갤러거 형제 자만추',
                 latitude: 37.5665,
                 longitude: 126.978,
+                date: '2026-04-01',
                 sequence: 0,
               },
             ],

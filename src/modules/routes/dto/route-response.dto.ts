@@ -28,7 +28,14 @@ export class RoutePointResponseDto {
   @ApiProperty({ example: 126.978, description: '경도' })
   longitude!: number;
 
-  @ApiProperty({ example: 0, description: '방문 순서' })
+  @ApiProperty({
+    example: '2026-04-01',
+    description:
+      '방문 날짜 (KST, YYYY-MM-DD). 프론트에서 날짜별 세그먼트 구분에 사용',
+  })
+  date!: string;
+
+  @ApiProperty({ example: 0, description: '방문 순서 (날짜 순)' })
   sequence!: number;
 }
 
@@ -48,11 +55,11 @@ export class RouteSummaryResponseDto {
   routeName!: string;
 
   @ApiProperty({
-    example: '2026-04-01',
-    nullable: true,
-    description: '기록 날짜 (장소들의 날짜, YYYY-MM-DD)',
+    type: [String],
+    example: ['2026-03-31', '2026-04-01'],
+    description: '기록 날짜들 (KST, 오름차순, 최대 3일)',
   })
-  recordDate!: string | null;
+  recordDates!: string[];
 
   @ApiProperty({ example: 2, description: '장소 개수' })
   placeCount!: number;

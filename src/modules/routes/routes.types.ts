@@ -31,6 +31,7 @@ export interface RoutePointWithTreeRecord {
     description: string | null;
     latitude: Prisma.Decimal;
     longitude: Prisma.Decimal;
+    createdAt: Date;
     deletedAt: Date | null;
   };
 }

@@ -12,7 +12,7 @@ import {
   RouteSummaryResponseDto,
 } from './dto/route-response.dto';
 import { UpdateRouteRequestDto } from './dto/update-route-request.dto';
-import { RoutePagination } from './routes.constant';
+import { ROUTE_MAX_DATE_SPAN, RoutePagination } from './routes.constant';
 import { RoutesRepository } from './routes.repository';
 import {
   RouteListItemRecord,
@@ -133,12 +133,21 @@ export class RoutesService {
     points: CreateRouteRequestDto['points'],
   ): Promise<void> => {
     const treeIds = [...new Set(points.map((point) => point.treeId))];
-    const ownedCount = await this.routesRepository.countOwnedTrees(
+    const ownedTrees = await this.routesRepository.findOwnedTreesForRoute(
       treeIds,
       userId,
     );
 
-    if (ownedCount !== treeIds.length) {
+    // 모든 나무가 본인 소유·미삭제여야 한다.
+    if (ownedTrees.length !== treeIds.length) {
+      throw new AppException(ErrorCode.ROUTE_INVALID_REQUEST);
+    }
+
+    // 동선은 최대 3일(서로 다른 KST 날짜)까지만 묶을 수 있다.
+    const distinctDates = new Set(
+      ownedTrees.map((tree) => this.toKstDateString(tree.createdAt)),
+    );
+    if (distinctDates.size > ROUTE_MAX_DATE_SPAN) {
       throw new AppException(ErrorCode.ROUTE_INVALID_REQUEST);
     }
   };
@@ -201,20 +210,17 @@ export class RoutesService {
     const livePoints = route.points.filter(
       (point) => point.tree.deletedAt === null,
     );
-    // 기록 날짜: 동선에 속한 장소들 중 가장 이른 기록일 (KST 기준 날짜)
-    const recordDate =
-      livePoints.length > 0
-        ? this.toKstDateString(
-            [...livePoints].sort(
-              (a, b) => a.tree.createdAt.getTime() - b.tree.createdAt.getTime(),
-            )[0].tree.createdAt,
-          )
-        : null;
+    // 기록 날짜들: 동선 장소들의 KST 날짜 (중복 제거, 오름차순, 최대 3일)
+    const recordDates = [
+      ...new Set(
+        livePoints.map((point) => this.toKstDateString(point.tree.createdAt)),
+      ),
+    ].sort();
 
     return {
       routeId: Number(route.id),
       routeName: route.routeName,
-      recordDate,
+      recordDates,
       placeCount: livePoints.length,
       places: livePoints.map((point) => ({
         name: point.tree.name,
@@ -240,6 +246,7 @@ export class RoutesService {
         description: point.tree.description,
         latitude: Number(point.tree.latitude),
         longitude: Number(point.tree.longitude),
+        date: this.toKstDateString(point.tree.createdAt),
         sequence: point.sequence,
       })),
   });

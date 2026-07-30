@@ -29,14 +29,18 @@ export class RoutesRepository {
     });
   };
 
-  // 동선 생성 시 검증용: 본인 소유이면서 삭제되지 않은 나무 개수
-  countOwnedTrees = (treeIds: number[], userId: number): Promise<number> => {
-    return this.prisma.tree.count({
+  // 동선 생성 시 검증용: 본인 소유·미삭제 나무들 (개수 + 날짜 범위 검증에 사용)
+  findOwnedTreesForRoute = (
+    treeIds: number[],
+    userId: number,
+  ): Promise<{ id: bigint; createdAt: Date }[]> => {
+    return this.prisma.tree.findMany({
       where: {
         id: { in: treeIds.map((id) => BigInt(id)) },
         userId: BigInt(userId),
         deletedAt: null,
       },
+      select: { id: true, createdAt: true },
     });
   };
 
@@ -108,6 +112,7 @@ export class RoutesRepository {
                 description: true,
                 latitude: true,
                 longitude: true,
+                createdAt: true,
                 deletedAt: true,
               },
             },
