@@ -5,6 +5,7 @@ import { AuthRepository } from './auth.repository';
 import { AuthSocialService } from './auth-social.service';
 import { AuthTokenService } from './auth-token.service';
 import { AuthUserResponseDto } from './dto/auth-user-response.dto';
+import { DevLoginRequestDto } from './dto/dev-login-request.dto';
 import { SocialLoginRequestDto } from './dto/social-login-request.dto';
 import { TokenRefreshResponseDto } from './dto/token-refresh-response.dto';
 import {
@@ -85,6 +86,35 @@ export class AuthService {
 
   logout = (): Promise<null> => {
     return Promise.resolve(null);
+  };
+
+  devLogin = async (
+    devLoginRequestDto: DevLoginRequestDto,
+  ): Promise<SocialLoginResult> => {
+    const user = await this.authRepository.findUserById(
+      devLoginRequestDto.userId,
+    );
+
+    if (!user) {
+      throw new AppException(ErrorCode.USER_NOT_FOUND);
+    }
+
+    this.validateAvailableUser(user);
+
+    const tokens = await this.authTokenService.issueTokens({
+      userId: Number(user.id),
+      role: user.role,
+    });
+
+    return {
+      isNewUser: false,
+      needTermsAgreement: false,
+      needProfileSetup: false,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: tokens.expiresIn,
+      user: this.toAuthUserResponseDto(user),
+    };
   };
 
   private validateAvailableUser = (user: AuthUserRecord): void => {
