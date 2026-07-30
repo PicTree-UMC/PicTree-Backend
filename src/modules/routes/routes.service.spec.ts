@@ -42,7 +42,8 @@ describe('RoutesService', () => {
           description: '갤러거 형제 자만추',
           latitude: new Prisma.Decimal('37.5665'),
           longitude: new Prisma.Decimal('126.9780'),
-          createdAt: new Date('2026-04-01T10:00:00.000Z'),
+          // UTC 3/31 15:30 = KST 4/1 00:30 → date 는 KST 기준 '2026-04-01' 이어야 함
+          createdAt: new Date('2026-03-31T15:30:00.000Z'),
           deletedAt: null,
         },
       },
@@ -64,7 +65,7 @@ describe('RoutesService', () => {
   beforeEach(() => {
     repository = {
       createRoute: jest.fn(),
-      countOwnedTrees: jest.fn(),
+      findOwnedTreesForRoute: jest.fn(),
       findRoutesByUserId: jest.fn(),
       findRouteById: jest.fn(),
       findRouteWithPointsById: jest.fn(),
@@ -83,18 +84,27 @@ describe('RoutesService', () => {
   });
 
   describe('createRoute', () => {
+    // 2개 장소, 서로 다른 2일 (3일 이내)
+    const ownedTrees = [
+      { id: 1n, createdAt: new Date('2026-03-31T09:00:00.000Z') },
+      { id: 2n, createdAt: new Date('2026-04-01T09:00:00.000Z') },
+    ];
+
     it('본인 소유 나무들로 동선을 생성하고 routeId 를 반환한다', async () => {
-      repository.countOwnedTrees.mockResolvedValue(2);
+      repository.findOwnedTreesForRoute.mockResolvedValue(ownedTrees);
       repository.createRoute.mockResolvedValue(route);
 
       const result = await service.createRoute(10, createDto);
 
-      expect(repository.countOwnedTrees).toHaveBeenCalledWith([1, 2], 10);
+      expect(repository.findOwnedTreesForRoute).toHaveBeenCalledWith(
+        [1, 2],
+        10,
+      );
       expect(result).toEqual({ routeId: 1 });
     });
 
     it('노드(나무·순서)를 저장 계층에 전달한다', async () => {
-      repository.countOwnedTrees.mockResolvedValue(2);
+      repository.findOwnedTreesForRoute.mockResolvedValue(ownedTrees);
       repository.createRoute.mockResolvedValue(route);
 
       await service.createRoute(10, createDto);
@@ -112,9 +122,34 @@ describe('RoutesService', () => {
     });
 
     it('존재하지 않거나 타인 소유의 나무가 있으면 ROUTE400 을 던진다', async () => {
-      repository.countOwnedTrees.mockResolvedValue(1); // 2개 중 1개만 유효
+      // 2개 중 1개만 유효
+      repository.findOwnedTreesForRoute.mockResolvedValue([ownedTrees[0]]);
 
       const error = await catchAppError(service.createRoute(10, createDto));
+
+      expect(error.getResponse()).toMatchObject({ code: 'ROUTE400' });
+      expect(repository.createRoute).not.toHaveBeenCalled();
+    });
+
+    it('4일 이상에 걸친 장소면 ROUTE400 을 던진다', async () => {
+      const fourDayDto: CreateRouteRequestDto = {
+        routeName: '긴 동선',
+        points: [
+          { treeId: 1, sequence: 0 },
+          { treeId: 2, sequence: 1 },
+          { treeId: 3, sequence: 2 },
+          { treeId: 4, sequence: 3 },
+        ],
+      };
+      // 소유는 통과(4개 모두), 그러나 서로 다른 4일
+      repository.findOwnedTreesForRoute.mockResolvedValue([
+        { id: 1n, createdAt: new Date('2026-03-31T09:00:00.000Z') },
+        { id: 2n, createdAt: new Date('2026-04-01T09:00:00.000Z') },
+        { id: 3n, createdAt: new Date('2026-04-02T09:00:00.000Z') },
+        { id: 4n, createdAt: new Date('2026-04-03T09:00:00.000Z') },
+      ]);
+
+      const error = await catchAppError(service.createRoute(10, fourDayDto));
 
       expect(error.getResponse()).toMatchObject({ code: 'ROUTE400' });
       expect(repository.createRoute).not.toHaveBeenCalled();
@@ -122,25 +157,35 @@ describe('RoutesService', () => {
   });
 
   describe('getMyRoutes', () => {
-    it('동선 목록을 장소 정보·기록날짜와 함께 반환한다', async () => {
+    it('동선 목록의 recordDates 는 중복 제거·오름차순으로 반환한다', async () => {
       const listItem: RouteListItemRecord = {
         ...route,
         points: [
+          // 순서를 뒤섞고(4/1 먼저) 같은 날짜(4/1)를 중복 포함
           {
             sequence: 0,
             tree: {
-              name: '포그레인 공원',
-              mood: '😀',
-              createdAt: new Date('2026-03-31T09:00:00.000Z'),
+              name: '오아시스 만난 곳',
+              mood: '😍',
+              createdAt: new Date('2026-04-01T10:00:00.000Z'),
               deletedAt: null,
             },
           },
           {
             sequence: 1,
             tree: {
-              name: '오아시스 만난 곳',
-              mood: '😍',
-              createdAt: new Date('2026-04-01T10:00:00.000Z'),
+              name: '피자 맛집',
+              mood: '😋',
+              createdAt: new Date('2026-04-01T12:00:00.000Z'),
+              deletedAt: null,
+            },
+          },
+          {
+            sequence: 2,
+            tree: {
+              name: '포그레인 공원',
+              mood: '😀',
+              createdAt: new Date('2026-03-31T09:00:00.000Z'),
               deletedAt: null,
             },
           },
@@ -154,10 +199,11 @@ describe('RoutesService', () => {
         routeId: 1,
         routeName: '아침 산책',
         recordDates: ['2026-03-31', '2026-04-01'],
-        placeCount: 2,
+        placeCount: 3,
         places: [
-          { name: '포그레인 공원', mood: '😀' },
           { name: '오아시스 만난 곳', mood: '😍' },
+          { name: '피자 맛집', mood: '😋' },
+          { name: '포그레인 공원', mood: '😀' },
         ],
         createdAt: route.createdAt,
       });

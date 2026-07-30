@@ -12,7 +12,7 @@ import {
   RouteSummaryResponseDto,
 } from './dto/route-response.dto';
 import { UpdateRouteRequestDto } from './dto/update-route-request.dto';
-import { RoutePagination } from './routes.constant';
+import { ROUTE_MAX_DATE_SPAN, RoutePagination } from './routes.constant';
 import { RoutesRepository } from './routes.repository';
 import {
   RouteListItemRecord,
@@ -133,12 +133,21 @@ export class RoutesService {
     points: CreateRouteRequestDto['points'],
   ): Promise<void> => {
     const treeIds = [...new Set(points.map((point) => point.treeId))];
-    const ownedCount = await this.routesRepository.countOwnedTrees(
+    const ownedTrees = await this.routesRepository.findOwnedTreesForRoute(
       treeIds,
       userId,
     );
 
-    if (ownedCount !== treeIds.length) {
+    // 모든 나무가 본인 소유·미삭제여야 한다.
+    if (ownedTrees.length !== treeIds.length) {
+      throw new AppException(ErrorCode.ROUTE_INVALID_REQUEST);
+    }
+
+    // 동선은 최대 3일(서로 다른 KST 날짜)까지만 묶을 수 있다.
+    const distinctDates = new Set(
+      ownedTrees.map((tree) => this.toKstDateString(tree.createdAt)),
+    );
+    if (distinctDates.size > ROUTE_MAX_DATE_SPAN) {
       throw new AppException(ErrorCode.ROUTE_INVALID_REQUEST);
     }
   };
