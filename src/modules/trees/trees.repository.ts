@@ -81,11 +81,10 @@ export class TreesRepository {
             select: {
               id: true,
               timelineRecordId: true,
-              imageUrl: true,
-              sortOrder: true,
+              s3Key: true,
             },
             orderBy: {
-              sortOrder: 'asc',
+              id: 'asc',
             },
             take: 1,
           },
@@ -115,8 +114,13 @@ export class TreesRepository {
       },
       include: {
         images: {
+          select: {
+            id: true,
+            timelineRecordId: true,
+            s3Key: true,
+          },
           orderBy: {
-            sortOrder: 'asc',
+            id: 'asc',
           },
         },
       },

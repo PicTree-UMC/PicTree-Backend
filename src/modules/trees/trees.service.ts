@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
+import { S3Service } from '../../common/s3/s3.service';
 import { CreateTreeRequestDto } from './dto/create-tree-request.dto';
 import { GetNearbyTreesQueryDto } from './dto/get-nearby-trees-query.dto';
 import {
@@ -34,7 +35,10 @@ import {
 
 @Injectable()
 export class TreesService {
-  constructor(private readonly treesRepository: TreesRepository) {}
+  constructor(
+    private readonly treesRepository: TreesRepository,
+    private readonly s3Service: S3Service,
+  ) {}
 
   createTree = async (
     userId: number,
@@ -98,7 +102,9 @@ export class TreesService {
 
     return {
       count: favorites.length,
-      favorites: favorites.map(this.toFavoriteTreeResponseDto),
+      favorites: await Promise.all(
+        favorites.map((favorite) => this.toFavoriteTreeResponseDto(favorite)),
+      ),
     };
   };
 
@@ -235,9 +241,9 @@ export class TreesService {
     isFavorite: tree.isFavorite,
   });
 
-  private toTreeResponseDto = (
+  private toTreeResponseDto = async (
     tree: TreeWithImagesRecord,
-  ): TreeResponseDto => ({
+  ): Promise<TreeResponseDto> => ({
     treeId: Number(tree.id),
     name: tree.name,
     description: tree.description,
@@ -247,30 +253,35 @@ export class TreesService {
     mood: tree.mood,
     defaultImage: tree.defaultImage,
     isFavorite: tree.isFavorite,
-    images: tree.images.map(this.toTreeImageResponseDto),
+    images: await Promise.all(
+      tree.images.map((image) => this.toTreeImageResponseDto(image)),
+    ),
     createdAt: tree.createdAt,
     updatedAt: tree.updatedAt,
   });
 
-  private toFavoriteTreeResponseDto = (
+  private toFavoriteTreeResponseDto = async (
     tree: FavoriteTreeRecord,
-  ): FavoriteTreeResponseDto => {
+  ): Promise<FavoriteTreeResponseDto> => {
     return {
       treeId: Number(tree.id),
       name: tree.name,
       description: tree.description,
       visitedAt: tree.createdAt.toISOString().slice(0, 10),
-      imageUrl: tree.image?.imageUrl ?? null,
+      // 버킷이 private 이므로 조회용 임시 서명 URL 을 발급한다.
+      imageUrl: tree.image
+        ? await this.s3Service.getPresignedUrl(tree.image.s3Key)
+        : null,
     };
   };
 
-  private toTreeImageResponseDto = (
+  private toTreeImageResponseDto = async (
     image: TreeWithImagesRecord['images'][number],
-  ): TreeImageResponseDto => ({
+  ): Promise<TreeImageResponseDto> => ({
     imageId: Number(image.id),
-    imageUrl: image.imageUrl,
+    // 버킷이 private 이므로 원본 URL 대신 presigned URL 을 내려준다.
+    imageUrl: await this.s3Service.getPresignedUrl(image.s3Key),
     timelineRecordId:
       image.timelineRecordId === null ? null : Number(image.timelineRecordId),
-    sortOrder: image.sortOrder,
   });
 }

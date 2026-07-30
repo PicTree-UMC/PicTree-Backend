@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { AppException } from '../../common/exceptions/app.exception';
+import { S3Service } from '../../common/s3/s3.service';
 import { CreateTreeRequestDto } from './dto/create-tree-request.dto';
 import { UpdateTreeRequestDto } from './dto/update-tree-request.dto';
 import { TreesRepository } from './trees.repository';
@@ -48,8 +49,7 @@ describe('TreesService', () => {
     image: {
       id: 11n,
       timelineRecordId: null,
-      imageUrl: 'https://example.com/tree.jpg',
-      sortOrder: 0,
+      s3Key: 'trees/1/a.jpg',
     },
   };
 
@@ -62,6 +62,7 @@ describe('TreesService', () => {
   };
 
   let repository: jest.Mocked<TreesRepository>;
+  let s3Service: jest.Mocked<S3Service>;
   let service: TreesService;
 
   beforeEach(() => {
@@ -78,7 +79,17 @@ describe('TreesService', () => {
       findUserPlanCode: jest.fn(),
     } as unknown as jest.Mocked<TreesRepository>;
 
-    service = new TreesService(repository);
+    s3Service = {
+      upload: jest.fn(),
+      delete: jest.fn(),
+      getPresignedUrl: jest.fn(),
+    } as unknown as jest.Mocked<S3Service>;
+
+    s3Service.getPresignedUrl.mockImplementation((key) =>
+      Promise.resolve(`https://signed/${key}`),
+    );
+
+    service = new TreesService(repository, s3Service);
   });
 
   describe('createTree - adRequired', () => {
@@ -218,6 +229,24 @@ describe('TreesService', () => {
     });
   });
 
+  it('나무 상세의 사진 URL 을 presigned 로 발급한다', async () => {
+    repository.findTreeWithImagesById.mockResolvedValue({
+      ...treeWithImages,
+      images: [{ id: 11n, timelineRecordId: null, s3Key: 'trees/1/a.jpg' }],
+    });
+
+    const result = await service.getTree(10, 1);
+
+    expect(s3Service.getPresignedUrl).toHaveBeenCalledWith('trees/1/a.jpg');
+    expect(result.images).toEqual([
+      {
+        imageId: 11,
+        imageUrl: 'https://signed/trees/1/a.jpg',
+        timelineRecordId: null,
+      },
+    ]);
+  });
+
   it('즐겨찾기 장소 목록을 조회한다', async () => {
     repository.findFavoriteTreesByUserId.mockResolvedValue([favoriteTree]);
 
@@ -232,7 +261,7 @@ describe('TreesService', () => {
           name: '오아시스 만난 곳',
           description: '길 가다가 오아시스 자만추',
           visitedAt: '2026-03-30',
-          imageUrl: 'https://example.com/tree.jpg',
+          imageUrl: 'https://signed/trees/1/a.jpg',
         },
       ],
     });

@@ -164,9 +164,8 @@ export const ApiGetTree = () =>
             images: [
               {
                 imageId: 10,
-                imageUrl: 'https://.../a.jpg',
+                imageUrl: 'https://.../a.jpg?X-Amz-Signature=...',
                 timelineRecordId: null,
-                sortOrder: 0,
               },
             ],
             createdAt: '2026-07-19T10:00:00.000Z',
