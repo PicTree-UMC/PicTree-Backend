@@ -201,20 +201,17 @@ export class RoutesService {
     const livePoints = route.points.filter(
       (point) => point.tree.deletedAt === null,
     );
-    // 기록 날짜: 동선에 속한 장소들 중 가장 이른 기록일 (KST 기준 날짜)
-    const recordDate =
-      livePoints.length > 0
-        ? this.toKstDateString(
-            [...livePoints].sort(
-              (a, b) => a.tree.createdAt.getTime() - b.tree.createdAt.getTime(),
-            )[0].tree.createdAt,
-          )
-        : null;
+    // 기록 날짜들: 동선 장소들의 KST 날짜 (중복 제거, 오름차순, 최대 3일)
+    const recordDates = [
+      ...new Set(
+        livePoints.map((point) => this.toKstDateString(point.tree.createdAt)),
+      ),
+    ].sort();
 
     return {
       routeId: Number(route.id),
       routeName: route.routeName,
-      recordDate,
+      recordDates,
       placeCount: livePoints.length,
       places: livePoints.map((point) => ({
         name: point.tree.name,
@@ -240,6 +237,7 @@ export class RoutesService {
         description: point.tree.description,
         latitude: Number(point.tree.latitude),
         longitude: Number(point.tree.longitude),
+        date: this.toKstDateString(point.tree.createdAt),
         sequence: point.sequence,
       })),
   });

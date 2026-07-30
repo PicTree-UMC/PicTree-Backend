@@ -108,6 +108,7 @@ export class RoutesRepository {
                 description: true,
                 latitude: true,
                 longitude: true,
+                createdAt: true,
                 deletedAt: true,
               },
             },

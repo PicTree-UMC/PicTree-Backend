@@ -9,5 +9,5 @@ export const RoutePagination = {
 // 동선은 노드(나무)가 최소 1개 이상 있어야 한다
 export const ROUTE_POINT_MIN_COUNT = 1;
 
-// 한 동선의 최대 노드 수 (과도한 요청 방지)
-export const ROUTE_POINT_MAX_COUNT = 100;
+// 한 동선의 최대 노드 수 (기획: 장소 20개 제한)
+export const ROUTE_POINT_MAX_COUNT = 20;
