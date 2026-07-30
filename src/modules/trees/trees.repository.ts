@@ -6,6 +6,7 @@ import {
   CreateTreeData,
   FavoriteTreeRecord,
   NearbyTreeRecord,
+  TreeListItemRecord,
   TreeRecord,
   TreeWithImagesRecord,
   UpdateTreeData,
@@ -34,7 +35,7 @@ export class TreesRepository {
     userId: number,
     page: number,
     size: number,
-  ): Promise<[TreeRecord[], number]> => {
+  ): Promise<[TreeListItemRecord[], number]> => {
     const where: Prisma.TreeWhereInput = {
       userId: BigInt(userId),
       deletedAt: null,
@@ -48,6 +49,15 @@ export class TreesRepository {
         },
         skip: (page - 1) * size,
         take: size,
+        // 목록 카드에 노출할 대표 사진(타임라인에 속하지 않은 사진) 1장
+        include: {
+          images: {
+            where: { timelineRecordId: null },
+            orderBy: { id: 'asc' },
+            take: 1,
+            select: { s3Key: true },
+          },
+        },
       }),
       this.prisma.tree.count({ where }),
     ]);

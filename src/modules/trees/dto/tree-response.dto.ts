@@ -48,6 +48,14 @@ export class TreeSummaryResponseDto {
   @ApiProperty({ example: 'DEFAULT_1', description: '기본 이미지' })
   defaultImage!: string;
 
+  @ApiProperty({
+    example: 'https://.../a.jpg?X-Amz-Signature=...',
+    nullable: true,
+    description:
+      '대표 사진 URL (presigned). 사진이 없으면 null → 기본 이미지로 표시',
+  })
+  imageUrl!: string | null;
+
   @ApiProperty({ example: false, description: '즐겨찾기 여부' })
   isFavorite!: boolean;
 }

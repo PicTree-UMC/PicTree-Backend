@@ -26,6 +26,11 @@ export interface TreeWithImagesRecord extends TreeRecord {
   images: TreeImageRecord[];
 }
 
+// 목록 조회용: 나무 + 대표 사진(0~1장)
+export interface TreeListItemRecord extends TreeRecord {
+  images: { s3Key: string }[];
+}
+
 export interface NearbyTreeRecord {
   id: bigint;
   name: string;
