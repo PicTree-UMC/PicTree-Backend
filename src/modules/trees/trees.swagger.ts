@@ -261,7 +261,11 @@ export const ApiToggleFavoriteTree = () =>
 
 export const ApiDeleteTree = () =>
   applyDecorators(
-    ApiOperation({ summary: '나무 삭제' }),
+    ApiOperation({
+      summary: '나무 삭제',
+      description:
+        '나무를 삭제하면 해당 나무의 사진 레코드가 함께 삭제되고 S3 객체 삭제도 시도합니다. S3 삭제가 실패해도 나무 삭제는 진행되므로 S3 객체가 남을 수 있습니다. 타임라인 기록 자체는 유지됩니다.',
+    }),
     protectedTreeResponses(),
     treeIdParam(),
     treeResourceResponses(),
