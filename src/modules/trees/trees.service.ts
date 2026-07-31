@@ -133,9 +133,30 @@ export class TreesService {
   deleteTree = async (userId: number, treeId: number): Promise<null> => {
     await this.getOwnedTreeOrThrow(userId, treeId);
 
+    // 나무는 소프트 삭제라 Cascade 가 동작하지 않으므로 사진을 직접 정리한다.
+    // 타임라인에 연결된 사진도 함께 지워지며, 타임라인 기록 자체는 유지된다.
+    await this.deleteTreeImages(treeId);
+
     await this.treesRepository.softDeleteTree(treeId, new Date());
 
     return null;
+  };
+
+  private deleteTreeImages = async (treeId: number): Promise<void> => {
+    const images = await this.treesRepository.findImageKeysByTreeId(treeId);
+
+    if (images.length === 0) {
+      return;
+    }
+
+    // S3 삭제가 실패해도 나무 삭제는 계속 진행한다 (고아 객체만 남음).
+    await Promise.all(
+      images.map((image) =>
+        this.s3Service.delete(image.s3Key).catch(() => undefined),
+      ),
+    );
+
+    await this.treesRepository.deleteImagesByTreeId(treeId);
   };
 
   getNearbyTrees = async (

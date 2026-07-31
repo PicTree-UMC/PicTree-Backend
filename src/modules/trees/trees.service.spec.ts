@@ -74,6 +74,8 @@ describe('TreesService', () => {
       findTreeWithImagesById: jest.fn(),
       updateTree: jest.fn(),
       updateFavoriteStatus: jest.fn(),
+      findImageKeysByTreeId: jest.fn(),
+      deleteImagesByTreeId: jest.fn(),
       softDeleteTree: jest.fn(),
       countTreesByUserId: jest.fn(),
       findUserPlanCode: jest.fn(),
@@ -210,6 +212,7 @@ describe('TreesService', () => {
   describe('deleteTree', () => {
     it('본인 나무를 소프트 삭제한다', async () => {
       repository.findTreeById.mockResolvedValue(tree);
+      repository.findImageKeysByTreeId.mockResolvedValue([]);
 
       await service.deleteTree(10, 1);
 
@@ -217,6 +220,45 @@ describe('TreesService', () => {
         1,
         expect.any(Date),
       );
+    });
+
+    it('나무의 사진을 S3 와 DB 에서 함께 삭제한다', async () => {
+      repository.findTreeById.mockResolvedValue(tree);
+      repository.findImageKeysByTreeId.mockResolvedValue([
+        { s3Key: 'trees/1/a.jpg' },
+        { s3Key: 'trees/1/b.jpg' },
+      ]);
+      s3Service.delete.mockResolvedValue(undefined);
+
+      await service.deleteTree(10, 1);
+
+      expect(s3Service.delete).toHaveBeenCalledWith('trees/1/a.jpg');
+      expect(s3Service.delete).toHaveBeenCalledWith('trees/1/b.jpg');
+      expect(repository.deleteImagesByTreeId).toHaveBeenCalledWith(1);
+      expect(repository.softDeleteTree).toHaveBeenCalled();
+    });
+
+    it('사진이 없으면 삭제를 시도하지 않는다', async () => {
+      repository.findTreeById.mockResolvedValue(tree);
+      repository.findImageKeysByTreeId.mockResolvedValue([]);
+
+      await service.deleteTree(10, 1);
+
+      expect(s3Service.delete).not.toHaveBeenCalled();
+      expect(repository.deleteImagesByTreeId).not.toHaveBeenCalled();
+    });
+
+    it('S3 삭제가 실패해도 나무 삭제는 계속 진행한다', async () => {
+      repository.findTreeById.mockResolvedValue(tree);
+      repository.findImageKeysByTreeId.mockResolvedValue([
+        { s3Key: 'trees/1/a.jpg' },
+      ]);
+      s3Service.delete.mockRejectedValue(new Error('s3 error'));
+
+      await service.deleteTree(10, 1);
+
+      expect(repository.deleteImagesByTreeId).toHaveBeenCalledWith(1);
+      expect(repository.softDeleteTree).toHaveBeenCalled();
     });
 
     it('타인의 나무는 삭제할 수 없다', async () => {

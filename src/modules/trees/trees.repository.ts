@@ -163,6 +163,21 @@ export class TreesRepository {
     });
   };
 
+  // 나무 삭제 시 정리할 사진들 (타임라인에 연결된 사진 포함)
+  findImageKeysByTreeId = (treeId: number): Promise<{ s3Key: string }[]> => {
+    return this.prisma.treeImage.findMany({
+      where: { treeId: BigInt(treeId) },
+      select: { s3Key: true },
+    });
+  };
+
+  // S3 객체를 지운 뒤 호출한다. 나무는 소프트 삭제라 Cascade 가 동작하지 않는다.
+  deleteImagesByTreeId = (treeId: number): Promise<{ count: number }> => {
+    return this.prisma.treeImage.deleteMany({
+      where: { treeId: BigInt(treeId) },
+    });
+  };
+
   softDeleteTree = (treeId: number, deletedAt: Date): Promise<TreeRecord> => {
     return this.prisma.tree.update({
       where: {
