@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import { S3Service } from '../../common/s3/s3.service';
@@ -36,6 +36,8 @@ import {
 
 @Injectable()
 export class TreesService {
+  private readonly logger = new Logger(TreesService.name);
+
   constructor(
     private readonly treesRepository: TreesRepository,
     private readonly s3Service: S3Service,
@@ -149,12 +151,22 @@ export class TreesService {
       return;
     }
 
-    // S3 삭제가 실패해도 나무 삭제는 계속 진행한다 (고아 객체만 남음).
+    // S3 삭제가 실패해도 나무 삭제는 계속 진행한다. 실패한 키는 로그로 남겨
+    // 나중에 고아 객체를 추적·정리할 수 있게 한다.
+    const failedKeys: string[] = [];
     await Promise.all(
       images.map((image) =>
-        this.s3Service.delete(image.s3Key).catch(() => undefined),
+        this.s3Service.delete(image.s3Key).catch(() => {
+          failedKeys.push(image.s3Key);
+        }),
       ),
     );
+
+    if (failedKeys.length > 0) {
+      this.logger.warn(
+        `나무(${treeId}) 삭제 중 S3 객체 삭제 실패: ${failedKeys.join(', ')}`,
+      );
+    }
 
     await this.treesRepository.deleteImagesByTreeId(treeId);
   };

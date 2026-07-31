@@ -236,6 +236,16 @@ describe('TreesService', () => {
       expect(s3Service.delete).toHaveBeenCalledWith('trees/1/b.jpg');
       expect(repository.deleteImagesByTreeId).toHaveBeenCalledWith(1);
       expect(repository.softDeleteTree).toHaveBeenCalled();
+
+      // S3 객체 삭제 → 사진 레코드 삭제 → 나무 소프트 삭제 순서를 보장한다.
+      const lastS3Call = Math.max(...s3Service.delete.mock.invocationCallOrder);
+      const imageDeleteCall =
+        repository.deleteImagesByTreeId.mock.invocationCallOrder[0];
+      const treeDeleteCall =
+        repository.softDeleteTree.mock.invocationCallOrder[0];
+
+      expect(lastS3Call).toBeLessThan(imageDeleteCall);
+      expect(imageDeleteCall).toBeLessThan(treeDeleteCall);
     });
 
     it('사진이 없으면 삭제를 시도하지 않는다', async () => {
@@ -257,6 +267,7 @@ describe('TreesService', () => {
 
       await service.deleteTree(10, 1);
 
+      expect(s3Service.delete).toHaveBeenCalledWith('trees/1/a.jpg');
       expect(repository.deleteImagesByTreeId).toHaveBeenCalledWith(1);
       expect(repository.softDeleteTree).toHaveBeenCalled();
     });
