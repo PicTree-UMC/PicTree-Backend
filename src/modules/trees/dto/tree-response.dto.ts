@@ -17,7 +17,7 @@ export class TreeImageResponseDto {
 
   @ApiProperty({
     example: 'https://.../a.jpg?X-Amz-Signature=...',
-    description: '사진 조회용 임시 서명 URL (presigned)',
+    description: '사진 조회용 임시 서명 URL (presigned, 24시간 유효)',
   })
   imageUrl!: string;
 
