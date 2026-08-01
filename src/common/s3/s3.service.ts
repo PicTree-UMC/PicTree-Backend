@@ -10,8 +10,10 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AppException } from '../exceptions/app.exception';
 import { ErrorCode } from '../exceptions/error-code';
 
-// presigned 조회 URL 유효 시간(초). 기본 1시간.
-const PRESIGNED_URL_EXPIRES_IN = 3600;
+// presigned 조회 URL 유효 시간(초). 24시간.
+// 화면을 오래 열어둔 뒤에도 이미지가 보이도록 하루로 잡는다.
+// 만료된 경우에는 조회 API 를 다시 호출해 새 URL 을 발급받는다.
+const PRESIGNED_URL_EXPIRES_IN = 60 * 60 * 24;
 
 interface UploadParams {
   key: string;
