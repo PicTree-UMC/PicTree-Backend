@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateTimelineData,
@@ -13,6 +14,11 @@ const timelineInclude = {
       name: true,
       mood: true,
       defaultImage: true,
+      isFavorite: true,
+      images: {
+        select: { s3Key: true },
+        orderBy: { id: 'asc' },
+      },
     },
   },
 } as const;
@@ -28,9 +34,36 @@ export class TimelinesRepository {
     });
 
   create = (data: CreateTimelineData): Promise<TimelineRecordWithTree> =>
-    this.prisma.timelineRecord.create({
-      data,
-      include: timelineInclude,
+    this.prisma.$transaction(async (tx) => {
+      if (data.treeId !== null && data.treeId !== undefined) {
+        const existing = await tx.timelineRecord.findFirst({
+          where: { treeId: data.treeId, deletedAt: null },
+          select: { id: true },
+        });
+
+        if (existing) {
+          await tx.tree.updateMany({
+            where: { id: data.treeId, userId: data.userId, deletedAt: null },
+            data: { name: data.title, description: data.content },
+          });
+
+          return tx.timelineRecord.update({
+            where: { id: existing.id },
+            data: {
+              title: data.title,
+              content: data.content,
+              category: data.category,
+              visitedAt: data.visitedAt,
+            },
+            include: timelineInclude,
+          });
+        }
+      }
+
+      return tx.timelineRecord.create({
+        data,
+        include: timelineInclude,
+      });
     });
 
   findAllByUser = async (
@@ -38,13 +71,17 @@ export class TimelinesRepository {
     skip: number,
     take: number,
   ): Promise<[TimelineRecordWithTree[], number]> => {
-    const where = { userId, deletedAt: null };
+    const where: Prisma.TimelineRecordWhereInput = {
+      userId,
+      deletedAt: null,
+      OR: [{ treeId: null }, { tree: { deletedAt: null } }],
+    };
 
     return this.prisma.$transaction([
       this.prisma.timelineRecord.findMany({
         where,
         include: timelineInclude,
-        orderBy: [{ visitedAt: 'desc' }, { id: 'desc' }],
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip,
         take,
       }),
@@ -57,7 +94,12 @@ export class TimelinesRepository {
     userId: bigint,
   ): Promise<TimelineRecordWithTree | null> =>
     this.prisma.timelineRecord.findFirst({
-      where: { id: timelineId, userId, deletedAt: null },
+      where: {
+        id: timelineId,
+        userId,
+        deletedAt: null,
+        OR: [{ treeId: null }, { tree: { deletedAt: null } }],
+      },
       include: timelineInclude,
     });
 
@@ -65,10 +107,33 @@ export class TimelinesRepository {
     timelineId: bigint,
     data: UpdateTimelineData,
   ): Promise<TimelineRecordWithTree> =>
-    this.prisma.timelineRecord.update({
-      where: { id: timelineId },
-      data,
-      include: timelineInclude,
+    this.prisma.$transaction(async (tx) => {
+      const timeline = await tx.timelineRecord.update({
+        where: { id: timelineId },
+        data,
+        select: { treeId: true },
+      });
+
+      if (timeline.treeId !== null) {
+        const treeData: Prisma.TreeUpdateManyMutationInput = {};
+        if (data.title !== undefined) {
+          treeData.name = data.title;
+        }
+        if (data.content !== undefined) {
+          treeData.description = data.content;
+        }
+        if (Object.keys(treeData).length > 0) {
+          await tx.tree.updateMany({
+            where: { id: timeline.treeId, deletedAt: null },
+            data: treeData,
+          });
+        }
+      }
+
+      return tx.timelineRecord.findUniqueOrThrow({
+        where: { id: timelineId },
+        include: timelineInclude,
+      });
     });
 
   softDelete = (timelineId: bigint, deletedAt: Date) =>

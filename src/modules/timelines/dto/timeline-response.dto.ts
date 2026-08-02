@@ -16,6 +16,16 @@ export class TimelineTreeResponseDto {
     description: '기본 나무 이미지 식별자',
   })
   defaultImage!: string;
+
+  @ApiProperty({ example: false, description: '즐겨찾기 여부' })
+  isFavorite!: boolean;
+
+  @ApiProperty({
+    type: [String],
+    example: ['https://.../a.jpg?X-Amz-Signature=...'],
+    description: '나무 사진의 조회용 임시 서명 URL 목록',
+  })
+  imageUrls!: string[];
 }
 
 export class TimelineResponseDto {

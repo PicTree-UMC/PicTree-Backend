@@ -8,6 +8,6 @@ import { TreesService } from './trees.service';
   imports: [AuthModule],
   controllers: [TreesController],
   providers: [TreesService, TreesRepository],
-  exports: [TreesRepository],
+  exports: [TreesService, TreesRepository],
 })
 export class TreesModule {}

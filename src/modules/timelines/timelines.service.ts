@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
+import { S3Service } from '../../common/s3/s3.service';
+import { TreesService } from '../trees/trees.service';
 import { CreateTimelineRequestDto } from './dto/create-timeline-request.dto';
 import {
   TimelineListResponseDto,
@@ -13,7 +15,11 @@ import { TimelineRecordWithTree, UpdateTimelineData } from './timelines.types';
 
 @Injectable()
 export class TimelinesService {
-  constructor(private readonly timelinesRepository: TimelinesRepository) {}
+  constructor(
+    private readonly timelinesRepository: TimelinesRepository,
+    private readonly treesService: TreesService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   create = async (
     userId: number,
@@ -47,7 +53,9 @@ export class TimelinesService {
     const totalPages = Math.ceil(totalElements / query.size);
 
     return {
-      items: timelines.map((timeline) => this.toResponseDto(timeline)),
+      items: await Promise.all(
+        timelines.map((timeline) => this.toResponseDto(timeline)),
+      ),
       page: query.page,
       size: query.size,
       totalElements,
@@ -96,8 +104,12 @@ export class TimelinesService {
   };
 
   remove = async (userId: number, timelineId: number): Promise<null> => {
-    await this.getTimelineOrThrow(userId, timelineId);
-    await this.timelinesRepository.softDelete(BigInt(timelineId), new Date());
+    const timeline = await this.getTimelineOrThrow(userId, timelineId);
+    if (timeline.treeId !== null) {
+      await this.treesService.deleteTree(userId, Number(timeline.treeId));
+    } else {
+      await this.timelinesRepository.softDelete(BigInt(timelineId), new Date());
+    }
 
     return null;
   };
@@ -145,9 +157,9 @@ export class TimelinesService {
     }
   };
 
-  private toResponseDto = (
+  private toResponseDto = async (
     timeline: TimelineRecordWithTree,
-  ): TimelineResponseDto => ({
+  ): Promise<TimelineResponseDto> => ({
     id: Number(timeline.id),
     userId: Number(timeline.userId),
     treeId: timeline.treeId === null ? null : Number(timeline.treeId),
@@ -165,6 +177,12 @@ export class TimelinesService {
             name: timeline.tree.name,
             mood: timeline.tree.mood,
             defaultImage: timeline.tree.defaultImage,
+            isFavorite: timeline.tree.isFavorite,
+            imageUrls: await Promise.all(
+              timeline.tree.images.map((image) =>
+                this.s3Service.getPresignedUrl(image.s3Key),
+              ),
+            ),
           },
   });
 }
