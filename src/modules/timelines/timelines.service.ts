@@ -100,6 +100,10 @@ export class TimelinesService {
       data,
     );
 
+    if (!timeline) {
+      throw new AppException(ErrorCode.TIMELINE_TREE_ALREADY_LINKED);
+    }
+
     return this.toResponseDto(timeline);
   };
 

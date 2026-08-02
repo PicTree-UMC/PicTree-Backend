@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, TimelineCategory } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateTimelineData,
@@ -36,6 +36,14 @@ export class TimelinesRepository {
   create = (data: CreateTimelineData): Promise<TimelineRecordWithTree> =>
     this.prisma.$transaction(async (tx) => {
       if (data.treeId !== null && data.treeId !== undefined) {
+        // 동일 나무에 대한 생성 요청을 직렬화해 활성 타임라인 중복 생성을 막는다.
+        await tx.$queryRaw`
+          SELECT id
+          FROM trees
+          WHERE id = ${data.treeId}
+          FOR UPDATE
+        `;
+
         const existing = await tx.timelineRecord.findFirst({
           where: { treeId: data.treeId, deletedAt: null },
           select: { id: true },
@@ -106,28 +114,65 @@ export class TimelinesRepository {
   update = (
     timelineId: bigint,
     data: UpdateTimelineData,
-  ): Promise<TimelineRecordWithTree> =>
+  ): Promise<TimelineRecordWithTree | null> =>
     this.prisma.$transaction(async (tx) => {
-      const timeline = await tx.timelineRecord.update({
+      const current = await tx.timelineRecord.findUniqueOrThrow({
         where: { id: timelineId },
-        data,
         select: { treeId: true },
       });
 
-      if (timeline.treeId !== null) {
-        const treeData: Prisma.TreeUpdateManyMutationInput = {};
-        if (data.title !== undefined) {
-          treeData.name = data.title;
-        }
-        if (data.content !== undefined) {
-          treeData.description = data.content;
-        }
-        if (Object.keys(treeData).length > 0) {
-          await tx.tree.updateMany({
-            where: { id: timeline.treeId, deletedAt: null },
-            data: treeData,
+      const targetTreeId =
+        data.treeId === undefined ? current.treeId : data.treeId;
+
+      if (targetTreeId !== null) {
+        // 대상 나무를 잠근 뒤 충돌 여부를 확인해 이동 요청도 원자적으로 처리한다.
+        await tx.$queryRaw`
+          SELECT id
+          FROM trees
+          WHERE id = ${targetTreeId}
+          FOR UPDATE
+        `;
+
+        if (data.treeId !== undefined && targetTreeId !== current.treeId) {
+          const conflict = await tx.timelineRecord.findFirst({
+            where: {
+              treeId: targetTreeId,
+              deletedAt: null,
+              id: { not: timelineId },
+            },
+            select: { id: true },
           });
+
+          if (conflict) {
+            return null;
+          }
         }
+      }
+
+      const timeline = await tx.timelineRecord.update({
+        where: { id: timelineId },
+        data,
+        select: {
+          treeId: true,
+          title: true,
+          content: true,
+          category: true,
+        },
+      });
+
+      const shouldSyncTree =
+        timeline.treeId !== null &&
+        timeline.category === TimelineCategory.VISIT &&
+        (data.treeId !== undefined ||
+          data.title !== undefined ||
+          data.content !== undefined ||
+          data.category !== undefined);
+
+      if (shouldSyncTree && timeline.treeId !== null) {
+        await tx.tree.updateMany({
+          where: { id: timeline.treeId, deletedAt: null },
+          data: { name: timeline.title, description: timeline.content },
+        });
       }
 
       return tx.timelineRecord.findUniqueOrThrow({

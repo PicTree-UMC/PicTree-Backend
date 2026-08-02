@@ -76,7 +76,11 @@ describe('TreesRepository 나무-타임라인 동기화', () => {
     });
 
     expect(tx.timelineRecord.updateMany).toHaveBeenCalledWith({
-      where: { treeId: 1n, deletedAt: null },
+      where: {
+        treeId: 1n,
+        category: TimelineCategory.VISIT,
+        deletedAt: null,
+      },
       data: { title: '수정된 이름', content: '수정된 설명' },
     });
   });

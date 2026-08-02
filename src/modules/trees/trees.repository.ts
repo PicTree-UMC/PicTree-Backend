@@ -172,7 +172,11 @@ export class TreesRepository {
 
       if (Object.keys(timelineData).length > 0) {
         await tx.timelineRecord.updateMany({
-          where: { treeId: tree.id, deletedAt: null },
+          where: {
+            treeId: tree.id,
+            category: TimelineCategory.VISIT,
+            deletedAt: null,
+          },
           data: timelineData,
         });
       }

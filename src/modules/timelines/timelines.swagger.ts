@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
@@ -155,6 +156,15 @@ export const ApiUpdateTimeline = () =>
         example: failResponse(
           'TIMELINE400',
           '타임라인 수정 요청 값이 올바르지 않습니다.',
+        ),
+      },
+    }),
+    ApiConflictResponse({
+      description: '대상 나무에 다른 활성 타임라인이 이미 연결됨',
+      schema: {
+        example: failResponse(
+          'TIMELINE409',
+          '해당 나무에는 이미 활성 타임라인이 연결되어 있습니다.',
         ),
       },
     }),

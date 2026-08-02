@@ -308,6 +308,11 @@ export const ErrorCode = {
     code: 'TIMELINE404',
     message: '타임라인을 찾을 수 없습니다.',
   },
+  TIMELINE_TREE_ALREADY_LINKED: {
+    status: HttpStatus.CONFLICT,
+    code: 'TIMELINE409',
+    message: '해당 나무에는 이미 활성 타임라인이 연결되어 있습니다.',
+  },
 
   // Push Subscription
   PUSH_SUBSCRIPTION_NOT_FOUND: {

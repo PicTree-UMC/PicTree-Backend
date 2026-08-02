@@ -125,6 +125,20 @@ describe('TimelinesService', () => {
     expect(repository.update).not.toHaveBeenCalled();
   });
 
+  it('다른 활성 타임라인이 연결된 나무로 변경할 수 없다', async () => {
+    repository.findByIdAndUser.mockResolvedValue(timeline);
+    repository.findAvailableTreeByIdAndUser.mockResolvedValue({ id: 3n });
+    repository.update.mockResolvedValue(null);
+
+    await expect(service.update(10, 1, { treeId: 3 })).rejects.toMatchObject({
+      response: {
+        success: false,
+        code: 'TIMELINE409',
+      },
+      status: 409,
+    });
+  });
+
   it('나무와 연결된 타임라인을 삭제하면 나무도 삭제한다', async () => {
     repository.findByIdAndUser.mockResolvedValue(timeline);
     treesService.deleteTree.mockResolvedValue(null);
