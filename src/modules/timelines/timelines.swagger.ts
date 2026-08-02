@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
@@ -34,6 +35,8 @@ const timelineExample = {
     name: '오아시스 만난 곳',
     mood: 'HAPPY',
     defaultImage: 'https://example.com/default-tree.png',
+    isFavorite: false,
+    imageUrls: ['https://.../a.jpg?X-Amz-Signature=...'],
   },
 };
 
@@ -80,7 +83,11 @@ const notFoundResponses = () =>
 
 export const ApiGetTimelines = () =>
   applyDecorators(
-    ApiOperation({ summary: '타임라인 목록 조회' }),
+    ApiOperation({
+      summary: '타임라인 목록 조회',
+      description:
+        '나무 등록 시 자동 생성된 기록을 생성일 최신순으로 조회합니다. 즐겨찾기와 사진 정보는 tree에 포함됩니다.',
+    }),
     protectedResponses(),
     ApiOkResponse({
       description: '타임라인 목록 조회 성공',
@@ -110,7 +117,12 @@ export const ApiGetTimeline = () =>
 
 export const ApiCreateTimeline = () =>
   applyDecorators(
-    ApiOperation({ summary: '타임라인 기록 생성' }),
+    ApiOperation({
+      summary: '타임라인 기록 생성',
+      description:
+        '하위 호환용 API입니다. 나무에 이미 자동 생성된 기록이 있으면 해당 기록을 갱신합니다. 신규 화면에서는 나무 등록 API를 사용하세요.',
+      deprecated: true,
+    }),
     protectedResponses(),
     notFoundResponses(),
     ApiBody({ type: CreateTimelineRequestDto }),
@@ -126,7 +138,11 @@ export const ApiCreateTimeline = () =>
 
 export const ApiUpdateTimeline = () =>
   applyDecorators(
-    ApiOperation({ summary: '타임라인 기록 수정' }),
+    ApiOperation({
+      summary: '타임라인 기록 수정',
+      description:
+        '연결된 타임라인의 제목·내용을 수정하면 나무의 이름·설명도 함께 수정됩니다.',
+    }),
     protectedResponses(),
     notFoundResponses(),
     ApiBody({ type: UpdateTimelineRequestDto }),
@@ -143,11 +159,24 @@ export const ApiUpdateTimeline = () =>
         ),
       },
     }),
+    ApiConflictResponse({
+      description: '대상 나무에 다른 활성 타임라인이 이미 연결됨',
+      schema: {
+        example: failResponse(
+          'TIMELINE409',
+          '해당 나무에는 이미 활성 타임라인이 연결되어 있습니다.',
+        ),
+      },
+    }),
   );
 
 export const ApiDeleteTimeline = () =>
   applyDecorators(
-    ApiOperation({ summary: '타임라인 기록 삭제' }),
+    ApiOperation({
+      summary: '타임라인 기록 삭제',
+      description:
+        '나무와 연결된 타임라인을 삭제하면 해당 나무와 사진도 함께 삭제됩니다.',
+    }),
     protectedResponses(),
     notFoundResponses(),
     ApiOkResponse({

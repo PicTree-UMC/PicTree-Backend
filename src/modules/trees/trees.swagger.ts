@@ -57,7 +57,11 @@ const treeIdParam = () =>
 
 export const ApiCreateTree = () =>
   applyDecorators(
-    ApiOperation({ summary: '나무 등록' }),
+    ApiOperation({
+      summary: '나무 등록',
+      description:
+        '나무를 등록하면 같은 정보를 사용하는 타임라인 기록이 함께 생성됩니다.',
+    }),
     protectedTreeResponses(),
     ApiBody({ type: CreateTreeRequestDto }),
     ApiCreatedResponse({
@@ -213,7 +217,11 @@ export const ApiGetNearbyTrees = () =>
 
 export const ApiUpdateTree = () =>
   applyDecorators(
-    ApiOperation({ summary: '나무 정보 수정' }),
+    ApiOperation({
+      summary: '나무 정보 수정',
+      description:
+        '나무의 이름·설명을 수정하면 연결된 타임라인의 제목·내용도 함께 수정됩니다.',
+    }),
     protectedTreeResponses(),
     treeIdParam(),
     treeResourceResponses(),
@@ -264,7 +272,7 @@ export const ApiDeleteTree = () =>
     ApiOperation({
       summary: '나무 삭제',
       description:
-        '나무를 삭제하면 해당 나무의 사진 레코드가 함께 삭제되고 S3 객체 삭제도 시도합니다. S3 삭제가 실패해도 나무 삭제는 진행되므로 S3 객체가 남을 수 있습니다. 타임라인 기록 자체는 유지됩니다.',
+        '나무를 삭제하면 연결된 타임라인과 사진 레코드가 함께 삭제되고 S3 객체 삭제도 시도합니다. S3 삭제가 실패해도 나무·타임라인 삭제는 진행됩니다.',
     }),
     protectedTreeResponses(),
     treeIdParam(),

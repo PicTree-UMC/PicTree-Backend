@@ -1,5 +1,7 @@
 import { TimelineCategory } from '@prisma/client';
 import { AppException } from '../../common/exceptions/app.exception';
+import { S3Service } from '../../common/s3/s3.service';
+import { TreesService } from '../trees/trees.service';
 import { TimelinesRepository } from './timelines.repository';
 import { TimelinesService } from './timelines.service';
 import { TimelineRecordWithTree } from './timelines.types';
@@ -21,10 +23,14 @@ describe('TimelinesService', () => {
       name: '오아시스 나무',
       mood: 'HAPPY',
       defaultImage: 'DEFAULT_1',
+      isFavorite: true,
+      images: [{ s3Key: 'trees/2/a.jpg' }],
     },
   };
 
   let repository: jest.Mocked<TimelinesRepository>;
+  let treesService: jest.Mocked<TreesService>;
+  let s3Service: jest.Mocked<S3Service>;
   let service: TimelinesService;
 
   beforeEach(() => {
@@ -36,7 +42,15 @@ describe('TimelinesService', () => {
       update: jest.fn(),
       softDelete: jest.fn(),
     } as unknown as jest.Mocked<TimelinesRepository>;
-    service = new TimelinesService(repository);
+    treesService = {
+      deleteTree: jest.fn(),
+    } as unknown as jest.Mocked<TreesService>;
+    s3Service = {
+      getPresignedUrl: jest.fn((key: string) =>
+        Promise.resolve(`https://signed/${key}`),
+      ),
+    } as unknown as jest.Mocked<S3Service>;
+    service = new TimelinesService(repository, treesService, s3Service);
   });
 
   it('타임라인을 생성한다', async () => {
@@ -59,6 +73,10 @@ describe('TimelinesService', () => {
       10n,
     );
     expect(result).toMatchObject({ id: 1, userId: 10, treeId: 2 });
+    expect(result.tree).toMatchObject({
+      isFavorite: true,
+      imageUrls: ['https://signed/trees/2/a.jpg'],
+    });
   });
 
   it('존재하지 않거나 다른 사용자의 나무로 타임라인을 생성할 수 없다', async () => {
@@ -107,14 +125,44 @@ describe('TimelinesService', () => {
     expect(repository.update).not.toHaveBeenCalled();
   });
 
-  it('본인의 타임라인을 soft delete 한다', async () => {
+  it('다른 활성 타임라인이 연결된 나무로 변경할 수 없다', async () => {
     repository.findByIdAndUser.mockResolvedValue(timeline);
+    repository.findAvailableTreeByIdAndUser.mockResolvedValue({ id: 3n });
+    repository.update.mockResolvedValue(null);
+
+    await expect(service.update(10, 1, { treeId: 3 })).rejects.toMatchObject({
+      response: {
+        success: false,
+        code: 'TIMELINE409',
+      },
+      status: 409,
+    });
+  });
+
+  it('나무와 연결된 타임라인을 삭제하면 나무도 삭제한다', async () => {
+    repository.findByIdAndUser.mockResolvedValue(timeline);
+    treesService.deleteTree.mockResolvedValue(null);
+
+    await expect(service.remove(10, 1)).resolves.toBeNull();
+    expect(treesService.deleteTree).toHaveBeenCalledWith(10, 2);
+    expect(repository.softDelete).not.toHaveBeenCalled();
+  });
+
+  it('나무와 연결되지 않은 기존 타임라인만 soft delete 한다', async () => {
+    repository.findByIdAndUser.mockResolvedValue({
+      ...timeline,
+      treeId: null,
+      tree: null,
+    });
     repository.softDelete.mockResolvedValue({
       ...timeline,
+      treeId: null,
+      tree: null,
       deletedAt: new Date(),
     });
 
     await expect(service.remove(10, 1)).resolves.toBeNull();
     expect(repository.softDelete).toHaveBeenCalledWith(1n, expect.any(Date));
+    expect(treesService.deleteTree).not.toHaveBeenCalled();
   });
 });

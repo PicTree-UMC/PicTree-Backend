@@ -5,6 +5,8 @@ export interface TimelineTreeRecord {
   name: string;
   mood: string;
   defaultImage: string;
+  isFavorite: boolean;
+  images: { s3Key: string }[];
 }
 
 export interface TimelineRecordWithTree {
