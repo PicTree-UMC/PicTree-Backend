@@ -173,9 +173,11 @@ export class TreesService {
   };
 
   getNearbyTrees = async (
+    userId: number,
     query: GetNearbyTreesQueryDto,
   ): Promise<NearbyTreeResponseDto[]> => {
     const trees = await this.treesRepository.findNearbyTrees(
+      userId,
       query.lat,
       query.lng,
       NEARBY_TREE_RADIUS_M,

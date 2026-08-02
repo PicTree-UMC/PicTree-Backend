@@ -79,9 +79,13 @@ export class TreesController {
   @Get('nearby')
   @ApiGetNearbyTrees()
   async getNearbyTrees(
+    @CurrentUser() currentUser: JwtPayload,
     @Query() query: GetNearbyTreesQueryDto,
   ): Promise<ApiResponse<NearbyTreeResponseDto[]>> {
-    const data = await this.treesService.getNearbyTrees(query);
+    const data = await this.treesService.getNearbyTrees(
+      currentUser.userId,
+      query,
+    );
 
     return ApiResponse.success(SuccessCode.OK, data);
   }

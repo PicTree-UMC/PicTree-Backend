@@ -86,6 +86,12 @@ describe('NearbyAlertsService', () => {
     });
 
     expect(result).toEqual({ nearbyCount: 1, sentCount: 0 });
+    expect(treesRepository.findNearbyTrees).toHaveBeenCalledWith(
+      10,
+      37.5,
+      127,
+      100,
+    );
     expect(subscriptionsRepository.findActiveByUser).not.toHaveBeenCalled();
   });
 
