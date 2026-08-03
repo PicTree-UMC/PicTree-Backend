@@ -64,10 +64,14 @@ export class OpenAiBlogDraftService {
               type: 'input_text',
               text: [
                 '너는 여행/장소 기록을 바탕으로 한국어 블로그 초안을 작성하는 도우미다.',
-                '응답은 반드시 JSON 하나만 반환한다.',
+                '응답은 반드시 유효한 JSON 객체 하나만 반환한다.',
                 '형식: {"title":"문자열","items":[{"placeName":"장소명","content":"장소별 본문"}]}',
+                'JSON 외의 설명, 인사말, 마크다운, 코드블록, 주석은 절대 포함하지 않는다.',
+                '최상위 필드는 title, items만 허용한다.',
                 'items는 장소별 블로그 초안 본문 배열로 작성한다.',
                 '각 item은 placeName과 content를 반드시 포함한다.',
+                '각 item의 필드는 placeName, content만 허용한다.',
+                'title, placeName, content는 빈 문자열이면 안 된다.',
                 '한국인이 직접 쓴 여행 블로그처럼, 정보 나열보다 경험을 이야기하듯 작성한다.',
                 '이 글은 AI가 작성한 안내문이 아니라, 실제 20대 한국인이 하루를 기록한 개인 블로그처럼 작성한다.',
                 '너무 완벽하게 정리된 문장보다, 약간의 여운이 있는 자연스러운 문장을 선호한다.',
@@ -105,7 +109,7 @@ export class OpenAiBlogDraftService {
 
     const outputText = this.extractOutputText(response);
 
-    return this.parseGeneratedDraft(outputText, startDate, endDate);
+    return this.parseGeneratedDraft(outputText);
   };
 
   private requestOpenAi = async (
@@ -160,11 +164,7 @@ export class OpenAiBlogDraftService {
     return content;
   };
 
-  private parseGeneratedDraft = (
-    text: string,
-    startDate: string,
-    endDate: string,
-  ): OpenAiGeneratedDraft => {
+  private parseGeneratedDraft = (text: string): OpenAiGeneratedDraft => {
     const jsonText = this.extractJsonText(text);
 
     try {
@@ -184,15 +184,7 @@ export class OpenAiBlogDraftService {
         items,
       };
     } catch {
-      return {
-        title: this.normalizeTitle(`[여행기록] ${startDate} ~ ${endDate}`),
-        items: [
-          {
-            placeName: '여행 기록',
-            content: text.trim(),
-          },
-        ],
-      };
+      throw new AppException(ErrorCode.BLOG_DRAFT_GENERATION_FAILED);
     }
   };
 
