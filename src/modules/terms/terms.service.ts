@@ -94,6 +94,7 @@ export class TermsService {
     type: term.type,
     version: term.version,
     contentUrl: term.contentUrl,
+    summary: term.summary,
     isRequired: term.isRequired,
     effectiveFrom: term.effectiveFrom,
   });

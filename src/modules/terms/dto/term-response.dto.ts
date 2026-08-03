@@ -20,6 +20,14 @@ export class TermResponseDto {
   })
   contentUrl!: string | null;
 
+  @ApiProperty({
+    example:
+      'PicTree 서비스 이용에 필요한 기본 약관입니다. 회원의 권리·의무, 서비스 제공 범위, 이용 제한 사항 등을 포함합니다.',
+    nullable: true,
+    description: '앱 화면에 표시할 약관 요약 설명',
+  })
+  summary!: string | null;
+
   @ApiProperty({ example: true, description: '필수 동의 여부' })
   isRequired!: boolean;
 

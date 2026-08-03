@@ -35,6 +35,8 @@ export const ApiGetTerms = () =>
               type: 'SERVICE',
               version: '1.0',
               contentUrl: 'https://example.com/terms/service-v1.html',
+              summary:
+                'PicTree 서비스 이용에 필요한 기본 약관입니다. 회원의 권리·의무, 서비스 제공 범위, 이용 제한 사항 등을 포함합니다.',
               isRequired: true,
               effectiveFrom: '2026-07-16T00:00:00.000Z',
             },
@@ -44,6 +46,8 @@ export const ApiGetTerms = () =>
               type: 'MARKETING',
               version: '1.0',
               contentUrl: null,
+              summary:
+                '신규 기능, 이벤트, 혜택 소식을 받습니다. 미동의 시에도 서비스 이용에는 제한이 없습니다.',
               isRequired: false,
               effectiveFrom: '2026-07-16T00:00:00.000Z',
             },
