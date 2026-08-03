@@ -63,6 +63,7 @@ model Term {
   type          String               @db.VarChar(30)
   version       String               @db.VarChar(20)
   contentUrl    String?              @map("content_url") @db.VarChar(500)
+  summary       String?              @db.VarChar(1000)
   isRequired    Boolean              @default(true) @map("is_required")
   isActive      Boolean              @default(true) @map("is_active")
   effectiveFrom DateTime             @map("effective_from")
