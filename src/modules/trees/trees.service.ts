@@ -87,7 +87,6 @@ export class TreesService {
       size,
       total,
       totalPages: Math.ceil(total / size),
-      hasNext: page * size < total,
     };
   };
 
@@ -137,8 +136,7 @@ export class TreesService {
     await this.getOwnedTreeOrThrow(userId, treeId);
 
     // 나무는 소프트 삭제라 Cascade 가 동작하지 않으므로 사진을 직접 정리한다.
-    // 타임라인에 연결된 사진도 함께 지운다. 저장소 트랜잭션에서
-    // 나무와 연결된 타임라인을 같은 시각에 소프트 삭제한다.
+    // 타임라인에 연결된 사진도 함께 지워지며, 타임라인 기록 자체는 유지된다.
     await this.deleteTreeImages(treeId);
 
     await this.treesRepository.softDeleteTree(treeId, new Date());
@@ -274,7 +272,6 @@ export class TreesService {
   ): Promise<TreeSummaryResponseDto> => ({
     treeId: Number(tree.id),
     name: tree.name,
-    description: tree.description,
     latitude: Number(tree.latitude),
     longitude: Number(tree.longitude),
     mood: tree.mood,
@@ -285,8 +282,6 @@ export class TreesService {
         ? await this.s3Service.getPresignedUrl(tree.images[0].s3Key)
         : null,
     isFavorite: tree.isFavorite,
-    createdAt: tree.createdAt,
-    updatedAt: tree.updatedAt,
   });
 
   private toTreeResponseDto = async (
@@ -329,5 +324,7 @@ export class TreesService {
     imageId: Number(image.id),
     // 버킷이 private 이므로 원본 URL 대신 presigned URL 을 내려준다.
     imageUrl: await this.s3Service.getPresignedUrl(image.s3Key),
+    timelineRecordId:
+      image.timelineRecordId === null ? null : Number(image.timelineRecordId),
   });
 }

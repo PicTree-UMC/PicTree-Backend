@@ -16,7 +16,4 @@ export class TreeListResponseDto {
 
   @ApiProperty({ example: 3, description: '전체 페이지 수' })
   totalPages!: number;
-
-  @ApiProperty({ example: true, description: '다음 페이지 존재 여부' })
-  hasNext!: boolean;
 }

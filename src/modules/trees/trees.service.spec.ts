@@ -48,6 +48,7 @@ describe('TreesService', () => {
     createdAt: new Date('2026-03-30T10:00:00.000Z'),
     image: {
       id: 11n,
+      timelineRecordId: null,
       s3Key: 'trees/1/a.jpg',
     },
   };
@@ -292,15 +293,6 @@ describe('TreesService', () => {
 
       expect(s3Service.getPresignedUrl).toHaveBeenCalledWith('trees/1/a.jpg');
       expect(result.items[0].imageUrl).toBe('https://signed/trees/1/a.jpg');
-      expect(result.items[0]).toMatchObject({
-        treeId: 1,
-        name: tree.name,
-        description: tree.description,
-        isFavorite: tree.isFavorite,
-        createdAt: tree.createdAt,
-        updatedAt: tree.updatedAt,
-      });
-      expect(result.hasNext).toBe(false);
     });
 
     it('사진이 없으면 imageUrl 은 null 이다', async () => {
@@ -319,7 +311,7 @@ describe('TreesService', () => {
   it('나무 상세의 사진 URL 을 presigned 로 발급한다', async () => {
     repository.findTreeWithImagesById.mockResolvedValue({
       ...treeWithImages,
-      images: [{ id: 11n, s3Key: 'trees/1/a.jpg' }],
+      images: [{ id: 11n, timelineRecordId: null, s3Key: 'trees/1/a.jpg' }],
     });
 
     const result = await service.getTree(10, 1);
@@ -329,6 +321,7 @@ describe('TreesService', () => {
       {
         imageId: 11,
         imageUrl: 'https://signed/trees/1/a.jpg',
+        timelineRecordId: null,
       },
     ]);
   });

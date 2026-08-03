@@ -57,11 +57,7 @@ const treeIdParam = () =>
 
 export const ApiCreateTree = () =>
   applyDecorators(
-    ApiOperation({
-      summary: '나무 등록',
-      description:
-        '나무를 등록합니다. 등록된 나무 데이터는 지도와 타임라인 화면에서 공통으로 사용됩니다.',
-    }),
+    ApiOperation({ summary: '나무 등록' }),
     protectedTreeResponses(),
     ApiBody({ type: CreateTreeRequestDto }),
     ApiCreatedResponse({
@@ -83,11 +79,7 @@ export const ApiCreateTree = () =>
 
 export const ApiGetMyTrees = () =>
   applyDecorators(
-    ApiOperation({
-      summary: '내 나무 목록 조회',
-      description:
-        '지도와 타임라인 화면에서 공통으로 사용합니다. 등록일 최신순으로 반환합니다.',
-    }),
+    ApiOperation({ summary: '내 나무 목록 조회 (지도)' }),
     protectedTreeResponses(),
     ApiOkResponse({
       description: '나무 목록 조회 성공',
@@ -101,22 +93,18 @@ export const ApiGetMyTrees = () =>
               {
                 treeId: 1,
                 name: '우리 동네 벚나무',
-                description: '산책로 입구',
                 latitude: 37.5665,
                 longitude: 126.978,
                 mood: '😍',
                 defaultImage: 'DEFAULT_1',
                 imageUrl: 'https://.../a.jpg?X-Amz-Signature=...',
                 isFavorite: false,
-                createdAt: '2026-07-19T10:00:00.000Z',
-                updatedAt: '2026-07-19T10:10:00.000Z',
               },
             ],
             page: 1,
             size: 20,
             total: 1,
             totalPages: 1,
-            hasNext: false,
           },
         },
       },
@@ -178,6 +166,7 @@ export const ApiGetTree = () =>
               {
                 imageId: 10,
                 imageUrl: 'https://.../a.jpg?X-Amz-Signature=...',
+                timelineRecordId: null,
               },
             ],
             createdAt: '2026-07-19T10:00:00.000Z',
@@ -224,11 +213,7 @@ export const ApiGetNearbyTrees = () =>
 
 export const ApiUpdateTree = () =>
   applyDecorators(
-    ApiOperation({
-      summary: '나무 정보 수정',
-      description:
-        '나무의 이름·설명을 수정하면 연결된 타임라인의 제목·내용도 함께 수정됩니다.',
-    }),
+    ApiOperation({ summary: '나무 정보 수정' }),
     protectedTreeResponses(),
     treeIdParam(),
     treeResourceResponses(),
@@ -279,7 +264,7 @@ export const ApiDeleteTree = () =>
     ApiOperation({
       summary: '나무 삭제',
       description:
-        '나무를 삭제하면 연결된 타임라인과 사진 레코드가 함께 삭제되고 S3 객체 삭제도 시도합니다. S3 삭제가 실패해도 나무·타임라인 삭제는 진행됩니다.',
+        '나무를 삭제하면 해당 나무의 사진 레코드가 함께 삭제되고 S3 객체 삭제도 시도합니다. S3 삭제가 실패해도 나무 삭제는 진행되므로 S3 객체가 남을 수 있습니다. 타임라인 기록 자체는 유지됩니다.',
     }),
     protectedTreeResponses(),
     treeIdParam(),

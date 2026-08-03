@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, TimelineCategory } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FREE_PLAN_CODE } from './trees.constant';
 import {
@@ -16,35 +16,20 @@ import {
 export class TreesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  createTree = (createTreeData: CreateTreeData): Promise<TreeRecord> =>
-    this.prisma.$transaction(async (tx) => {
-      const tree = await tx.tree.create({
-        data: {
-          userId: BigInt(createTreeData.userId),
-          name: createTreeData.name,
-          description: createTreeData.description,
-          latitude: createTreeData.latitude,
-          longitude: createTreeData.longitude,
-          address: createTreeData.address,
-          mood: createTreeData.mood,
-          defaultImage: createTreeData.defaultImage,
-        },
-      });
-
-      await tx.timelineRecord.create({
-        data: {
-          userId: tree.userId,
-          treeId: tree.id,
-          title: tree.name,
-          content: tree.description,
-          category: TimelineCategory.VISIT,
-          visitedAt: tree.createdAt,
-          createdAt: tree.createdAt,
-        },
-      });
-
-      return tree;
+  createTree = (createTreeData: CreateTreeData): Promise<TreeRecord> => {
+    return this.prisma.tree.create({
+      data: {
+        userId: BigInt(createTreeData.userId),
+        name: createTreeData.name,
+        description: createTreeData.description,
+        latitude: createTreeData.latitude,
+        longitude: createTreeData.longitude,
+        address: createTreeData.address,
+        mood: createTreeData.mood,
+        defaultImage: createTreeData.defaultImage,
+      },
     });
+  };
 
   findTreesByUserId = (
     userId: number,
@@ -64,9 +49,10 @@ export class TreesRepository {
         },
         skip: (page - 1) * size,
         take: size,
-        // 지도와 타임라인 목록 카드에 노출할 첫 번째 사진 1장
+        // 목록 카드에 노출할 대표 사진(타임라인에 속하지 않은 사진) 1장
         include: {
           images: {
+            where: { timelineRecordId: null },
             orderBy: { id: 'asc' },
             take: 1,
             select: { s3Key: true },
@@ -104,6 +90,7 @@ export class TreesRepository {
           images: {
             select: {
               id: true,
+              timelineRecordId: true,
               s3Key: true,
             },
             orderBy: {
@@ -139,6 +126,7 @@ export class TreesRepository {
         images: {
           select: {
             id: true,
+            timelineRecordId: true,
             s3Key: true,
           },
           orderBy: {
@@ -152,34 +140,14 @@ export class TreesRepository {
   updateTree = (
     treeId: number,
     updateTreeData: UpdateTreeData,
-  ): Promise<TreeRecord> =>
-    this.prisma.$transaction(async (tx) => {
-      const tree = await tx.tree.update({
-        where: { id: BigInt(treeId) },
-        data: updateTreeData,
-      });
-
-      const timelineData: Prisma.TimelineRecordUpdateManyMutationInput = {};
-      if (updateTreeData.name !== undefined) {
-        timelineData.title = updateTreeData.name;
-      }
-      if (updateTreeData.description !== undefined) {
-        timelineData.content = updateTreeData.description;
-      }
-
-      if (Object.keys(timelineData).length > 0) {
-        await tx.timelineRecord.updateMany({
-          where: {
-            treeId: tree.id,
-            category: TimelineCategory.VISIT,
-            deletedAt: null,
-          },
-          data: timelineData,
-        });
-      }
-
-      return tree;
+  ): Promise<TreeRecord> => {
+    return this.prisma.tree.update({
+      where: {
+        id: BigInt(treeId),
+      },
+      data: updateTreeData,
     });
+  };
 
   updateFavoriteStatus = (
     treeId: number,
@@ -210,18 +178,14 @@ export class TreesRepository {
     });
   };
 
-  softDeleteTree = (treeId: number, deletedAt: Date): Promise<TreeRecord> =>
-    this.prisma.$transaction(async (tx) => {
-      await tx.timelineRecord.updateMany({
-        where: { treeId: BigInt(treeId), deletedAt: null },
-        data: { deletedAt },
-      });
-
-      return tx.tree.update({
-        where: { id: BigInt(treeId) },
-        data: { deletedAt },
-      });
+  softDeleteTree = (treeId: number, deletedAt: Date): Promise<TreeRecord> => {
+    return this.prisma.tree.update({
+      where: {
+        id: BigInt(treeId),
+      },
+      data: { deletedAt },
     });
+  };
 
   countTreesByUserId = (userId: number): Promise<number> => {
     return this.prisma.tree.count({
