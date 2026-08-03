@@ -254,6 +254,25 @@ export class OpenAiBlogDraftService {
     endDate: string,
     tone: BlogDraftTone,
   ): string => {
+    return [
+      `작성 대상 기간: ${startDate} ~ ${endDate}`,
+      '',
+      this.buildTreeSection(source),
+      '',
+      this.buildTimelineSection(source),
+      '',
+      this.buildImageSection(images),
+      '',
+      this.buildToneSection(tone),
+      '',
+      '요구사항:',
+      this.buildTitleInstruction(),
+      this.buildContentInstruction(),
+      this.buildConstraintInstruction(),
+    ].join('\n');
+  };
+
+  private buildTreeSection = (source: BlogDraftGenerateSource): string => {
     const treeLines = source.trees.map((tree, index) => {
       return [
         `${index + 1}. 장소명: ${tree.name}`,
@@ -267,6 +286,13 @@ export class OpenAiBlogDraftService {
         .join('\n');
     });
 
+    return [
+      '장소 데이터:',
+      treeLines.length > 0 ? treeLines.join('\n\n') : '- 없음',
+    ].join('\n');
+  };
+
+  private buildTimelineSection = (source: BlogDraftGenerateSource): string => {
     const timelineLines = source.timelines.map((timeline, index) =>
       [
         `${index + 1}. 제목: ${timeline.title}`,
@@ -279,34 +305,47 @@ export class OpenAiBlogDraftService {
         .join('\n'),
     );
 
+    return [
+      '기록 데이터:',
+      timelineLines.length > 0 ? timelineLines.join('\n\n') : '- 없음',
+    ].join('\n');
+  };
+
+  private buildImageSection = (
+    images: BlogDraftSourceImageForPrompt[],
+  ): string => {
     const imageLines = images.map(
       (image, index) => `${index + 1}. ${image.caption}`,
     );
 
     return [
-      `작성 대상 기간: ${startDate} ~ ${endDate}`,
-      '',
-      '장소 데이터:',
-      treeLines.length > 0 ? treeLines.join('\n\n') : '- 없음',
-      '',
-      '기록 데이터:',
-      timelineLines.length > 0 ? timelineLines.join('\n\n') : '- 없음',
-      '',
       '사진 요약:',
       imageLines.length > 0 ? imageLines.join('\n') : '- 없음',
-      '',
+    ].join('\n');
+  };
+
+  private buildToneSection = (tone: BlogDraftTone): string => {
+    return [
       '선택한 어체:',
       this.getToneInstruction(tone),
       '- 위 선택 어체의 문장 종결 규칙은 본문 전체에서 최우선으로 적용한다.',
       '- 문장부호, 감탄사, ㅋㅋ, ㅎㅎ 사용 여부는 선택 어체 규칙을 따른다.',
-      '',
-      '요구사항:',
+    ].join('\n');
+  };
+
+  private buildTitleInstruction = (): string => {
+    return [
       '- 제목은 내용을 요약하는 문장이 아니라 실제 한국인이 블로그에 붙일 법한 제목으로 작성한다.',
       '- 제목에는 날짜, 장소, 함께한 사람, 핵심 추억 등을 자연스럽게 활용할 수 있다.',
       '- 제목에서 모든 장소를 나열하거나 하루 전체를 요약하려고 하지 않는다.',
       '- 제목은 10~25자 정도를 권장한다.',
       '- 제목에는 필요하다면 ㅎㅎ, !, ~ 정도를 자연스럽게 사용할 수 있다. 이모지는 사용하지 않는다.',
       '- 좋은 제목 예시: 수빈이랑 서울 데이트 / 오랜만에 수빈이랑 힐링! / 오늘도 추억 하나 추가 :) / 귀여운 것만 잔뜩 보고 온 하루 / 수빈이랑 놀면 시간이 왜 이렇게 빨라',
+    ].join('\n');
+  };
+
+  private buildContentInstruction = (): string => {
+    return [
       '- 본문은 한국인이 실제 네이버 블로그나 개인 블로그에 남긴 여행 후기처럼 작성한다.',
       '- 정보 나열이 아니라 실제 사람이 하루를 회상하며 적는 느낌을 유지한다.',
       '- items 배열은 장소마다 하나의 item으로 작성한다.',
@@ -319,6 +358,11 @@ export class OpenAiBlogDraftService {
       '- 문장 길이는 자연스럽게 조절하되, 문장 종결 방식은 선택한 어체 규칙을 따른다.',
       '- "특히", "또한", "한편", "무엇보다" 같은 연결어를 반복해서 사용하지 않는다.',
       '- 약간의 여운이나 담백한 표현을 사용할 수 있다.',
+    ].join('\n');
+  };
+
+  private buildConstraintInstruction = (): string => {
+    return [
       '- 광고성 문구나 홍보 문구처럼 보이는 표현은 사용하지 않는다.',
       '- 제공된 장소 이미지는 장소당 1장이므로, 나머지 장소/기록 정보와 함께 균형 있게 서술한다.',
       '- 제공된 정보만 바탕으로 작성하고, 확인되지 않은 사실은 절대 단정하지 않는다.',
