@@ -255,6 +255,7 @@ export class TreesRepository {
   };
 
   findNearbyTrees = (
+    userId: number,
     latitude: number,
     longitude: number,
     radiusM: number,
@@ -273,6 +274,7 @@ export class TreesRepository {
         ) AS distanceM
       FROM trees
       WHERE deleted_at IS NULL
+        AND user_id = ${userId}
       HAVING distanceM <= ${radiusM}
       ORDER BY distanceM ASC, id ASC
     `);

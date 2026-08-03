@@ -34,6 +34,7 @@ export class NearbyAlertsService {
     const [notificationEnabled, trees] = await Promise.all([
       this.nearbyAlertsRepository.isNotificationEnabled(BigInt(userId)),
       this.treesRepository.findNearbyTrees(
+        userId,
         request.latitude,
         request.longitude,
         NEARBY_TREE_RADIUS_M,

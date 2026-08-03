@@ -19,12 +19,13 @@ describe('TreesService.getNearbyTrees', () => {
     } as unknown as jest.Mocked<TreesRepository>;
     const service = new TreesService(repository);
 
-    const result = await service.getNearbyTrees({
+    const result = await service.getNearbyTrees(10, {
       lat: 37.5665,
       lng: 126.978,
     });
 
     expect(repository.findNearbyTrees).toHaveBeenCalledWith(
+      10,
       37.5665,
       126.978,
       100,
