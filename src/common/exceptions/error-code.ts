@@ -297,23 +297,6 @@ export const ErrorCode = {
     message: '존재하지 않는 동선입니다.',
   },
 
-  // Timeline
-  TIMELINE_INVALID_UPDATE_REQUEST: {
-    status: HttpStatus.BAD_REQUEST,
-    code: 'TIMELINE400',
-    message: '타임라인 수정 요청 값이 올바르지 않습니다.',
-  },
-  TIMELINE_NOT_FOUND: {
-    status: HttpStatus.NOT_FOUND,
-    code: 'TIMELINE404',
-    message: '타임라인을 찾을 수 없습니다.',
-  },
-  TIMELINE_TREE_ALREADY_LINKED: {
-    status: HttpStatus.CONFLICT,
-    code: 'TIMELINE409',
-    message: '해당 나무에는 이미 활성 타임라인이 연결되어 있습니다.',
-  },
-
   // Push Subscription
   PUSH_SUBSCRIPTION_NOT_FOUND: {
     status: HttpStatus.NOT_FOUND,

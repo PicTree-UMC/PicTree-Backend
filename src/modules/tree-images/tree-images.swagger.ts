@@ -12,7 +12,6 @@ import {
   ApiOperation,
   ApiParam,
   ApiPayloadTooLargeResponse,
-  ApiQuery,
   ApiUnauthorizedResponse,
   ApiUnsupportedMediaTypeResponse,
 } from '@nestjs/swagger';
@@ -26,7 +25,6 @@ const failResponse = (code: string, message: string) => ({
 const imageExample = {
   imageId: 10,
   imageUrl: 'https://pictree-images-prod.s3.ap-northeast-2.amazonaws.com/...',
-  timelineRecordId: null,
   fileSize: 204800,
 };
 
@@ -62,8 +60,7 @@ export const ApiUploadTreeImage = () =>
   applyDecorators(
     ApiOperation({
       summary: '나무 사진 업로드',
-      description:
-        '나무(또는 타임라인 기록)당 사진은 1장입니다. 이미 있으면 교체됩니다.',
+      description: '나무당 사진은 1장입니다. 이미 있으면 교체됩니다.',
     }),
     protectedResponses(),
     treeIdParam(),
@@ -76,10 +73,6 @@ export const ApiUploadTreeImage = () =>
             type: 'string',
             format: 'binary',
             description: '업로드할 사진 파일 (1장)',
-          },
-          timelineRecordId: {
-            type: 'number',
-            description: '특정 타임라인 기록의 사진일 때만',
           },
         },
         required: ['image'],
@@ -125,12 +118,6 @@ export const ApiGetTreeImages = () =>
     ApiOperation({ summary: '나무 사진 목록 조회' }),
     protectedResponses(),
     treeIdParam(),
-    ApiQuery({
-      name: 'timelineRecordId',
-      required: false,
-      type: Number,
-      description: '특정 타임라인 기록의 사진만 필터 (생략 시 전체)',
-    }),
     ApiOkResponse({
       description: '사진 목록 조회 성공',
       schema: {

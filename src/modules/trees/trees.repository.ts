@@ -64,10 +64,9 @@ export class TreesRepository {
         },
         skip: (page - 1) * size,
         take: size,
-        // 목록 카드에 노출할 대표 사진(타임라인에 속하지 않은 사진) 1장
+        // 지도와 타임라인 목록 카드에 노출할 첫 번째 사진 1장
         include: {
           images: {
-            where: { timelineRecordId: null },
             orderBy: { id: 'asc' },
             take: 1,
             select: { s3Key: true },
@@ -105,7 +104,6 @@ export class TreesRepository {
           images: {
             select: {
               id: true,
-              timelineRecordId: true,
               s3Key: true,
             },
             orderBy: {
@@ -141,7 +139,6 @@ export class TreesRepository {
         images: {
           select: {
             id: true,
-            timelineRecordId: true,
             s3Key: true,
           },
           orderBy: {

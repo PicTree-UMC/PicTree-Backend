@@ -180,14 +180,15 @@ describe('TreeImagesService', () => {
   });
 
   describe('getImages', () => {
-    it('타임라인 필터를 저장 계층에 전달하고 presigned URL 로 변환한다', async () => {
+    it('나무 사진을 조회하고 presigned URL 로 변환한다', async () => {
       repository.findTreeById.mockResolvedValue(owner);
       repository.findByTreeId.mockResolvedValue([imageRecord]);
 
-      const result = await service.getImages(10, 1, 5);
+      const result = await service.getImages(10, 1);
 
-      expect(repository.findByTreeId).toHaveBeenCalledWith(1, 5);
+      expect(repository.findByTreeId).toHaveBeenCalledWith(1);
       expect(result.images[0].imageUrl).toBe('https://signed-url');
+      expect(result.images[0]).not.toHaveProperty('timelineRecordId');
     });
   });
 });

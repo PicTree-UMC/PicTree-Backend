@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateTreeImageData,
@@ -18,7 +17,7 @@ export class TreeImagesRepository {
     });
   };
 
-  // 나무(또는 타임라인 기록)당 사진은 1장이므로, 기존 사진을 찾아 교체 대상으로 삼는다.
+  // 나무 대표 사진은 1장이므로, 기존 사진을 찾아 교체 대상으로 삼는다.
   findByTreeAndTimeline = (
     treeId: number,
     timelineRecordId: number | null,
@@ -59,19 +58,9 @@ export class TreeImagesRepository {
     });
   };
 
-  findByTreeId = (
-    treeId: number,
-    timelineRecordId?: number,
-  ): Promise<TreeImageRecord[]> => {
-    const where: Prisma.TreeImageWhereInput = {
-      treeId: BigInt(treeId),
-      ...(timelineRecordId
-        ? { timelineRecordId: BigInt(timelineRecordId) }
-        : {}),
-    };
-
+  findByTreeId = (treeId: number): Promise<TreeImageRecord[]> => {
     return this.prisma.treeImage.findMany({
-      where,
+      where: { treeId: BigInt(treeId) },
       orderBy: { id: 'asc' },
     });
   };

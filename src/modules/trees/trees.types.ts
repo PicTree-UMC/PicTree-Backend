@@ -17,7 +17,6 @@ export interface TreeRecord {
 
 export interface TreeImageRecord {
   id: bigint;
-  timelineRecordId: bigint | null;
   // 조회 응답에는 presigned URL 을 내려주므로 s3Key 가 필요하다.
   s3Key: string;
 }

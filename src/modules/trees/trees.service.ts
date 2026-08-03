@@ -87,6 +87,7 @@ export class TreesService {
       size,
       total,
       totalPages: Math.ceil(total / size),
+      hasNext: page * size < total,
     };
   };
 
@@ -273,6 +274,7 @@ export class TreesService {
   ): Promise<TreeSummaryResponseDto> => ({
     treeId: Number(tree.id),
     name: tree.name,
+    description: tree.description,
     latitude: Number(tree.latitude),
     longitude: Number(tree.longitude),
     mood: tree.mood,
@@ -283,6 +285,8 @@ export class TreesService {
         ? await this.s3Service.getPresignedUrl(tree.images[0].s3Key)
         : null,
     isFavorite: tree.isFavorite,
+    createdAt: tree.createdAt,
+    updatedAt: tree.updatedAt,
   });
 
   private toTreeResponseDto = async (
@@ -325,7 +329,5 @@ export class TreesService {
     imageId: Number(image.id),
     // 버킷이 private 이므로 원본 URL 대신 presigned URL 을 내려준다.
     imageUrl: await this.s3Service.getPresignedUrl(image.s3Key),
-    timelineRecordId:
-      image.timelineRecordId === null ? null : Number(image.timelineRecordId),
   });
 }

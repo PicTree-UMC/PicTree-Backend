@@ -20,13 +20,6 @@ export class TreeImageResponseDto {
     description: '사진 조회용 임시 서명 URL (presigned, 24시간 유효)',
   })
   imageUrl!: string;
-
-  @ApiProperty({
-    example: null,
-    nullable: true,
-    description: '연결된 타임라인 기록 ID (없으면 장소 대표 사진)',
-  })
-  timelineRecordId!: number | null;
 }
 
 export class TreeSummaryResponseDto {
@@ -35,6 +28,13 @@ export class TreeSummaryResponseDto {
 
   @ApiProperty({ example: '우리 동네 벚나무', description: '나무 이름' })
   name!: string;
+
+  @ApiProperty({
+    example: '산책로 입구',
+    nullable: true,
+    description: '타임라인 카드에 표시할 기록 내용',
+  })
+  description!: string | null;
 
   @ApiProperty({ example: 37.5665, description: '위도' })
   latitude!: number;
@@ -58,6 +58,20 @@ export class TreeSummaryResponseDto {
 
   @ApiProperty({ example: false, description: '즐겨찾기 여부' })
   isFavorite!: boolean;
+
+  @ApiProperty({
+    example: '2026-07-19T10:00:00.000Z',
+    format: 'date-time',
+    description: '나무 등록일(타임라인 정렬·그룹 기준)',
+  })
+  createdAt!: Date;
+
+  @ApiProperty({
+    example: '2026-07-19T10:10:00.000Z',
+    format: 'date-time',
+    description: '마지막 수정일',
+  })
+  updatedAt!: Date;
 }
 
 export class TreeResponseDto {

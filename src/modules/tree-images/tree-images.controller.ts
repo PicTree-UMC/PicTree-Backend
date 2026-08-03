@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -8,7 +7,6 @@ import {
   ParseIntPipe,
   ParseFilePipeBuilder,
   Post,
-  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -20,10 +18,8 @@ import { SuccessCode } from '../../common/responses/success-code';
 import { AccessTokenGuard } from '../auth/access-token.guard';
 import type { JwtPayload } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { GetTreeImagesQueryDto } from './dto/get-tree-images-query.dto';
 import { TreeImageListResponseDto } from './dto/tree-image-list-response.dto';
 import { TreeImageUploadResponseDto } from './dto/tree-image-upload-response.dto';
-import { UploadTreeImageRequestDto } from './dto/upload-tree-image-request.dto';
 import { MAX_IMAGE_SIZE_BYTES } from './tree-images.constant';
 import {
   ApiDeleteTreeImage,
@@ -60,14 +56,11 @@ export class TreeImagesController {
         }),
     )
     file: Express.Multer.File | undefined,
-    // multipart 의 파일 외 필드는 body 로 전달됩니다.
-    @Body() uploadTreeImageRequestDto: UploadTreeImageRequestDto,
   ): Promise<ApiResponse<TreeImageUploadResponseDto>> {
     const data = await this.treeImagesService.uploadImage(
       currentUser.userId,
       treeId,
       file,
-      uploadTreeImageRequestDto.timelineRecordId,
     );
 
     return ApiResponse.success(SuccessCode.CREATED, data);
@@ -78,12 +71,10 @@ export class TreeImagesController {
   async getImages(
     @CurrentUser() currentUser: JwtPayload,
     @Param('treeId', ParseIntPipe) treeId: number,
-    @Query() getTreeImagesQueryDto: GetTreeImagesQueryDto,
   ): Promise<ApiResponse<TreeImageListResponseDto>> {
     const data = await this.treeImagesService.getImages(
       currentUser.userId,
       treeId,
-      getTreeImagesQueryDto.timelineRecordId,
     );
 
     return ApiResponse.success(SuccessCode.OK, data);

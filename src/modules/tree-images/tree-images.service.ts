@@ -21,13 +21,12 @@ export class TreeImagesService {
     private readonly s3Service: S3Service,
   ) {}
 
-  // 나무(또는 타임라인 기록)당 사진은 1장이다. 이미 있으면 교체한다.
+  // 나무당 사진은 1장이다. 이미 있으면 교체한다.
   // 사진의 날짜는 항상 나무 등록 시점(Tree.createdAt) 기준이며, 교체해도 변하지 않는다.
   uploadImage = async (
     userId: number,
     treeId: number,
     file: Express.Multer.File | undefined,
-    timelineRecordId?: number,
   ): Promise<TreeImageUploadResponseDto> => {
     await this.ensureTreeOwnership(userId, treeId);
 
@@ -36,10 +35,9 @@ export class TreeImagesService {
     }
     this.validateFileType(file);
 
-    const normalizedTimelineRecordId = timelineRecordId ?? null;
     const existing = await this.treeImagesRepository.findByTreeAndTimeline(
       treeId,
-      normalizedTimelineRecordId,
+      null,
     );
 
     const key = this.buildKey(treeId, file.mimetype);
@@ -53,7 +51,7 @@ export class TreeImagesService {
     try {
       created = await this.treeImagesRepository.replace(existing?.id ?? null, {
         treeId,
-        timelineRecordId: normalizedTimelineRecordId,
+        timelineRecordId: null,
         imageUrl,
         s3Key: key,
         fileSize: file.size,
@@ -75,14 +73,10 @@ export class TreeImagesService {
   getImages = async (
     userId: number,
     treeId: number,
-    timelineRecordId?: number,
   ): Promise<TreeImageListResponseDto> => {
     await this.ensureTreeOwnership(userId, treeId);
 
-    const images = await this.treeImagesRepository.findByTreeId(
-      treeId,
-      timelineRecordId,
-    );
+    const images = await this.treeImagesRepository.findByTreeId(treeId);
 
     return { images: await this.toResponseDtos(images) };
   };
@@ -143,8 +137,6 @@ export class TreeImagesService {
   ): Promise<TreeImageResponseDto> => ({
     imageId: Number(image.id),
     imageUrl: await this.s3Service.getPresignedUrl(image.s3Key),
-    timelineRecordId:
-      image.timelineRecordId === null ? null : Number(image.timelineRecordId),
     fileSize: Number(image.fileSize),
   });
 

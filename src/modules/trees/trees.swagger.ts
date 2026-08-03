@@ -60,7 +60,7 @@ export const ApiCreateTree = () =>
     ApiOperation({
       summary: '나무 등록',
       description:
-        '나무를 등록하면 같은 정보를 사용하는 타임라인 기록이 함께 생성됩니다.',
+        '나무를 등록합니다. 등록된 나무 데이터는 지도와 타임라인 화면에서 공통으로 사용됩니다.',
     }),
     protectedTreeResponses(),
     ApiBody({ type: CreateTreeRequestDto }),
@@ -83,7 +83,11 @@ export const ApiCreateTree = () =>
 
 export const ApiGetMyTrees = () =>
   applyDecorators(
-    ApiOperation({ summary: '내 나무 목록 조회 (지도)' }),
+    ApiOperation({
+      summary: '내 나무 목록 조회',
+      description:
+        '지도와 타임라인 화면에서 공통으로 사용합니다. 등록일 최신순으로 반환합니다.',
+    }),
     protectedTreeResponses(),
     ApiOkResponse({
       description: '나무 목록 조회 성공',
@@ -97,18 +101,22 @@ export const ApiGetMyTrees = () =>
               {
                 treeId: 1,
                 name: '우리 동네 벚나무',
+                description: '산책로 입구',
                 latitude: 37.5665,
                 longitude: 126.978,
                 mood: '😍',
                 defaultImage: 'DEFAULT_1',
                 imageUrl: 'https://.../a.jpg?X-Amz-Signature=...',
                 isFavorite: false,
+                createdAt: '2026-07-19T10:00:00.000Z',
+                updatedAt: '2026-07-19T10:10:00.000Z',
               },
             ],
             page: 1,
             size: 20,
             total: 1,
             totalPages: 1,
+            hasNext: false,
           },
         },
       },
@@ -170,7 +178,6 @@ export const ApiGetTree = () =>
               {
                 imageId: 10,
                 imageUrl: 'https://.../a.jpg?X-Amz-Signature=...',
-                timelineRecordId: null,
               },
             ],
             createdAt: '2026-07-19T10:00:00.000Z',
