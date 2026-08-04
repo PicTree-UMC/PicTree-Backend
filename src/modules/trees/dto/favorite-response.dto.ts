@@ -16,14 +16,14 @@ export class FavoriteTreeResponseDto {
 
   @ApiProperty({
     example: '2026-03-30',
-    description: '방문일',
+    description: '나무 생성일',
   })
-  visitedAt!: string;
+  createdAt!: string;
 
   @ApiProperty({
-    example: 'https://.../a.jpg',
+    example: 'https://.../a.jpg?X-Amz-Signature=...',
     nullable: true,
-    description: '장소 이미지 URL',
+    description: '장소 이미지 URL (presigned)',
   })
   imageUrl!: string | null;
 }
