@@ -351,7 +351,7 @@ describe('TreesService', () => {
           treeId: 1,
           name: '오아시스 만난 곳',
           description: '길 가다가 오아시스 자만추',
-          visitedAt: '2026-03-30',
+          createdAt: '2026-03-30',
           imageUrl: 'https://signed/trees/1/a.jpg',
         },
       ],
