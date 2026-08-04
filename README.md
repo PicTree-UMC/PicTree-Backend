@@ -108,7 +108,6 @@
  │   │   ├── 📁 subscription-plans # 구독 요금제 조회
  │   │   ├── 📁 subscriptions      # 사용자 구독 관리
  │   │   ├── 📁 terms              # 약관 조회/동의
- │   │   ├── 📁 timelines          # 타임라인 기록 관리
  │   │   ├── 📁 tree-images        # 나무 이미지 업로드/조회/삭제
  │   │   ├── 📁 trees              # 나무 장소 관리
  │   │   └── 📁 users              # 사용자 정보 관리
