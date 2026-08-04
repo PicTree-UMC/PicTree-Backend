@@ -36,6 +36,13 @@ export class TreeSummaryResponseDto {
   @ApiProperty({ example: '우리 동네 벚나무', description: '나무 이름' })
   name!: string;
 
+  @ApiProperty({
+    example: '산책로 입구에 있는 나무',
+    nullable: true,
+    description: '한줄평',
+  })
+  description!: string | null;
+
   @ApiProperty({ example: 37.5665, description: '위도' })
   latitude!: number;
 
@@ -58,6 +65,13 @@ export class TreeSummaryResponseDto {
 
   @ApiProperty({ example: false, description: '즐겨찾기 여부' })
   isFavorite!: boolean;
+
+  @ApiProperty({
+    example: '2026-07-19T10:00:00.000Z',
+    format: 'date-time',
+    description: '등록일',
+  })
+  createdAt!: Date;
 }
 
 export class TreeResponseDto {
