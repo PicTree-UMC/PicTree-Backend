@@ -295,6 +295,18 @@ describe('TreesService', () => {
       expect(result.items[0].imageUrl).toBe('https://signed/trees/1/a.jpg');
     });
 
+    it('목록 항목에 한줄평과 등록일을 포함한다', async () => {
+      repository.findTreesByUserId.mockResolvedValue([
+        [{ ...tree, images: [] }],
+        1,
+      ]);
+
+      const result = await service.getMyTrees(10, {});
+
+      expect(result.items[0].description).toBe('길 가다가 오아시스 자만추');
+      expect(result.items[0].createdAt).toEqual(tree.createdAt);
+    });
+
     it('사진이 없으면 imageUrl 은 null 이다', async () => {
       repository.findTreesByUserId.mockResolvedValue([
         [{ ...tree, images: [] }],

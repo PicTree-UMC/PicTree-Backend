@@ -272,6 +272,7 @@ export class TreesService {
   ): Promise<TreeSummaryResponseDto> => ({
     treeId: Number(tree.id),
     name: tree.name,
+    description: tree.description,
     latitude: Number(tree.latitude),
     longitude: Number(tree.longitude),
     mood: tree.mood,
@@ -282,6 +283,7 @@ export class TreesService {
         ? await this.s3Service.getPresignedUrl(tree.images[0].s3Key)
         : null,
     isFavorite: tree.isFavorite,
+    createdAt: tree.createdAt,
   });
 
   private toTreeResponseDto = async (
