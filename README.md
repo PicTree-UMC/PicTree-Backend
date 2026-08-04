@@ -76,6 +76,7 @@
 </div>
 
 ## 🏗 Architecture
+<img width="4056" height="1968" alt="PicTree drawio" src="https://github.com/user-attachments/assets/4f186b55-022f-4c31-964e-f8e8a98d9116" />
 
 ## 🗄 ERD
 <img width="1940" height="877" alt="PicTree" src="https://github.com/user-attachments/assets/a7a3d094-1c97-4e1f-8b6d-91f37b0088f5" />
@@ -90,7 +91,7 @@
 
 ```
 📦 PicTree-Backend
- ├── 📁 prisma                    # Prisma 스키마 및 마이그레이션
+ ├── 📁 prisma                     # Prisma 스키마 및 마이그레이션
  ├── 📁 scripts                    # 배포 및 운영 스크립트
  ├── 📁 src
  │   ├── 📁 common                 # 공통 예외, 응답, 유틸, S3 처리
