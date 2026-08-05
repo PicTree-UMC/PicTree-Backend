@@ -16,8 +16,8 @@ export class CalendarService {
     userId: number,
     query: CalendarQueryDto,
   ): Promise<CalendarResponseDto> => {
-    const start = this.createKstMonthBoundary(query.year, query.month - 1);
-    const end = this.createKstMonthBoundary(query.year, query.month);
+    const start = this.createKstMonthStart(query.year, query.month);
+    const end = this.createKstMonthStart(query.year, query.month + 1);
     const trees = await this.calendarRepository.findCreatedDatesByUserAndRange(
       userId,
       start,
@@ -74,8 +74,8 @@ export class CalendarService {
     return `${year}-${monthText}-${dayText}`;
   };
 
-  private createKstMonthBoundary = (year: number, monthIndex: number): Date => {
-    return new Date(Date.UTC(year, monthIndex, 1) - KST_OFFSET_MS);
+  private createKstMonthStart = (year: number, month: number): Date => {
+    return new Date(Date.UTC(year, month - 1, 1) - KST_OFFSET_MS);
   };
 
   private formatKstDate = (date: Date): string => {
