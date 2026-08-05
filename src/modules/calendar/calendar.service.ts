@@ -6,6 +6,8 @@ import {
 } from './dto/calendar-response.dto';
 import { CalendarRepository } from './calendar.repository';
 
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
 @Injectable()
 export class CalendarService {
   constructor(private readonly calendarRepository: CalendarRepository) {}
@@ -14,15 +16,15 @@ export class CalendarService {
     userId: number,
     query: CalendarQueryDto,
   ): Promise<CalendarResponseDto> => {
-    const start = new Date(Date.UTC(query.year, query.month - 1, 1));
-    const end = new Date(Date.UTC(query.year, query.month, 1));
+    const start = this.createKstMonthBoundary(query.year, query.month - 1);
+    const end = this.createKstMonthBoundary(query.year, query.month);
     const trees = await this.calendarRepository.findCreatedDatesByUserAndRange(
       userId,
       start,
       end,
     );
     const countByDate = trees.reduce<Map<string, number>>((map, tree) => {
-      const date = this.formatUtcDate(tree.createdAt);
+      const date = this.formatKstDate(tree.createdAt);
       map.set(date, (map.get(date) ?? 0) + 1);
       return map;
     }, new Map());
@@ -72,11 +74,17 @@ export class CalendarService {
     return `${year}-${monthText}-${dayText}`;
   };
 
-  private formatUtcDate = (date: Date): string => {
+  private createKstMonthBoundary = (year: number, monthIndex: number): Date => {
+    return new Date(Date.UTC(year, monthIndex, 1) - KST_OFFSET_MS);
+  };
+
+  private formatKstDate = (date: Date): string => {
+    const kstDate = new Date(date.getTime() + KST_OFFSET_MS);
+
     return this.formatDate(
-      date.getUTCFullYear(),
-      date.getUTCMonth() + 1,
-      date.getUTCDate(),
+      kstDate.getUTCFullYear(),
+      kstDate.getUTCMonth() + 1,
+      kstDate.getUTCDate(),
     );
   };
 }
