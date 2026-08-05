@@ -33,8 +33,8 @@ describe('CalendarService', () => {
 
     expect(repository.findCreatedDatesByUserAndRange).toHaveBeenCalledWith(
       1,
-      new Date('2026-04-01T00:00:00.000Z'),
-      new Date('2026-05-01T00:00:00.000Z'),
+      new Date('2026-03-31T15:00:00.000Z'),
+      new Date('2026-04-30T15:00:00.000Z'),
     );
     expect(result.year).toBe(2026);
     expect(result.month).toBe(4);
@@ -46,15 +46,28 @@ describe('CalendarService', () => {
     expect(result.days[4]).toEqual({ date: '2026-04-05', level: 0 });
   });
 
-  it('UTC 월 경계에 걸친 생성일도 같은 UTC 기준으로 집계한다', async () => {
+  it('KST 월 경계에 맞춰 생성일을 집계한다', async () => {
     repository.findCreatedDatesByUserAndRange.mockResolvedValue([
-      { createdAt: new Date('2026-04-01T00:30:00.000Z') },
-      { createdAt: new Date('2026-04-30T23:30:00.000Z') },
+      { createdAt: new Date('2026-03-31T15:30:00.000Z') },
+      { createdAt: new Date('2026-04-30T14:30:00.000Z') },
     ]);
 
     const result = await service.getCalendar(1, { year: 2026, month: 4 });
 
     expect(result.days[0]).toEqual({ date: '2026-04-01', level: 1 });
     expect(result.days[29]).toEqual({ date: '2026-04-30', level: 1 });
+  });
+
+  it('KST 새벽 기록을 전날이 아닌 같은 날짜로 집계한다', async () => {
+    repository.findCreatedDatesByUserAndRange.mockResolvedValue([
+      { createdAt: new Date('2026-07-25T15:30:00.000Z') },
+      { createdAt: new Date('2026-07-25T23:59:00.000Z') },
+      { createdAt: new Date('2026-07-26T00:01:00.000Z') },
+    ]);
+
+    const result = await service.getCalendar(1, { year: 2026, month: 7 });
+
+    expect(result.days[24]).toEqual({ date: '2026-07-25', level: 0 });
+    expect(result.days[25]).toEqual({ date: '2026-07-26', level: 3 });
   });
 });
