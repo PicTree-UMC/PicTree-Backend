@@ -14,6 +14,7 @@ export interface BlogDraftRecord {
 export interface BlogDraftSummaryRecord {
   id: bigint;
   title: string;
+  content: string;
   startDate: Date;
   endDate: Date;
   createdAt: Date;

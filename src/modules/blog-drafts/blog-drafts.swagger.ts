@@ -66,6 +66,7 @@ export const ApiGetBlogDrafts = () =>
               {
                 draftId: 1,
                 title: '[여행 기록] 3월 31일 ~ 4월 1일',
+                thumbnailUrl: 'https://.../a.jpg?X-Amz-Signature=...',
                 startDate: '2026-03-31',
                 endDate: '2026-04-01',
                 createdAt: '2026-04-01T12:00:00',

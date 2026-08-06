@@ -62,6 +62,13 @@ export class BlogDraftSummaryResponseDto {
   })
   title!: string;
 
+  @ApiProperty({
+    example: 'https://.../a.jpg?X-Amz-Signature=...',
+    nullable: true,
+    description: '초안 썸네일 이미지 URL (첫 번째 장소 대표 이미지, presigned)',
+  })
+  thumbnailUrl!: string | null;
+
   @ApiProperty({ example: '2026-03-31', description: '시작일' })
   startDate!: string;
 

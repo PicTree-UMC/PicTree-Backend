@@ -188,6 +188,7 @@ export class BlogDraftsRepository {
       select: {
         id: true,
         title: true,
+        content: true,
         startDate: true,
         endDate: true,
         createdAt: true,

@@ -107,9 +107,15 @@ export class BlogDraftsService {
   getDrafts = async (userId: number): Promise<BlogDraftListResponseDto> => {
     const drafts =
       await this.blogDraftsRepository.findSavedDraftsByUserId(userId);
+    const thumbnailUrlByTreeId = await this.getThumbnailUrlByTreeId(
+      userId,
+      drafts,
+    );
 
     return {
-      drafts: drafts.map(this.toBlogDraftSummaryResponseDto),
+      drafts: drafts.map((draft) =>
+        this.toBlogDraftSummaryResponseDto(draft, thumbnailUrlByTreeId),
+      ),
     };
   };
 
@@ -519,13 +525,45 @@ export class BlogDraftsService {
     );
   };
 
+  private getThumbnailUrlByTreeId = async (
+    userId: number,
+    drafts: BlogDraftSummaryRecord[],
+  ): Promise<Map<number, string>> => {
+    const items = drafts
+      .map((draft) => this.parseDraftItems(draft.content)[0])
+      .filter(
+        (item): item is BlogDraftDetailItemResponseDto => item !== undefined,
+      );
+
+    return this.getImageUrlByTreeId(userId, items);
+  };
+
+  private getFirstDraftTreeId = (content: string): number | null => {
+    return this.parseDraftItems(content)[0]?.treeId ?? null;
+  };
+
   private toBlogDraftSummaryResponseDto = (
     draft: BlogDraftSummaryRecord,
+    thumbnailUrlByTreeId: Map<number, string>,
   ): BlogDraftSummaryResponseDto => ({
     draftId: Number(draft.id),
     title: draft.title,
+    thumbnailUrl: this.getSummaryThumbnailUrl(draft, thumbnailUrlByTreeId),
     startDate: draft.startDate.toISOString().slice(0, 10),
     endDate: draft.endDate.toISOString().slice(0, 10),
     createdAt: draft.createdAt.toISOString().slice(0, 19),
   });
+
+  private getSummaryThumbnailUrl = (
+    draft: BlogDraftSummaryRecord,
+    thumbnailUrlByTreeId: Map<number, string>,
+  ): string | null => {
+    const treeId = this.getFirstDraftTreeId(draft.content);
+
+    if (treeId === null) {
+      return null;
+    }
+
+    return thumbnailUrlByTreeId.get(treeId) ?? null;
+  };
 }

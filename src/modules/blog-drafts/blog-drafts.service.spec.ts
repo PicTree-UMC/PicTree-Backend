@@ -353,6 +353,42 @@ describe('BlogDraftsService', () => {
     ]);
   });
 
+  it('초안 목록 조회 시 첫 번째 장소 대표 이미지를 thumbnailUrl로 포함한다', async () => {
+    repository.findSavedDraftsByUserId.mockResolvedValue([
+      {
+        id: 1n,
+        title: '제목',
+        content: JSON.stringify([
+          { treeId: 1, placeName: '포그레인 공원', content: '본문' },
+        ]),
+        startDate: new Date('2026-03-31T00:00:00.000Z'),
+        endDate: new Date('2026-04-01T00:00:00.000Z'),
+        createdAt: new Date('2026-04-02T10:00:00.000Z'),
+      },
+    ]);
+    repository.findTreeImagesByIds.mockResolvedValue([
+      {
+        id: 1n,
+        images: [{ s3Key: 'trees/1/a.jpg' }],
+      },
+    ]);
+    s3Service.getPresignedUrl.mockResolvedValue('https://signed/trees/1/a.jpg');
+
+    const result = await service.getDrafts(1);
+
+    expect(repository.findTreeImagesByIds).toHaveBeenCalledWith(1, [1]);
+    expect(result.drafts).toEqual([
+      {
+        draftId: 1,
+        title: '제목',
+        thumbnailUrl: 'https://signed/trees/1/a.jpg',
+        startDate: '2026-03-31',
+        endDate: '2026-04-01',
+        createdAt: '2026-04-02T10:00:00',
+      },
+    ]);
+  });
+
   it('저장할 제목이 비어 있으면 BLOG400-3 예외를 던진다', async () => {
     try {
       await service.saveDraft(1, {
