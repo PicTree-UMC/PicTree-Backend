@@ -11,6 +11,27 @@ export class BlogDraftItemResponseDto {
   content!: string;
 }
 
+export class BlogDraftDetailItemResponseDto {
+  @ApiProperty({ example: 1, nullable: true, description: '연결된 나무 ID' })
+  treeId!: number | null;
+
+  @ApiProperty({
+    example: 'https://.../a.jpg?X-Amz-Signature=...',
+    nullable: true,
+    description: '장소 대표 이미지 URL (presigned)',
+  })
+  imageUrl!: string | null;
+
+  @ApiProperty({ example: '포그레인 공원', description: '장소명' })
+  placeName!: string;
+
+  @ApiProperty({
+    example: '해 질 무렵 공원을 걸었음. 조용해서 산책하기 좋았음.',
+    description: '장소별 초안 본문',
+  })
+  content!: string;
+}
+
 export class GeneratedBlogDraftResponseDto {
   @ApiProperty({
     example: '[여행 기록] 3월 31일 ~ 4월 1일',
@@ -40,6 +61,13 @@ export class BlogDraftSummaryResponseDto {
     description: '초안 제목',
   })
   title!: string;
+
+  @ApiProperty({
+    example: 'https://.../a.jpg?X-Amz-Signature=...',
+    nullable: true,
+    description: '초안 썸네일 이미지 URL (첫 번째 장소 대표 이미지, presigned)',
+  })
+  thumbnailUrl!: string | null;
 
   @ApiProperty({ example: '2026-03-31', description: '시작일' })
   startDate!: string;
@@ -78,10 +106,10 @@ export class BlogDraftDetailResponseDto {
   title!: string;
 
   @ApiProperty({
-    type: [BlogDraftItemResponseDto],
+    type: [BlogDraftDetailItemResponseDto],
     description: '장소별 초안 본문 목록',
   })
-  items!: BlogDraftItemResponseDto[];
+  items!: BlogDraftDetailItemResponseDto[];
 
   @ApiProperty({ example: '2026-03-31', description: '시작일' })
   startDate!: string;

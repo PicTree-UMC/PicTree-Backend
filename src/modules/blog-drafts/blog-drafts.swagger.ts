@@ -66,6 +66,7 @@ export const ApiGetBlogDrafts = () =>
               {
                 draftId: 1,
                 title: '[여행 기록] 3월 31일 ~ 4월 1일',
+                thumbnailUrl: 'https://.../a.jpg?X-Amz-Signature=...',
                 startDate: '2026-03-31',
                 endDate: '2026-04-01',
                 createdAt: '2026-04-01T12:00:00',
@@ -211,10 +212,14 @@ export const ApiGetBlogDraft = () =>
             title: '[여행 기록] 3월 31일 ~ 4월 1일',
             items: [
               {
+                treeId: 1,
+                imageUrl: 'https://.../a.jpg?X-Amz-Signature=...',
                 placeName: '포그레인 공원',
                 content: '해 질 무렵 공원을 걸었음. 조용해서 산책하기 좋았음.',
               },
               {
+                treeId: 2,
+                imageUrl: null,
                 placeName: '피자 맛집',
                 content: '저녁으로 피자를 먹었음. 기다린 만큼 맛있었음.',
               },

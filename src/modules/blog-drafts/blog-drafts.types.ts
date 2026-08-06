@@ -14,6 +14,7 @@ export interface BlogDraftRecord {
 export interface BlogDraftSummaryRecord {
   id: bigint;
   title: string;
+  content: string;
   startDate: Date;
   endDate: Date;
   createdAt: Date;
@@ -74,7 +75,15 @@ export interface CreateBlogDraftData {
   endDate: Date;
 }
 
+export interface BlogDraftTreeImageRecord {
+  id: bigint;
+  images: {
+    s3Key: string;
+  }[];
+}
+
 export interface BlogDraftItem {
+  treeId?: number | null;
   placeName: string;
   content: string;
 }
