@@ -299,10 +299,21 @@ describe('BlogDraftsService', () => {
 
     const result = await service.saveDraft(1, {
       title: '제목',
-      items: [{ placeName: '포그레인 공원', content: '본문' }],
+      days: [
+        {
+          date: '2026-03-31',
+          items: [
+            {
+              treeId: 1,
+              imageUrl: null,
+              placeName: '포그레인 공원',
+              content: '본문',
+            },
+          ],
+        },
+      ],
       startDate: '2026-03-31',
       endDate: '2026-04-01',
-      treeIds: [1],
     });
 
     expect(repository.createDraft).toHaveBeenCalledWith(
@@ -402,10 +413,21 @@ describe('BlogDraftsService', () => {
     try {
       await service.saveDraft(1, {
         title: '   ',
-        items: [{ placeName: '포그레인 공원', content: '본문' }],
+        days: [
+          {
+            date: '2026-03-31',
+            items: [
+              {
+                treeId: 1,
+                imageUrl: null,
+                placeName: '포그레인 공원',
+                content: '본문',
+              },
+            ],
+          },
+        ],
         startDate: '2026-03-31',
         endDate: '2026-04-01',
-        treeIds: [1],
       });
       throw new Error('Expected AppException');
     } catch (error) {
@@ -423,10 +445,21 @@ describe('BlogDraftsService', () => {
     try {
       await service.saveDraft(1, {
         title: '제목',
-        items: [{ placeName: '포그레인 공원', content: '   ' }],
+        days: [
+          {
+            date: '2026-03-31',
+            items: [
+              {
+                treeId: 1,
+                imageUrl: null,
+                placeName: '포그레인 공원',
+                content: '   ',
+              },
+            ],
+          },
+        ],
         startDate: '2026-03-31',
         endDate: '2026-04-01',
-        treeIds: [1],
       });
       throw new Error('Expected AppException');
     } catch (error) {

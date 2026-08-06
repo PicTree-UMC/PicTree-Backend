@@ -104,16 +104,17 @@ export class BlogDraftsService {
       request.startDate,
       request.endDate,
     );
-    this.validateDraftContent(request.title, request.items);
-    this.validateDraftItemTreeIds(request.items, request.treeIds);
+    const items = this.flattenSaveDraftItems(request.days);
+    this.validateDraftContent(request.title, items);
+    this.validateSaveDraftItems(items);
+    const treeIds = this.extractSaveDraftTreeIds(items);
+
     await this.getAvailableUserOrThrow(userId);
-    await this.validateTreeIds(userId, request.treeIds);
+    await this.validateTreeIds(userId, treeIds);
     const saved = await this.blogDraftsRepository.createDraft({
       userId: BigInt(userId),
       title: request.title,
-      content: JSON.stringify(
-        this.buildSavedDraftItems(request.items, request.treeIds),
-      ),
+      content: JSON.stringify(this.buildSavedDraftItems(items)),
       startDate,
       endDate,
     });
@@ -359,21 +360,32 @@ export class BlogDraftsService {
     }
   };
 
-  private validateDraftItemTreeIds = (
-    items: BlogDraftItem[],
-    treeIds: number[],
-  ): void => {
-    if (items.length !== treeIds.length) {
+  private validateSaveDraftItems = (items: BlogDraftItem[]): void => {
+    if (
+      items.length > BLOG_DRAFT_MAX_TREE_COUNT ||
+      items.some((item) => typeof item.treeId !== 'number')
+    ) {
       throw new AppException(ErrorCode.BLOG_DRAFT_INVALID_REQUEST);
     }
   };
 
-  private buildSavedDraftItems = (
-    items: BlogDraftItem[],
-    treeIds: number[],
+  private flattenSaveDraftItems = (
+    days: SaveBlogDraftRequestDto['days'],
   ): BlogDraftItem[] =>
-    items.map((item, index) => ({
-      treeId: treeIds[index],
+    days.flatMap((day) =>
+      day.items.map((item) => ({
+        treeId: item.treeId,
+        placeName: item.placeName,
+        content: item.content,
+      })),
+    );
+
+  private extractSaveDraftTreeIds = (items: BlogDraftItem[]): number[] =>
+    items.map((item) => item.treeId as number);
+
+  private buildSavedDraftItems = (items: BlogDraftItem[]): BlogDraftItem[] =>
+    items.map((item) => ({
+      treeId: item.treeId,
       placeName: item.placeName,
       content: item.content,
     }));
