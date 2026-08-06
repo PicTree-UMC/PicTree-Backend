@@ -77,6 +77,7 @@ export interface CreateBlogDraftData {
 
 export interface BlogDraftTreeImageRecord {
   id: bigint;
+  createdAt: Date;
   images: {
     s3Key: string;
   }[];

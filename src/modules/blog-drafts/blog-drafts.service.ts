@@ -7,6 +7,7 @@ import {
   BLOG_DRAFT_MAX_TREE_COUNT,
 } from './blog-drafts.constant';
 import {
+  BlogDraftDayResponseDto,
   BlogDraftDetailItemResponseDto,
   BlogDraftDetailResponseDto,
   BlogDraftListResponseDto,
@@ -18,12 +19,21 @@ import { GenerateBlogDraftRequestDto } from './dto/generate-blog-draft-request.d
 import { SaveBlogDraftRequestDto } from './dto/save-blog-draft-request.dto';
 import { BlogDraftsRepository } from './blog-drafts.repository';
 import {
+  BlogDraftGenerateSource,
   BlogDraftItem,
   BlogDraftRecord,
+  BlogDraftSourceTreeRecord,
   BlogDraftSummaryRecord,
   BlogDraftUserRecord,
 } from './blog-drafts.types';
 import { OpenAiBlogDraftService } from './openai-blog-draft.service';
+
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+interface BlogDraftTreeContext {
+  date: string;
+  imageUrl: string | null;
+}
 
 @Injectable()
 export class BlogDraftsService {
@@ -71,7 +81,11 @@ export class BlogDraftsService {
 
     return {
       title: generated.title,
-      items: generated.items,
+      days: await this.buildGeneratedDraftDays(
+        source,
+        generated.items,
+        request.startDate,
+      ),
       startDate: request.startDate,
       endDate: request.endDate,
     };
@@ -392,18 +406,23 @@ export class BlogDraftsService {
     draft: BlogDraftRecord,
   ): Promise<BlogDraftDetailResponseDto> => {
     const items = this.parseDraftItems(draft.content);
-    const imageUrlByTreeId = await this.getImageUrlByTreeId(userId, items);
+    const contextByTreeId = await this.getTreeContextByTreeId(userId, items);
+    const fallbackDate = draft.startDate.toISOString().slice(0, 10);
 
     return {
       draftId: Number(draft.id),
       title: draft.title,
-      items: items.map((item) => ({
-        ...item,
-        imageUrl:
-          item.treeId === null
-            ? null
-            : (imageUrlByTreeId.get(item.treeId) ?? null),
-      })),
+      days: this.groupDraftItemsByDate(
+        items.map((item) => ({
+          ...item,
+          imageUrl:
+            item.treeId === null
+              ? null
+              : (contextByTreeId.get(item.treeId)?.imageUrl ?? null),
+        })),
+        contextByTreeId,
+        fallbackDate,
+      ),
       startDate: draft.startDate.toISOString().slice(0, 10),
       endDate: draft.endDate.toISOString().slice(0, 10),
       createdAt: draft.createdAt.toISOString().slice(0, 19),
@@ -483,10 +502,64 @@ export class BlogDraftsService {
     return item.treeId;
   };
 
-  private getImageUrlByTreeId = async (
+  private buildGeneratedDraftDays = async (
+    source: BlogDraftGenerateSource,
+    items: BlogDraftItem[],
+    fallbackDate: string,
+  ): Promise<BlogDraftDayResponseDto[]> => {
+    const contextByTreeId = new Map<number, BlogDraftTreeContext>();
+    const detailItems = await Promise.all(
+      items.map(async (item, index) => {
+        const tree = source.trees[index];
+
+        if (!tree) {
+          return {
+            treeId: null,
+            imageUrl: null,
+            placeName: item.placeName,
+            content: item.content,
+          };
+        }
+
+        const treeId = Number(tree.id);
+        const imageUrl = await this.getSourceTreeImageUrl(tree);
+        contextByTreeId.set(treeId, {
+          date: this.formatKstDate(tree.createdAt),
+          imageUrl,
+        });
+
+        return {
+          treeId,
+          imageUrl,
+          placeName: item.placeName,
+          content: item.content,
+        };
+      }),
+    );
+
+    return this.groupDraftItemsByDate(
+      detailItems,
+      contextByTreeId,
+      fallbackDate,
+    );
+  };
+
+  private getSourceTreeImageUrl = async (
+    tree: BlogDraftSourceTreeRecord,
+  ): Promise<string | null> => {
+    const image = tree.images[0];
+
+    if (!image) {
+      return null;
+    }
+
+    return this.s3Service.getPresignedUrl(image.s3Key);
+  };
+
+  private getTreeContextByTreeId = async (
     userId: number,
     items: BlogDraftDetailItemResponseDto[],
-  ): Promise<Map<number, string>> => {
+  ): Promise<Map<number, BlogDraftTreeContext>> => {
     const treeIds = Array.from(
       new Set(
         items
@@ -507,35 +580,53 @@ export class BlogDraftsService {
       trees.map(async (tree) => {
         const image = tree.images[0];
 
-        if (!image) {
-          return null;
-        }
-
         return [
           Number(tree.id),
-          await this.s3Service.getPresignedUrl(image.s3Key),
+          {
+            date: this.formatKstDate(tree.createdAt),
+            imageUrl: image
+              ? await this.s3Service.getPresignedUrl(image.s3Key)
+              : null,
+          },
         ] as const;
       }),
     );
 
-    return new Map(
-      entries.filter(
-        (entry): entry is readonly [number, string] => entry !== null,
-      ),
-    );
+    return new Map(entries);
+  };
+
+  private groupDraftItemsByDate = (
+    items: BlogDraftDetailItemResponseDto[],
+    contextByTreeId: Map<number, BlogDraftTreeContext>,
+    fallbackDate: string,
+  ): BlogDraftDayResponseDto[] => {
+    const groups = new Map<string, BlogDraftDayResponseDto>();
+
+    for (const item of items) {
+      const date =
+        item.treeId === null
+          ? fallbackDate
+          : (contextByTreeId.get(item.treeId)?.date ?? fallbackDate);
+
+      const group = groups.get(date) ?? { date, items: [] };
+      group.items.push(item);
+      groups.set(date, group);
+    }
+
+    return Array.from(groups.values());
   };
 
   private getThumbnailUrlByTreeId = async (
     userId: number,
     drafts: BlogDraftSummaryRecord[],
-  ): Promise<Map<number, string>> => {
+  ): Promise<Map<number, BlogDraftTreeContext>> => {
     const items = drafts
       .map((draft) => this.parseDraftItems(draft.content)[0])
       .filter(
         (item): item is BlogDraftDetailItemResponseDto => item !== undefined,
       );
 
-    return this.getImageUrlByTreeId(userId, items);
+    return this.getTreeContextByTreeId(userId, items);
   };
 
   private getFirstDraftTreeId = (content: string): number | null => {
@@ -544,7 +635,7 @@ export class BlogDraftsService {
 
   private toBlogDraftSummaryResponseDto = (
     draft: BlogDraftSummaryRecord,
-    thumbnailUrlByTreeId: Map<number, string>,
+    thumbnailUrlByTreeId: Map<number, BlogDraftTreeContext>,
   ): BlogDraftSummaryResponseDto => ({
     draftId: Number(draft.id),
     title: draft.title,
@@ -556,7 +647,7 @@ export class BlogDraftsService {
 
   private getSummaryThumbnailUrl = (
     draft: BlogDraftSummaryRecord,
-    thumbnailUrlByTreeId: Map<number, string>,
+    thumbnailUrlByTreeId: Map<number, BlogDraftTreeContext>,
   ): string | null => {
     const treeId = this.getFirstDraftTreeId(draft.content);
 
@@ -564,6 +655,12 @@ export class BlogDraftsService {
       return null;
     }
 
-    return thumbnailUrlByTreeId.get(treeId) ?? null;
+    return thumbnailUrlByTreeId.get(treeId)?.imageUrl ?? null;
+  };
+
+  private formatKstDate = (date: Date): string => {
+    const kstDate = new Date(date.getTime() + KST_OFFSET_MS);
+
+    return kstDate.toISOString().slice(0, 10);
   };
 }
