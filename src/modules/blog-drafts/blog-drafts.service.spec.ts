@@ -319,7 +319,10 @@ describe('BlogDraftsService', () => {
     expect(repository.createDraft).toHaveBeenCalledWith(
       expect.objectContaining({
         content: JSON.stringify([
-          { treeId: 1, placeName: '포그레인 공원', content: '본문' },
+          {
+            date: '2026-03-31',
+            items: [{ treeId: 1, placeName: '포그레인 공원', content: '본문' }],
+          },
         ]),
         startDate: new Date('2026-03-30T15:00:00.000Z'),
         endDate: new Date('2026-03-31T15:00:00.000Z'),
@@ -336,7 +339,10 @@ describe('BlogDraftsService', () => {
       userId: 1n,
       title: '제목',
       content: JSON.stringify([
-        { treeId: 1, placeName: '포그레인 공원', content: '본문' },
+        {
+          date: '2026-03-31',
+          items: [{ treeId: 1, placeName: '포그레인 공원', content: '본문' }],
+        },
       ]),
       startDate: new Date('2026-03-31T00:00:00.000Z'),
       endDate: new Date('2026-04-01T00:00:00.000Z'),

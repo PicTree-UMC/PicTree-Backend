@@ -89,6 +89,11 @@ export interface BlogDraftItem {
   content: string;
 }
 
+export interface StoredBlogDraftDay {
+  date: string;
+  items: BlogDraftItem[];
+}
+
 export interface OpenAiGeneratedDraft {
   title: string;
   items: BlogDraftItem[];

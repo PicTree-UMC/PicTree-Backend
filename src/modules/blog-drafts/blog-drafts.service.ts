@@ -32,6 +32,7 @@ import {
   BlogDraftSourceTreeRecord,
   BlogDraftSummaryRecord,
   BlogDraftUserRecord,
+  StoredBlogDraftDay,
 } from './blog-drafts.types';
 import { OpenAiBlogDraftService } from './openai-blog-draft.service';
 
@@ -104,7 +105,8 @@ export class BlogDraftsService {
       request.startDate,
       request.endDate,
     );
-    const items = this.flattenSaveDraftItems(request.days);
+    const storedDays = this.buildStoredDraftDays(request.days);
+    const items = this.flattenStoredDraftDays(storedDays);
     this.validateDraftContent(request.title, items);
     this.validateSaveDraftItems(items);
     const treeIds = this.extractSaveDraftTreeIds(items);
@@ -114,7 +116,7 @@ export class BlogDraftsService {
     const saved = await this.blogDraftsRepository.createDraft({
       userId: BigInt(userId),
       title: request.title,
-      content: JSON.stringify(this.buildSavedDraftItems(items)),
+      content: JSON.stringify(storedDays),
       startDate,
       endDate,
     });
@@ -369,26 +371,24 @@ export class BlogDraftsService {
     }
   };
 
-  private flattenSaveDraftItems = (
+  private buildStoredDraftDays = (
     days: SaveBlogDraftRequestDto['days'],
-  ): BlogDraftItem[] =>
-    days.flatMap((day) =>
-      day.items.map((item) => ({
+  ): StoredBlogDraftDay[] =>
+    days.map((day) => ({
+      date: day.date,
+      items: day.items.map((item) => ({
         treeId: item.treeId,
         placeName: item.placeName,
         content: item.content,
       })),
-    );
+    }));
+
+  private flattenStoredDraftDays = (
+    days: StoredBlogDraftDay[],
+  ): BlogDraftItem[] => days.flatMap((day) => day.items);
 
   private extractSaveDraftTreeIds = (items: BlogDraftItem[]): number[] =>
     items.map((item) => item.treeId as number);
-
-  private buildSavedDraftItems = (items: BlogDraftItem[]): BlogDraftItem[] =>
-    items.map((item) => ({
-      treeId: item.treeId,
-      placeName: item.placeName,
-      content: item.content,
-    }));
 
   private toExclusiveEndDate = (endDate: Date): Date => {
     return new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
@@ -398,23 +398,18 @@ export class BlogDraftsService {
     userId: number,
     draft: BlogDraftRecord,
   ): Promise<BlogDraftDetailResponseDto> => {
-    const items = this.parseDraftItems(draft.content);
+    const storedDays = this.parseDraftContent(draft.content);
+    const items = this.flattenStoredDraftDays(storedDays);
     const contextByTreeId = await this.getTreeContextByTreeId(userId, items);
     const fallbackDate = formatKstDate(draft.startDate);
 
     return {
       draftId: Number(draft.id),
       title: draft.title,
-      days: this.groupDraftItemsByDate(
-        items.map((item) => ({
-          ...item,
-          imageUrl:
-            item.treeId === null
-              ? null
-              : (contextByTreeId.get(item.treeId)?.imageUrl ?? null),
-        })),
-        contextByTreeId,
+      days: this.toDraftDayResponseDtos(
+        storedDays,
         fallbackDate,
+        contextByTreeId,
       ),
       startDate: formatKstDate(draft.startDate),
       endDate: formatKstDate(draft.endDate),
@@ -422,53 +417,81 @@ export class BlogDraftsService {
     };
   };
 
-  private parseDraftItems = (
-    content: string,
-  ): BlogDraftDetailItemResponseDto[] => {
+  private parseDraftContent = (content: string): StoredBlogDraftDay[] => {
     try {
       const parsed = JSON.parse(content) as unknown;
 
       if (!Array.isArray(parsed)) {
-        return [
-          { treeId: null, imageUrl: null, placeName: '여행 기록', content },
-        ];
+        return [this.createFallbackStoredDraftDay(content)];
       }
 
-      const items = parsed
-        .map((item) => {
-          if (!this.isDraftItemLike(item)) {
-            return null;
-          }
+      const days = this.parseStoredDraftDays(parsed);
 
-          const placeName = item.placeName.trim();
-          const itemContent = item.content.trim();
-
-          if (!placeName || !itemContent) {
-            return null;
-          }
-
-          const draftItem: BlogDraftDetailItemResponseDto = {
-            treeId: this.getDraftItemTreeId(item),
-            imageUrl: null,
-            placeName,
-            content: itemContent,
-          };
-
-          return draftItem;
-        })
-        .filter(
-          (item): item is BlogDraftDetailItemResponseDto => item !== null,
-        );
-
-      return items.length > 0
-        ? items
-        : [{ treeId: null, imageUrl: null, placeName: '여행 기록', content }];
+      return days.length > 0
+        ? days
+        : [this.createFallbackStoredDraftDay(content)];
     } catch {
-      return [
-        { treeId: null, imageUrl: null, placeName: '여행 기록', content },
-      ];
+      return [this.createFallbackStoredDraftDay(content)];
     }
   };
+
+  private parseStoredDraftDays = (parsed: unknown[]): StoredBlogDraftDay[] => {
+    if (parsed.every((item) => this.isStoredDraftDayLike(item))) {
+      return parsed
+        .map((day) => {
+          const items = day.items
+            .map((item) => this.parseStoredDraftItem(item))
+            .filter((item): item is BlogDraftItem => item !== null);
+
+          return items.length > 0 ? { date: day.date, items } : null;
+        })
+        .filter((day): day is StoredBlogDraftDay => day !== null);
+    }
+
+    const legacyItems = parsed
+      .map((item) => this.parseStoredDraftItem(item))
+      .filter((item): item is BlogDraftItem => item !== null);
+
+    return legacyItems.length > 0 ? [{ date: '', items: legacyItems }] : [];
+  };
+
+  private parseStoredDraftItem = (item: unknown): BlogDraftItem | null => {
+    if (!this.isDraftItemLike(item)) {
+      return null;
+    }
+
+    const placeName = item.placeName.trim();
+    const itemContent = item.content.trim();
+
+    if (!placeName || !itemContent) {
+      return null;
+    }
+
+    return {
+      treeId: this.getDraftItemTreeId(item),
+      placeName,
+      content: itemContent,
+    };
+  };
+
+  private isStoredDraftDayLike = (
+    item: unknown,
+  ): item is { date: string; items: unknown[] } => {
+    if (typeof item !== 'object' || item === null) {
+      return false;
+    }
+
+    const draftDay = item as Record<string, unknown>;
+
+    return typeof draftDay.date === 'string' && Array.isArray(draftDay.items);
+  };
+
+  private createFallbackStoredDraftDay = (
+    content: string,
+  ): StoredBlogDraftDay => ({
+    date: '',
+    items: [{ treeId: null, placeName: '여행 기록', content }],
+  });
 
   private isDraftItemLike = (
     item: unknown,
@@ -491,6 +514,52 @@ export class BlogDraftsService {
     }
 
     return item.treeId;
+  };
+
+  private toDraftDayResponseDtos = (
+    days: StoredBlogDraftDay[],
+    fallbackDate: string,
+    contextByTreeId: Map<number, BlogDraftTreeContext>,
+  ): BlogDraftDayResponseDto[] => {
+    if (days.some((day) => !day.date)) {
+      return this.groupDraftItemsByDate(
+        this.flattenStoredDraftDays(days).map((item) =>
+          this.toBlogDraftDetailItemResponseDto(item, contextByTreeId),
+        ),
+        contextByTreeId,
+        fallbackDate,
+      );
+    }
+
+    const responseDays = days
+      .map((day) => ({
+        date: day.date || fallbackDate,
+        items: day.items.map((item) =>
+          this.toBlogDraftDetailItemResponseDto(item, contextByTreeId),
+        ),
+      }))
+      .filter((day) => day.items.length > 0);
+
+    return responseDays.length > 0
+      ? responseDays
+      : [{ date: fallbackDate, items: [] }];
+  };
+
+  private toBlogDraftDetailItemResponseDto = (
+    item: BlogDraftItem,
+    contextByTreeId: Map<number, BlogDraftTreeContext>,
+  ): BlogDraftDetailItemResponseDto => {
+    const treeId = item.treeId ?? null;
+
+    return {
+      treeId,
+      imageUrl:
+        treeId === null
+          ? null
+          : (contextByTreeId.get(treeId)?.imageUrl ?? null),
+      placeName: item.placeName,
+      content: item.content,
+    };
   };
 
   private buildGeneratedDraftDays = async (
@@ -549,13 +618,13 @@ export class BlogDraftsService {
 
   private getTreeContextByTreeId = async (
     userId: number,
-    items: BlogDraftDetailItemResponseDto[],
+    items: BlogDraftItem[],
   ): Promise<Map<number, BlogDraftTreeContext>> => {
     const treeIds = Array.from(
       new Set(
         items
           .map((item) => item.treeId)
-          .filter((treeId): treeId is number => treeId !== null),
+          .filter((treeId): treeId is number => typeof treeId === 'number'),
       ),
     );
 
@@ -612,16 +681,20 @@ export class BlogDraftsService {
     drafts: BlogDraftSummaryRecord[],
   ): Promise<Map<number, BlogDraftTreeContext>> => {
     const items = drafts
-      .map((draft) => this.parseDraftItems(draft.content)[0])
-      .filter(
-        (item): item is BlogDraftDetailItemResponseDto => item !== undefined,
-      );
+      .map(
+        (draft) =>
+          this.flattenStoredDraftDays(this.parseDraftContent(draft.content))[0],
+      )
+      .filter((item): item is BlogDraftItem => item !== undefined);
 
     return this.getTreeContextByTreeId(userId, items);
   };
 
   private getFirstDraftTreeId = (content: string): number | null => {
-    return this.parseDraftItems(content)[0]?.treeId ?? null;
+    return (
+      this.flattenStoredDraftDays(this.parseDraftContent(content))[0]?.treeId ??
+      null
+    );
   };
 
   private toBlogDraftSummaryResponseDto = (
