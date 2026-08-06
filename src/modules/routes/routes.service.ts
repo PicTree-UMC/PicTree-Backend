@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import { S3Service } from '../../common/s3/s3.service';
+import { formatKstDate } from '../../common/utils/kst-date.util';
 import { CreateRouteRequestDto } from './dto/create-route-request.dto';
 import { GetRoutesQueryDto } from './dto/get-routes-query.dto';
 import { RouteImageListResponseDto } from './dto/route-image-response.dto';
@@ -145,7 +146,7 @@ export class RoutesService {
 
     // 동선은 최대 3일(서로 다른 KST 날짜)까지만 묶을 수 있다.
     const distinctDates = new Set(
-      ownedTrees.map((tree) => this.toKstDateString(tree.createdAt)),
+      ownedTrees.map((tree) => formatKstDate(tree.createdAt)),
     );
     if (distinctDates.size > ROUTE_MAX_DATE_SPAN) {
       throw new AppException(ErrorCode.ROUTE_INVALID_REQUEST);
@@ -196,13 +197,6 @@ export class RoutesService {
       throw new AppException(ErrorCode.ROUTE_INVALID_REQUEST);
     }
   };
-
-  // UTC 저장값을 KST(UTC+9) 기준 YYYY-MM-DD 로 변환한다.
-  private toKstDateString = (date: Date): string => {
-    const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
-    return kst.toISOString().slice(0, 10);
-  };
-
   private toRouteSummaryResponseDto = (
     route: RouteListItemRecord,
   ): RouteSummaryResponseDto => {
@@ -213,7 +207,7 @@ export class RoutesService {
     // 기록 날짜들: 동선 장소들의 KST 날짜 (중복 제거, 오름차순, 최대 3일)
     const recordDates = [
       ...new Set(
-        livePoints.map((point) => this.toKstDateString(point.tree.createdAt)),
+        livePoints.map((point) => formatKstDate(point.tree.createdAt)),
       ),
     ].sort();
 
@@ -246,7 +240,7 @@ export class RoutesService {
         description: point.tree.description,
         latitude: Number(point.tree.latitude),
         longitude: Number(point.tree.longitude),
-        date: this.toKstDateString(point.tree.createdAt),
+        date: formatKstDate(point.tree.createdAt),
         sequence: point.sequence,
       })),
   });

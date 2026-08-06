@@ -3,6 +3,13 @@ import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import { S3Service } from '../../common/s3/s3.service';
 import {
+  createKstMonthlyAnchor,
+  formatKstDate,
+  formatKstDateTime,
+  parseKstDateStart,
+  toKstDateParts,
+} from '../../common/utils/kst-date.util';
+import {
   BLOG_DRAFT_LIMIT,
   BLOG_DRAFT_MAX_TREE_COUNT,
 } from './blog-drafts.constant';
@@ -27,8 +34,6 @@ import {
   BlogDraftUserRecord,
 } from './blog-drafts.types';
 import { OpenAiBlogDraftService } from './openai-blog-draft.service';
-
-const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 interface BlogDraftTreeContext {
   date: string;
@@ -254,11 +259,11 @@ export class BlogDraftsService {
   };
 
   private resolveFreeUsageWindow = (now: Date): [Date, Date] => {
-    const { year, monthIndex } = this.toKstDateParts(now);
+    const { year, monthIndex } = toKstDateParts(now);
 
     return [
-      this.createKstMonthlyAnchor(year, monthIndex, 1),
-      this.createKstMonthlyAnchor(year, monthIndex + 1, 1),
+      createKstMonthlyAnchor(year, monthIndex, 1),
+      createKstMonthlyAnchor(year, monthIndex + 1, 1),
     ];
   };
 
@@ -266,9 +271,9 @@ export class BlogDraftsService {
     startedAt: Date,
     now: Date,
   ): [Date, Date] => {
-    const { day: startedDay } = this.toKstDateParts(startedAt);
-    const { year, monthIndex } = this.toKstDateParts(now);
-    const currentMonthAnchor = this.createKstMonthlyAnchor(
+    const { day: startedDay } = toKstDateParts(startedAt);
+    const { year, monthIndex } = toKstDateParts(now);
+    const currentMonthAnchor = createKstMonthlyAnchor(
       year,
       monthIndex,
       startedDay,
@@ -277,26 +282,14 @@ export class BlogDraftsService {
     if (now >= currentMonthAnchor) {
       return [
         currentMonthAnchor,
-        this.createKstMonthlyAnchor(year, monthIndex + 1, startedDay),
+        createKstMonthlyAnchor(year, monthIndex + 1, startedDay),
       ];
     }
 
     return [
-      this.createKstMonthlyAnchor(year, monthIndex - 1, startedDay),
+      createKstMonthlyAnchor(year, monthIndex - 1, startedDay),
       currentMonthAnchor,
     ];
-  };
-
-  private createKstMonthlyAnchor = (
-    year: number,
-    monthIndex: number,
-    day: number,
-  ): Date => {
-    const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
-
-    return new Date(
-      Date.UTC(year, monthIndex, Math.min(day, lastDay)) - KST_OFFSET_MS,
-    );
   };
 
   private getDraftOrThrow = async (
@@ -335,8 +328,8 @@ export class BlogDraftsService {
     startDate: string,
     endDate: string,
   ): [Date, Date] => {
-    const start = this.parseKstDate(startDate);
-    const end = this.parseKstDate(endDate);
+    const start = parseKstDateStart(startDate);
+    const end = parseKstDateStart(endDate);
 
     if (start === null || end === null || start > end) {
       throw new AppException(ErrorCode.BLOG_DRAFT_INVALID_REQUEST);
@@ -395,7 +388,7 @@ export class BlogDraftsService {
   ): Promise<BlogDraftDetailResponseDto> => {
     const items = this.parseDraftItems(draft.content);
     const contextByTreeId = await this.getTreeContextByTreeId(userId, items);
-    const fallbackDate = this.formatKstDate(draft.startDate);
+    const fallbackDate = formatKstDate(draft.startDate);
 
     return {
       draftId: Number(draft.id),
@@ -411,9 +404,9 @@ export class BlogDraftsService {
         contextByTreeId,
         fallbackDate,
       ),
-      startDate: this.formatKstDate(draft.startDate),
-      endDate: this.formatKstDate(draft.endDate),
-      createdAt: this.formatKstDateTime(draft.createdAt),
+      startDate: formatKstDate(draft.startDate),
+      endDate: formatKstDate(draft.endDate),
+      createdAt: formatKstDateTime(draft.createdAt),
     };
   };
 
@@ -510,7 +503,7 @@ export class BlogDraftsService {
         const treeId = Number(tree.id);
         const imageUrl = await this.getSourceTreeImageUrl(tree);
         contextByTreeId.set(treeId, {
-          date: this.formatKstDate(tree.createdAt),
+          date: formatKstDate(tree.createdAt),
           imageUrl,
         });
 
@@ -569,7 +562,7 @@ export class BlogDraftsService {
         return [
           Number(tree.id),
           {
-            date: this.formatKstDate(tree.createdAt),
+            date: formatKstDate(tree.createdAt),
             imageUrl: image
               ? await this.s3Service.getPresignedUrl(image.s3Key)
               : null,
@@ -626,9 +619,9 @@ export class BlogDraftsService {
     draftId: Number(draft.id),
     title: draft.title,
     thumbnailUrl: this.getSummaryThumbnailUrl(draft, thumbnailUrlByTreeId),
-    startDate: this.formatKstDate(draft.startDate),
-    endDate: this.formatKstDate(draft.endDate),
-    createdAt: this.formatKstDateTime(draft.createdAt),
+    startDate: formatKstDate(draft.startDate),
+    endDate: formatKstDate(draft.endDate),
+    createdAt: formatKstDateTime(draft.createdAt),
   });
 
   private getSummaryThumbnailUrl = (
@@ -642,53 +635,5 @@ export class BlogDraftsService {
     }
 
     return thumbnailUrlByTreeId.get(treeId)?.imageUrl ?? null;
-  };
-
-  private formatKstDate = (date: Date): string => {
-    const kstDate = new Date(date.getTime() + KST_OFFSET_MS);
-
-    return kstDate.toISOString().slice(0, 10);
-  };
-
-  private formatKstDateTime = (date: Date): string => {
-    const kstDate = new Date(date.getTime() + KST_OFFSET_MS);
-
-    return kstDate.toISOString().slice(0, 19);
-  };
-
-  private parseKstDate = (dateText: string): Date | null => {
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateText);
-
-    if (!match) {
-      return null;
-    }
-
-    const year = Number(match[1]);
-    const month = Number(match[2]);
-    const day = Number(match[3]);
-    const date = new Date(Date.UTC(year, month - 1, day) - KST_OFFSET_MS);
-    const kstParts = this.toKstDateParts(date);
-
-    if (
-      kstParts.year !== year ||
-      kstParts.monthIndex !== month - 1 ||
-      kstParts.day !== day
-    ) {
-      return null;
-    }
-
-    return date;
-  };
-
-  private toKstDateParts = (
-    date: Date,
-  ): { year: number; monthIndex: number; day: number } => {
-    const kstDate = new Date(date.getTime() + KST_OFFSET_MS);
-
-    return {
-      year: kstDate.getUTCFullYear(),
-      monthIndex: kstDate.getUTCMonth(),
-      day: kstDate.getUTCDate(),
-    };
   };
 }
