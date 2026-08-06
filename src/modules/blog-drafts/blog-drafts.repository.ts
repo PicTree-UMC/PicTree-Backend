@@ -5,6 +5,7 @@ import {
   BlogDraftGenerateSource,
   BlogDraftRecord,
   BlogDraftSummaryRecord,
+  BlogDraftTreeImageRecord,
   BlogDraftUserRecord,
   CreateBlogDraftData,
 } from './blog-drafts.types';
@@ -205,6 +206,36 @@ export class BlogDraftsRepository {
       where: {
         id: BigInt(draftId),
         userId: BigInt(userId),
+      },
+    });
+  };
+
+  findTreeImagesByIds = (
+    userId: number,
+    treeIds: number[],
+  ): Promise<BlogDraftTreeImageRecord[]> => {
+    return this.prisma.tree.findMany({
+      where: {
+        userId: BigInt(userId),
+        deletedAt: null,
+        id: {
+          in: treeIds.map((treeId) => BigInt(treeId)),
+        },
+      },
+      select: {
+        id: true,
+        images: {
+          where: {
+            timelineRecordId: null,
+          },
+          select: {
+            s3Key: true,
+          },
+          orderBy: {
+            sortOrder: 'asc',
+          },
+          take: 1,
+        },
       },
     });
   };

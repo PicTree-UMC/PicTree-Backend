@@ -74,6 +74,13 @@ export interface CreateBlogDraftData {
   endDate: Date;
 }
 
+export interface BlogDraftTreeImageRecord {
+  id: bigint;
+  images: {
+    s3Key: string;
+  }[];
+}
+
 export interface BlogDraftItem {
   treeId?: number | null;
   placeName: string;

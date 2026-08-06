@@ -15,6 +15,13 @@ export class BlogDraftDetailItemResponseDto {
   @ApiProperty({ example: 1, nullable: true, description: '연결된 나무 ID' })
   treeId!: number | null;
 
+  @ApiProperty({
+    example: 'https://.../a.jpg?X-Amz-Signature=...',
+    nullable: true,
+    description: '장소 대표 이미지 URL (presigned)',
+  })
+  imageUrl!: string | null;
+
   @ApiProperty({ example: '포그레인 공원', description: '장소명' })
   placeName!: string;
 

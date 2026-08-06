@@ -212,11 +212,13 @@ export const ApiGetBlogDraft = () =>
             items: [
               {
                 treeId: 1,
+                imageUrl: 'https://.../a.jpg?X-Amz-Signature=...',
                 placeName: '포그레인 공원',
                 content: '해 질 무렵 공원을 걸었음. 조용해서 산책하기 좋았음.',
               },
               {
                 treeId: 2,
+                imageUrl: null,
                 placeName: '피자 맛집',
                 content: '저녁으로 피자를 먹었음. 기다린 만큼 맛있었음.',
               },

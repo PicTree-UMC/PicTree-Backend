@@ -1,4 +1,5 @@
 import { AppException } from '../../common/exceptions/app.exception';
+import { S3Service } from '../../common/s3/s3.service';
 import { BlogDraftsRepository } from './blog-drafts.repository';
 import { BlogDraftsService } from './blog-drafts.service';
 import { BlogDraftTone } from './dto/generate-blog-draft-request.dto';
@@ -7,6 +8,7 @@ import { OpenAiBlogDraftService } from './openai-blog-draft.service';
 describe('BlogDraftsService', () => {
   let repository: jest.Mocked<BlogDraftsRepository>;
   let openAiService: jest.Mocked<OpenAiBlogDraftService>;
+  let s3Service: jest.Mocked<S3Service>;
   let service: BlogDraftsService;
 
   beforeEach(() => {
@@ -20,12 +22,16 @@ describe('BlogDraftsService', () => {
       createDraft: jest.fn(),
       findSavedDraftsByUserId: jest.fn(),
       findDraftByIdAndUserId: jest.fn(),
+      findTreeImagesByIds: jest.fn(),
       deleteDraft: jest.fn(),
     } as unknown as jest.Mocked<BlogDraftsRepository>;
     openAiService = {
       generate: jest.fn(),
     } as unknown as jest.Mocked<OpenAiBlogDraftService>;
-    service = new BlogDraftsService(repository, openAiService);
+    s3Service = {
+      getPresignedUrl: jest.fn(),
+    } as unknown as jest.Mocked<S3Service>;
+    service = new BlogDraftsService(repository, openAiService, s3Service);
   });
 
   afterEach(() => {
@@ -324,13 +330,23 @@ describe('BlogDraftsService', () => {
       createdAt: new Date('2026-04-02T10:00:00.000Z'),
       updatedAt: new Date('2026-04-02T10:00:00.000Z'),
     });
+    repository.findTreeImagesByIds.mockResolvedValue([
+      {
+        id: 1n,
+        images: [{ s3Key: 'trees/1/a.jpg' }],
+      },
+    ]);
+    s3Service.getPresignedUrl.mockResolvedValue('https://signed/trees/1/a.jpg');
 
     const result = await service.getDraft(1, 1);
 
     expect(repository.findDraftByIdAndUserId).toHaveBeenCalledWith(1, 1);
+    expect(repository.findTreeImagesByIds).toHaveBeenCalledWith(1, [1]);
+    expect(s3Service.getPresignedUrl).toHaveBeenCalledWith('trees/1/a.jpg');
     expect(result.items).toEqual([
       {
         treeId: 1,
+        imageUrl: 'https://signed/trees/1/a.jpg',
         placeName: '포그레인 공원',
         content: '본문',
       },

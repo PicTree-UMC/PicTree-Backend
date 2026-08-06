@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
+import { S3Service } from '../../common/s3/s3.service';
 import {
   BLOG_DRAFT_LIMIT,
   BLOG_DRAFT_MAX_TREE_COUNT,
@@ -29,6 +30,7 @@ export class BlogDraftsService {
   constructor(
     private readonly blogDraftsRepository: BlogDraftsRepository,
     private readonly openAiBlogDraftService: OpenAiBlogDraftService,
+    private readonly s3Service: S3Service,
   ) {}
 
   generateDraft = async (
@@ -117,7 +119,7 @@ export class BlogDraftsService {
   ): Promise<BlogDraftDetailResponseDto> => {
     const draft = await this.getDraftOrThrow(userId, draftId);
 
-    return this.toBlogDraftDetailResponseDto(draft);
+    return this.toBlogDraftDetailResponseDto(userId, draft);
   };
 
   deleteDraft = async (userId: number, draftId: number): Promise<null> => {
@@ -379,23 +381,39 @@ export class BlogDraftsService {
     return new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
   };
 
-  private toBlogDraftDetailResponseDto = (
+  private toBlogDraftDetailResponseDto = async (
+    userId: number,
     draft: BlogDraftRecord,
-  ): BlogDraftDetailResponseDto => ({
-    draftId: Number(draft.id),
-    title: draft.title,
-    items: this.parseDraftItems(draft.content),
-    startDate: draft.startDate.toISOString().slice(0, 10),
-    endDate: draft.endDate.toISOString().slice(0, 10),
-    createdAt: draft.createdAt.toISOString().slice(0, 19),
-  });
+  ): Promise<BlogDraftDetailResponseDto> => {
+    const items = this.parseDraftItems(draft.content);
+    const imageUrlByTreeId = await this.getImageUrlByTreeId(userId, items);
 
-  private parseDraftItems = (content: string): BlogDraftDetailItemResponseDto[] => {
+    return {
+      draftId: Number(draft.id),
+      title: draft.title,
+      items: items.map((item) => ({
+        ...item,
+        imageUrl:
+          item.treeId === null
+            ? null
+            : (imageUrlByTreeId.get(item.treeId) ?? null),
+      })),
+      startDate: draft.startDate.toISOString().slice(0, 10),
+      endDate: draft.endDate.toISOString().slice(0, 10),
+      createdAt: draft.createdAt.toISOString().slice(0, 19),
+    };
+  };
+
+  private parseDraftItems = (
+    content: string,
+  ): BlogDraftDetailItemResponseDto[] => {
     try {
       const parsed = JSON.parse(content) as unknown;
 
       if (!Array.isArray(parsed)) {
-        return [{ treeId: null, placeName: '여행 기록', content }];
+        return [
+          { treeId: null, imageUrl: null, placeName: '여행 기록', content },
+        ];
       }
 
       const items = parsed
@@ -411,11 +429,14 @@ export class BlogDraftsService {
             return null;
           }
 
-          return {
+          const draftItem: BlogDraftDetailItemResponseDto = {
             treeId: this.getDraftItemTreeId(item),
+            imageUrl: null,
             placeName,
             content: itemContent,
           };
+
+          return draftItem;
         })
         .filter(
           (item): item is BlogDraftDetailItemResponseDto => item !== null,
@@ -423,9 +444,13 @@ export class BlogDraftsService {
 
       return items.length > 0
         ? items
-        : [{ treeId: null, placeName: '여행 기록', content }];
+        : [
+            { treeId: null, imageUrl: null, placeName: '여행 기록', content },
+          ];
     } catch {
-      return [{ treeId: null, placeName: '여행 기록', content }];
+      return [
+        { treeId: null, imageUrl: null, placeName: '여행 기록', content },
+      ];
     }
   };
 
@@ -450,6 +475,48 @@ export class BlogDraftsService {
     }
 
     return item.treeId;
+  };
+
+  private getImageUrlByTreeId = async (
+    userId: number,
+    items: BlogDraftDetailItemResponseDto[],
+  ): Promise<Map<number, string>> => {
+    const treeIds = Array.from(
+      new Set(
+        items
+          .map((item) => item.treeId)
+          .filter((treeId): treeId is number => treeId !== null),
+      ),
+    );
+
+    if (treeIds.length === 0) {
+      return new Map();
+    }
+
+    const trees = await this.blogDraftsRepository.findTreeImagesByIds(
+      userId,
+      treeIds,
+    );
+    const entries = await Promise.all(
+      trees.map(async (tree) => {
+        const image = tree.images[0];
+
+        if (!image) {
+          return null;
+        }
+
+        return [
+          Number(tree.id),
+          await this.s3Service.getPresignedUrl(image.s3Key),
+        ] as const;
+      }),
+    );
+
+    return new Map(
+      entries.filter(
+        (entry): entry is readonly [number, string] => entry !== null,
+      ),
+    );
   };
 
   private toBlogDraftSummaryResponseDto = (
