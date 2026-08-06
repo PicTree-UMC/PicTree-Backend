@@ -333,6 +333,92 @@ describe('BlogDraftsService', () => {
     });
   });
 
+  it('초안 저장 시 중복 treeId는 한 번만 검증하고 item은 모두 저장한다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: null,
+    });
+    repository.findGenerateSource.mockResolvedValue({
+      trees: [
+        {
+          id: 1n,
+          name: '포그레인 공원',
+          description: null,
+          address: null,
+          mood: '😍',
+          defaultImage: 'DEFAULT_1',
+          createdAt: new Date('2026-03-31T10:00:00.000Z'),
+          images: [],
+        },
+      ],
+      timelines: [],
+    });
+    repository.createDraft.mockResolvedValue({
+      id: 1n,
+      userId: 1n,
+      title: '제목',
+      content: '[]',
+      startDate: new Date('2026-03-31T00:00:00.000Z'),
+      endDate: new Date('2026-04-01T00:00:00.000Z'),
+      createdAt: new Date('2026-04-02T10:00:00.000Z'),
+      updatedAt: new Date('2026-04-02T10:00:00.000Z'),
+    });
+
+    await service.saveDraft(1, {
+      title: '제목',
+      days: [
+        {
+          date: '2026-03-31',
+          items: [
+            {
+              treeId: 1,
+              imageUrl: null,
+              placeName: '포그레인 공원',
+              content: '첫 번째 본문',
+            },
+            {
+              treeId: 1,
+              imageUrl: null,
+              placeName: '포그레인 공원',
+              content: '두 번째 본문',
+            },
+          ],
+        },
+      ],
+      startDate: '2026-03-31',
+      endDate: '2026-04-01',
+    });
+
+    expect(repository.findGenerateSource).toHaveBeenCalledWith(
+      1,
+      new Date('1970-01-01T00:00:00.000Z'),
+      new Date('9999-12-31T00:00:00.000Z'),
+      [1],
+    );
+    expect(repository.createDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: JSON.stringify([
+          {
+            date: '2026-03-31',
+            items: [
+              {
+                treeId: 1,
+                placeName: '포그레인 공원',
+                content: '첫 번째 본문',
+              },
+              {
+                treeId: 1,
+                placeName: '포그레인 공원',
+                content: '두 번째 본문',
+              },
+            ],
+          },
+        ]),
+      }),
+    );
+  });
+
   it('초안 상세 조회 시 장소별 item에 treeId를 포함한다', async () => {
     repository.findDraftByIdAndUserId.mockResolvedValue({
       id: 1n,

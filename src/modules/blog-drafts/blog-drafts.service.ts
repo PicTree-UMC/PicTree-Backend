@@ -388,7 +388,7 @@ export class BlogDraftsService {
   ): BlogDraftItem[] => days.flatMap((day) => day.items);
 
   private extractSaveDraftTreeIds = (items: BlogDraftItem[]): number[] =>
-    items.map((item) => item.treeId as number);
+    Array.from(new Set(items.map((item) => item.treeId as number)));
 
   private toExclusiveEndDate = (endDate: Date): Date => {
     return new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
