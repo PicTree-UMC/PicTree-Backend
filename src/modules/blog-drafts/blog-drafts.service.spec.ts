@@ -669,4 +669,84 @@ describe('BlogDraftsService', () => {
       endDate: '2026-04-01',
     });
   });
+
+  it('초안 생성 응답 item은 placeName을 우선해 나무 정보와 매핑한다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: null,
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(0);
+    repository.findGenerateSource.mockResolvedValue({
+      trees: [
+        {
+          id: 1n,
+          name: '포그레인 공원',
+          description: null,
+          address: null,
+          mood: '😍',
+          defaultImage: 'DEFAULT_1',
+          createdAt: new Date('2026-03-31T10:00:00.000Z'),
+          images: [],
+        },
+        {
+          id: 2n,
+          name: '피자 맛집',
+          description: null,
+          address: null,
+          mood: '😋',
+          defaultImage: 'DEFAULT_1',
+          createdAt: new Date('2026-04-01T10:00:00.000Z'),
+          images: [],
+        },
+      ],
+      timelines: [],
+    });
+    openAiService.generate.mockResolvedValue({
+      title: '제목',
+      items: [
+        {
+          placeName: '피자 맛집',
+          content: '피자를 먹었음.',
+        },
+        {
+          placeName: '포그레인 공원',
+          content: '공원을 걸었음.',
+        },
+      ],
+    });
+    repository.consumeUsageWithinLimit.mockResolvedValue();
+
+    const result = await service.generateDraft(1, {
+      startDate: '2026-03-31',
+      endDate: '2026-04-01',
+      treeIds: [1, 2],
+      tone: BlogDraftTone.RECORD,
+    });
+
+    expect(result.days).toEqual([
+      {
+        date: '2026-04-01',
+        items: [
+          {
+            treeId: 2,
+            imageUrl: null,
+            placeName: '피자 맛집',
+            content: '피자를 먹었음.',
+          },
+        ],
+      },
+      {
+        date: '2026-03-31',
+        items: [
+          {
+            treeId: 1,
+            imageUrl: null,
+            placeName: '포그레인 공원',
+            content: '공원을 걸었음.',
+          },
+        ],
+      },
+    ]);
+  });
 });

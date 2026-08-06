@@ -585,9 +585,15 @@ export class BlogDraftsService {
     fallbackDate: string,
   ): Promise<BlogDraftDayResponseDto[]> => {
     const contextByTreeId = new Map<number, BlogDraftTreeContext>();
+    const usedTreeIds = new Set<number>();
     const detailItems = await Promise.all(
       items.map(async (item, index) => {
-        const tree = source.trees[index];
+        const tree = this.findGeneratedItemTree(
+          item,
+          index,
+          source.trees,
+          usedTreeIds,
+        );
 
         if (!tree) {
           return {
@@ -599,6 +605,7 @@ export class BlogDraftsService {
         }
 
         const treeId = Number(tree.id);
+        usedTreeIds.add(treeId);
         const imageUrl = await this.getSourceTreeImageUrl(tree);
         contextByTreeId.set(treeId, {
           date: formatKstDate(tree.createdAt),
@@ -619,6 +626,31 @@ export class BlogDraftsService {
       contextByTreeId,
       fallbackDate,
     );
+  };
+
+  private findGeneratedItemTree = (
+    item: BlogDraftItem,
+    index: number,
+    trees: BlogDraftSourceTreeRecord[],
+    usedTreeIds: Set<number>,
+  ): BlogDraftSourceTreeRecord | undefined => {
+    const matchedByName = trees.find((tree) => {
+      const treeId = Number(tree.id);
+
+      return tree.name === item.placeName && !usedTreeIds.has(treeId);
+    });
+
+    if (matchedByName) {
+      return matchedByName;
+    }
+
+    const fallbackTree = trees[index];
+
+    if (!fallbackTree || usedTreeIds.has(Number(fallbackTree.id))) {
+      return undefined;
+    }
+
+    return fallbackTree;
   };
 
   private getSourceTreeImageUrl = async (
