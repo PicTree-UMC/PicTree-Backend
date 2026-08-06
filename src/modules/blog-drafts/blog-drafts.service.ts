@@ -107,6 +107,7 @@ export class BlogDraftsService {
     );
     const storedDays = this.buildStoredDraftDays(request.days);
     const items = this.flattenStoredDraftDays(storedDays);
+    this.validateStoredDayDates(storedDays, startDate, endDate);
     this.validateDraftContent(request.title, items);
     this.validateSaveDraftItems(items);
     const treeIds = this.extractSaveDraftTreeIds(items);
@@ -367,6 +368,22 @@ export class BlogDraftsService {
       items.length > BLOG_DRAFT_MAX_TREE_COUNT ||
       items.some((item) => typeof item.treeId !== 'number')
     ) {
+      throw new AppException(ErrorCode.BLOG_DRAFT_INVALID_REQUEST);
+    }
+  };
+
+  private validateStoredDayDates = (
+    days: StoredBlogDraftDay[],
+    startDate: Date,
+    endDate: Date,
+  ): void => {
+    const hasInvalidDate = days.some((day) => {
+      const date = parseKstDateStart(day.date);
+
+      return date === null || date < startDate || date > endDate;
+    });
+
+    if (hasInvalidDate) {
       throw new AppException(ErrorCode.BLOG_DRAFT_INVALID_REQUEST);
     }
   };

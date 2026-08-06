@@ -419,6 +419,39 @@ describe('BlogDraftsService', () => {
     );
   });
 
+  it('초안 저장 시 날짜 그룹이 요청 기간 밖이면 BLOG400-1 예외를 던진다', async () => {
+    try {
+      await service.saveDraft(1, {
+        title: '제목',
+        days: [
+          {
+            date: '2025-01-01',
+            items: [
+              {
+                treeId: 1,
+                imageUrl: null,
+                placeName: '포그레인 공원',
+                content: '본문',
+              },
+            ],
+          },
+        ],
+        startDate: '2026-03-31',
+        endDate: '2026-04-01',
+      });
+      throw new Error('Expected AppException');
+    } catch (error) {
+      expect(error).toBeInstanceOf(AppException);
+      expect((error as AppException).getResponse()).toMatchObject({
+        code: 'BLOG400-1',
+      });
+    }
+
+    expect(repository.findUserById).not.toHaveBeenCalled();
+    expect(repository.findGenerateSource).not.toHaveBeenCalled();
+    expect(repository.createDraft).not.toHaveBeenCalled();
+  });
+
   it('초안 상세 조회 시 장소별 item에 treeId를 포함한다', async () => {
     repository.findDraftByIdAndUserId.mockResolvedValue({
       id: 1n,
