@@ -9,6 +9,7 @@ export interface NearbyAlertLogRecord {
   status: NearbyAlertStatus;
   sentAt: Date | null;
   openedAt: Date | null;
+  deletedAt: Date | null;
   tree: {
     name: string;
     defaultImage: string;
