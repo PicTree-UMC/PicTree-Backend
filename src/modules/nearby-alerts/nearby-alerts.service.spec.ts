@@ -30,6 +30,7 @@ describe('NearbyAlertsService', () => {
     status: NearbyAlertStatus.PENDING,
     sentAt: null,
     openedAt: null,
+    deletedAt: null,
     tree: { name: '벚나무', defaultImage: 'DEFAULT_1' },
   };
 
@@ -47,6 +48,7 @@ describe('NearbyAlertsService', () => {
       findAllByUser: jest.fn(),
       findByIdAndUser: jest.fn(),
       markOpened: jest.fn(),
+      softDelete: jest.fn(),
     } as unknown as jest.Mocked<NearbyAlertsRepository>;
     treesRepository = {
       findNearbyTrees: jest.fn(),
@@ -314,5 +316,27 @@ describe('NearbyAlertsService', () => {
     alertsRepository.findByIdAndUser.mockResolvedValue(null);
 
     await expect(service.open(10, 999)).rejects.toBeInstanceOf(AppException);
+  });
+
+  it('본인 알림 기록을 삭제한다', async () => {
+    alertsRepository.findByIdAndUser.mockResolvedValue(log);
+    alertsRepository.softDelete.mockResolvedValue({
+      ...log,
+      deletedAt: new Date(),
+    });
+
+    await expect(service.delete(10, 5)).resolves.toBeNull();
+    expect(alertsRepository.findByIdAndUser).toHaveBeenCalledWith(5n, 10n);
+    expect(alertsRepository.softDelete).toHaveBeenCalledWith(
+      5n,
+      expect.any(Date),
+    );
+  });
+
+  it('본인 소유가 아닌 알림 기록은 삭제할 수 없다', async () => {
+    alertsRepository.findByIdAndUser.mockResolvedValue(null);
+
+    await expect(service.delete(10, 999)).rejects.toBeInstanceOf(AppException);
+    expect(alertsRepository.softDelete).not.toHaveBeenCalled();
   });
 });

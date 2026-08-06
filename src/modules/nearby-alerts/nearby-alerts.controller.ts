@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -24,6 +25,7 @@ import {
 } from './dto/nearby-alert-response.dto';
 import {
   ApiCheckNearbyAlerts,
+  ApiDeleteNearbyAlertLog,
   ApiGetNearbyAlertLogs,
   ApiOpenNearbyAlertLog,
 } from './nearby-alerts.swagger';
@@ -72,5 +74,15 @@ export class NearbyAlertsController {
       alertLogId,
     );
     return ApiResponse.success(SuccessCode.OK, data);
+  }
+
+  @Delete('logs/:alertLogId')
+  @ApiDeleteNearbyAlertLog()
+  async delete(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('alertLogId', ParseIntPipe) alertLogId: number,
+  ): Promise<ApiResponse<null>> {
+    await this.nearbyAlertsService.delete(currentUser.userId, alertLogId);
+    return ApiResponse.success(SuccessCode.OK, null);
   }
 }

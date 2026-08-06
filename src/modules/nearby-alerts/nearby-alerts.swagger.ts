@@ -121,3 +121,29 @@ export const ApiOpenNearbyAlertLog = () =>
       },
     }),
   );
+
+export const ApiDeleteNearbyAlertLog = () =>
+  applyDecorators(
+    ApiOperation({ summary: '근처 나무 알림 기록 삭제' }),
+    protectedResponses(),
+    ApiParam({ name: 'alertLogId', example: 1 }),
+    ApiOkResponse({
+      description: '알림 기록 삭제 성공',
+      schema: {
+        example: {
+          success: true,
+          code: 'COMMON200',
+          message: '요청이 성공했습니다.',
+          data: null,
+        },
+      },
+    }),
+    ApiNotFoundResponse({
+      schema: {
+        example: failResponse(
+          'NEARBY_ALERT404',
+          '근처 나무 알림 기록을 찾을 수 없습니다.',
+        ),
+      },
+    }),
+  );

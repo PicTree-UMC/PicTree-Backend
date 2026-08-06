@@ -57,9 +57,13 @@ export class NearbyAlertsRepository {
       where: {
         userId_treeId_alertDate: { userId, treeId, alertDate },
       },
-      select: { id: true, status: true },
+      select: { id: true, status: true, deletedAt: true },
     });
-    if (!existingLog || existingLog.status !== NearbyAlertStatus.FAILED) {
+    if (
+      !existingLog ||
+      existingLog.deletedAt ||
+      existingLog.status !== NearbyAlertStatus.FAILED
+    ) {
       return null;
     }
 
@@ -105,6 +109,7 @@ export class NearbyAlertsRepository {
   ): Promise<[NearbyAlertLogRecord[], number]> => {
     const where = {
       userId,
+      deletedAt: null,
       status: {
         in: [NearbyAlertStatus.SENT, NearbyAlertStatus.OPENED],
       },
@@ -129,6 +134,7 @@ export class NearbyAlertsRepository {
       where: {
         id: alertLogId,
         userId,
+        deletedAt: null,
         status: {
           in: [NearbyAlertStatus.SENT, NearbyAlertStatus.OPENED],
         },
@@ -143,6 +149,16 @@ export class NearbyAlertsRepository {
     this.prisma.nearbyAlertLog.update({
       where: { id: alertLogId },
       data: { status: NearbyAlertStatus.OPENED, openedAt },
+      include: alertInclude,
+    });
+
+  softDelete = (
+    alertLogId: bigint,
+    deletedAt: Date,
+  ): Promise<NearbyAlertLogRecord> =>
+    this.prisma.nearbyAlertLog.update({
+      where: { id: alertLogId },
+      data: { deletedAt },
       include: alertInclude,
     });
 }

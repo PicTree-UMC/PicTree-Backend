@@ -375,6 +375,7 @@ model NearbyAlertLog {
   status    NearbyAlertStatus @default(PENDING)
   sentAt    DateTime?         @map("sent_at")
   openedAt  DateTime?         @map("opened_at")
+  deletedAt DateTime?         @map("deleted_at")
   user      User              @relation(fields: [userId], references: [id], onDelete: Restrict)
   tree      Tree              @relation(fields: [treeId], references: [id], onDelete: Restrict)
 

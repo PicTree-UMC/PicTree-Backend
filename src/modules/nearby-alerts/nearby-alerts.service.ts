@@ -148,6 +148,19 @@ export class NearbyAlertsService {
     return this.toResponseDto(openedLog);
   };
 
+  delete = async (userId: number, alertLogId: number): Promise<null> => {
+    const log = await this.nearbyAlertsRepository.findByIdAndUser(
+      BigInt(alertLogId),
+      BigInt(userId),
+    );
+    if (!log) {
+      throw new AppException(ErrorCode.NEARBY_ALERT_NOT_FOUND);
+    }
+
+    await this.nearbyAlertsRepository.softDelete(log.id, new Date());
+    return null;
+  };
+
   private getKoreanDate = (now: Date): Date => {
     const koreanTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
     return new Date(
