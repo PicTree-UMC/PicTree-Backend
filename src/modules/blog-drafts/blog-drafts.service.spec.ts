@@ -333,6 +333,7 @@ describe('BlogDraftsService', () => {
     repository.findTreeImagesByIds.mockResolvedValue([
       {
         id: 1n,
+        createdAt: new Date('2026-03-31T10:00:00.000Z'),
         images: [{ s3Key: 'trees/1/a.jpg' }],
       },
     ]);
@@ -343,12 +344,17 @@ describe('BlogDraftsService', () => {
     expect(repository.findDraftByIdAndUserId).toHaveBeenCalledWith(1, 1);
     expect(repository.findTreeImagesByIds).toHaveBeenCalledWith(1, [1]);
     expect(s3Service.getPresignedUrl).toHaveBeenCalledWith('trees/1/a.jpg');
-    expect(result.items).toEqual([
+    expect(result.days).toEqual([
       {
-        treeId: 1,
-        imageUrl: 'https://signed/trees/1/a.jpg',
-        placeName: '포그레인 공원',
-        content: '본문',
+        date: '2026-03-31',
+        items: [
+          {
+            treeId: 1,
+            imageUrl: 'https://signed/trees/1/a.jpg',
+            placeName: '포그레인 공원',
+            content: '본문',
+          },
+        ],
       },
     ]);
   });
@@ -369,6 +375,7 @@ describe('BlogDraftsService', () => {
     repository.findTreeImagesByIds.mockResolvedValue([
       {
         id: 1n,
+        createdAt: new Date('2026-03-31T10:00:00.000Z'),
         images: [{ s3Key: 'trees/1/a.jpg' }],
       },
     ]);
@@ -485,10 +492,17 @@ describe('BlogDraftsService', () => {
     );
     expect(result).toEqual({
       title: '[여행 기록] 3월 31일 ~ 4월 1일',
-      items: [
+      days: [
         {
-          placeName: '포그레인 공원',
-          content: '생성된 블로그 초안 내용입니다.',
+          date: '2026-03-31',
+          items: [
+            {
+              treeId: 1,
+              imageUrl: null,
+              placeName: '포그레인 공원',
+              content: '생성된 블로그 초안 내용입니다.',
+            },
+          ],
         },
       ],
       startDate: '2026-03-31',
