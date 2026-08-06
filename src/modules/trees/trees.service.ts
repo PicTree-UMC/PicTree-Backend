@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import { S3Service } from '../../common/s3/s3.service';
+import { formatKstDate } from '../../common/utils/kst-date.util';
 import { CreateTreeRequestDto } from './dto/create-tree-request.dto';
 import { GetNearbyTreesQueryDto } from './dto/get-nearby-trees-query.dto';
 import {
@@ -33,8 +34,6 @@ import {
   TreeRecord,
   TreeWithImagesRecord,
 } from './trees.types';
-
-const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 @Injectable()
 export class TreesService {
@@ -314,7 +313,7 @@ export class TreesService {
       treeId: Number(tree.id),
       name: tree.name,
       description: tree.description,
-      createdAt: this.formatKstDate(tree.createdAt),
+      createdAt: formatKstDate(tree.createdAt),
       // 버킷이 private 이므로 조회용 임시 서명 URL 을 발급한다.
       imageUrl: tree.image
         ? await this.s3Service.getPresignedUrl(tree.image.s3Key)
@@ -331,10 +330,4 @@ export class TreesService {
     timelineRecordId:
       image.timelineRecordId === null ? null : Number(image.timelineRecordId),
   });
-
-  private formatKstDate = (date: Date): string => {
-    const kstDate = new Date(date.getTime() + KST_OFFSET_MS);
-
-    return kstDate.toISOString().slice(0, 10);
-  };
 }

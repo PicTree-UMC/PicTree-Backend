@@ -4,6 +4,10 @@ import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import { S3Service } from '../../common/s3/s3.service';
 import {
+  formatKstDate,
+  formatKstDateTime,
+} from '../../common/utils/kst-date.util';
+import {
   BLOG_DRAFT_MAX_IMAGE_COUNT,
   BLOG_DRAFT_MODEL,
 } from './blog-drafts.constant';
@@ -268,7 +272,7 @@ export class OpenAiBlogDraftService {
     const treeLines = source.trees.map((tree, index) => {
       return [
         `${index + 1}. 장소명: ${tree.name}`,
-        `- 생성일: ${this.formatDate(tree.createdAt)}`,
+        `- 생성일: ${formatKstDate(tree.createdAt)}`,
         tree.description ? `- 메모: ${tree.description}` : null,
         tree.address ? `- 주소: ${tree.address}` : null,
         `- 감정 이모지: ${tree.mood}`,
@@ -288,7 +292,7 @@ export class OpenAiBlogDraftService {
     const timelineLines = source.timelines.map((timeline, index) =>
       [
         `${index + 1}. 제목: ${timeline.title}`,
-        `- 방문시각: ${timeline.visitedAt.toISOString()}`,
+        `- 방문시각: ${formatKstDateTime(timeline.visitedAt)}`,
         `- 카테고리: ${timeline.category}`,
         timeline.tree ? `- 관련 장소: ${timeline.tree.name}` : null,
         timeline.content ? `- 내용: ${timeline.content}` : null,
@@ -442,9 +446,5 @@ export class OpenAiBlogDraftService {
         caption: image.caption,
       })),
     );
-  };
-
-  private formatDate = (date: Date): string => {
-    return date.toISOString().slice(0, 10);
   };
 }

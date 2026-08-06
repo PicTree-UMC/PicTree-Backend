@@ -225,6 +225,7 @@ export class BlogDraftsRepository {
       },
       select: {
         id: true,
+        createdAt: true,
         images: {
           where: {
             timelineRecordId: null,

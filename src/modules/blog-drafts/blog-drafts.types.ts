@@ -77,6 +77,7 @@ export interface CreateBlogDraftData {
 
 export interface BlogDraftTreeImageRecord {
   id: bigint;
+  createdAt: Date;
   images: {
     s3Key: string;
   }[];
@@ -86,6 +87,11 @@ export interface BlogDraftItem {
   treeId?: number | null;
   placeName: string;
   content: string;
+}
+
+export interface StoredBlogDraftDay {
+  date: string;
+  items: BlogDraftItem[];
 }
 
 export interface OpenAiGeneratedDraft {

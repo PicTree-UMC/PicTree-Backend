@@ -92,14 +92,35 @@ export const ApiGenerateBlogDraft = () =>
           message: 'AI 블로그 초안 생성이 완료되었습니다.',
           data: {
             title: '[여행 기록] 3월 31일 ~ 4월 1일',
-            items: [
+            days: [
               {
-                placeName: '포그레인 공원',
-                content: '해 질 무렵 공원을 걸었음. 조용해서 산책하기 좋았음.',
+                date: '2026-03-31',
+                items: [
+                  {
+                    treeId: 1,
+                    imageUrl: 'https://.../a.jpg?X-Amz-Signature=...',
+                    placeName: '포그레인 공원',
+                    content:
+                      '해 질 무렵 공원을 걸었음. 조용해서 산책하기 좋았음.',
+                  },
+                  {
+                    treeId: 2,
+                    imageUrl: null,
+                    placeName: '피자 맛집',
+                    content: '저녁으로 피자를 먹었음. 기다린 만큼 맛있었음.',
+                  },
+                ],
               },
               {
-                placeName: '피자 맛집',
-                content: '저녁으로 피자를 먹었음. 기다린 만큼 맛있었음.',
+                date: '2026-04-01',
+                items: [
+                  {
+                    treeId: 3,
+                    imageUrl: null,
+                    placeName: '마트',
+                    content: '필요한 걸 사러 들렀음. 생각보다 오래 구경했음.',
+                  },
+                ],
               },
             ],
             startDate: '2026-03-31',
@@ -154,7 +175,50 @@ export const ApiSaveBlogDraft = () =>
   applyDecorators(
     ApiOperation({ summary: 'AI 블로그 초안 저장' }),
     protectedResponses(),
-    ApiBody({ type: SaveBlogDraftRequestDto }),
+    ApiBody({
+      type: SaveBlogDraftRequestDto,
+      examples: {
+        default: {
+          summary: 'AI 블로그 초안 저장 요청',
+          value: {
+            title: '[여행 기록] 3월 31일 ~ 4월 1일',
+            days: [
+              {
+                date: '2026-03-31',
+                items: [
+                  {
+                    treeId: 1,
+                    imageUrl: 'https://.../a.jpg?X-Amz-Signature=...',
+                    placeName: '포그레인 공원',
+                    content:
+                      '해 질 무렵 공원을 걸었음. 조용해서 산책하기 좋았음.',
+                  },
+                  {
+                    treeId: 2,
+                    imageUrl: null,
+                    placeName: '피자 맛집',
+                    content: '저녁으로 피자를 먹었음. 기다린 만큼 맛있었음.',
+                  },
+                ],
+              },
+              {
+                date: '2026-04-01',
+                items: [
+                  {
+                    treeId: 3,
+                    imageUrl: null,
+                    placeName: '마트',
+                    content: '필요한 걸 사러 들렀음. 생각보다 오래 구경했음.',
+                  },
+                ],
+              },
+            ],
+            startDate: '2026-03-31',
+            endDate: '2026-04-01',
+          },
+        },
+      },
+    }),
     ApiCreatedResponse({
       description: '초안 저장 성공',
       schema: {
@@ -210,18 +274,35 @@ export const ApiGetBlogDraft = () =>
           data: {
             draftId: 1,
             title: '[여행 기록] 3월 31일 ~ 4월 1일',
-            items: [
+            days: [
               {
-                treeId: 1,
-                imageUrl: 'https://.../a.jpg?X-Amz-Signature=...',
-                placeName: '포그레인 공원',
-                content: '해 질 무렵 공원을 걸었음. 조용해서 산책하기 좋았음.',
+                date: '2026-03-31',
+                items: [
+                  {
+                    treeId: 1,
+                    imageUrl: 'https://.../a.jpg?X-Amz-Signature=...',
+                    placeName: '포그레인 공원',
+                    content:
+                      '해 질 무렵 공원을 걸었음. 조용해서 산책하기 좋았음.',
+                  },
+                  {
+                    treeId: 2,
+                    imageUrl: null,
+                    placeName: '피자 맛집',
+                    content: '저녁으로 피자를 먹었음. 기다린 만큼 맛있었음.',
+                  },
+                ],
               },
               {
-                treeId: 2,
-                imageUrl: null,
-                placeName: '피자 맛집',
-                content: '저녁으로 피자를 먹었음. 기다린 만큼 맛있었음.',
+                date: '2026-04-01',
+                items: [
+                  {
+                    treeId: 3,
+                    imageUrl: null,
+                    placeName: '마트',
+                    content: '필요한 걸 사러 들렀음. 생각보다 오래 구경했음.',
+                  },
+                ],
               },
             ],
             startDate: '2026-03-31',

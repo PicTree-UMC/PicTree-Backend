@@ -173,7 +173,7 @@ describe('BlogDraftsService', () => {
     ).rejects.toBeInstanceOf(AppException);
   });
 
-  it('무료 플랜은 매월 1일 기준으로 사용량을 집계한다', async () => {
+  it('무료 플랜은 KST 매월 1일 기준으로 사용량을 집계한다', async () => {
     repository.findUserById.mockResolvedValue({
       id: 1n,
       status: 'ACTIVE',
@@ -210,12 +210,12 @@ describe('BlogDraftsService', () => {
 
     expect(repository.countGeneratedDraftsInRange).toHaveBeenCalledWith(
       1,
-      new Date('2026-07-01T00:00:00.000Z'),
-      new Date('2026-08-01T00:00:00.000Z'),
+      new Date('2026-06-30T15:00:00.000Z'),
+      new Date('2026-07-31T15:00:00.000Z'),
     );
   });
 
-  it('유료 플랜은 결제일 기준으로 사용량을 집계한다', async () => {
+  it('유료 플랜은 KST 결제일 기준으로 사용량을 집계한다', async () => {
     repository.findUserById.mockResolvedValue({
       id: 1n,
       status: 'ACTIVE',
@@ -258,8 +258,8 @@ describe('BlogDraftsService', () => {
 
     expect(repository.countGeneratedDraftsInRange).toHaveBeenCalledWith(
       1,
-      new Date('2026-07-10T00:00:00.000Z'),
-      new Date('2026-08-10T00:00:00.000Z'),
+      new Date('2026-07-09T15:00:00.000Z'),
+      new Date('2026-08-09T15:00:00.000Z'),
     );
   });
 
@@ -299,22 +299,157 @@ describe('BlogDraftsService', () => {
 
     const result = await service.saveDraft(1, {
       title: '제목',
-      items: [{ placeName: '포그레인 공원', content: '본문' }],
+      days: [
+        {
+          date: '2026-03-31',
+          items: [
+            {
+              treeId: 1,
+              imageUrl: null,
+              placeName: '포그레인 공원',
+              content: '본문',
+            },
+          ],
+        },
+      ],
       startDate: '2026-03-31',
       endDate: '2026-04-01',
-      treeIds: [1],
     });
 
     expect(repository.createDraft).toHaveBeenCalledWith(
       expect.objectContaining({
         content: JSON.stringify([
-          { treeId: 1, placeName: '포그레인 공원', content: '본문' },
+          {
+            date: '2026-03-31',
+            items: [{ treeId: 1, placeName: '포그레인 공원', content: '본문' }],
+          },
         ]),
+        startDate: new Date('2026-03-30T15:00:00.000Z'),
+        endDate: new Date('2026-03-31T15:00:00.000Z'),
       }),
     );
     expect(result).toEqual({
       draftId: 1,
     });
+  });
+
+  it('초안 저장 시 중복 treeId는 한 번만 검증하고 item은 모두 저장한다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: null,
+    });
+    repository.findGenerateSource.mockResolvedValue({
+      trees: [
+        {
+          id: 1n,
+          name: '포그레인 공원',
+          description: null,
+          address: null,
+          mood: '😍',
+          defaultImage: 'DEFAULT_1',
+          createdAt: new Date('2026-03-31T10:00:00.000Z'),
+          images: [],
+        },
+      ],
+      timelines: [],
+    });
+    repository.createDraft.mockResolvedValue({
+      id: 1n,
+      userId: 1n,
+      title: '제목',
+      content: '[]',
+      startDate: new Date('2026-03-31T00:00:00.000Z'),
+      endDate: new Date('2026-04-01T00:00:00.000Z'),
+      createdAt: new Date('2026-04-02T10:00:00.000Z'),
+      updatedAt: new Date('2026-04-02T10:00:00.000Z'),
+    });
+
+    await service.saveDraft(1, {
+      title: '제목',
+      days: [
+        {
+          date: '2026-03-31',
+          items: [
+            {
+              treeId: 1,
+              imageUrl: null,
+              placeName: '포그레인 공원',
+              content: '첫 번째 본문',
+            },
+            {
+              treeId: 1,
+              imageUrl: null,
+              placeName: '포그레인 공원',
+              content: '두 번째 본문',
+            },
+          ],
+        },
+      ],
+      startDate: '2026-03-31',
+      endDate: '2026-04-01',
+    });
+
+    expect(repository.findGenerateSource).toHaveBeenCalledWith(
+      1,
+      new Date('1970-01-01T00:00:00.000Z'),
+      new Date('9999-12-31T00:00:00.000Z'),
+      [1],
+    );
+    expect(repository.createDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: JSON.stringify([
+          {
+            date: '2026-03-31',
+            items: [
+              {
+                treeId: 1,
+                placeName: '포그레인 공원',
+                content: '첫 번째 본문',
+              },
+              {
+                treeId: 1,
+                placeName: '포그레인 공원',
+                content: '두 번째 본문',
+              },
+            ],
+          },
+        ]),
+      }),
+    );
+  });
+
+  it('초안 저장 시 날짜 그룹이 요청 기간 밖이면 BLOG400-1 예외를 던진다', async () => {
+    try {
+      await service.saveDraft(1, {
+        title: '제목',
+        days: [
+          {
+            date: '2025-01-01',
+            items: [
+              {
+                treeId: 1,
+                imageUrl: null,
+                placeName: '포그레인 공원',
+                content: '본문',
+              },
+            ],
+          },
+        ],
+        startDate: '2026-03-31',
+        endDate: '2026-04-01',
+      });
+      throw new Error('Expected AppException');
+    } catch (error) {
+      expect(error).toBeInstanceOf(AppException);
+      expect((error as AppException).getResponse()).toMatchObject({
+        code: 'BLOG400-1',
+      });
+    }
+
+    expect(repository.findUserById).not.toHaveBeenCalled();
+    expect(repository.findGenerateSource).not.toHaveBeenCalled();
+    expect(repository.createDraft).not.toHaveBeenCalled();
   });
 
   it('초안 상세 조회 시 장소별 item에 treeId를 포함한다', async () => {
@@ -323,7 +458,10 @@ describe('BlogDraftsService', () => {
       userId: 1n,
       title: '제목',
       content: JSON.stringify([
-        { treeId: 1, placeName: '포그레인 공원', content: '본문' },
+        {
+          date: '2026-03-31',
+          items: [{ treeId: 1, placeName: '포그레인 공원', content: '본문' }],
+        },
       ]),
       startDate: new Date('2026-03-31T00:00:00.000Z'),
       endDate: new Date('2026-04-01T00:00:00.000Z'),
@@ -333,6 +471,7 @@ describe('BlogDraftsService', () => {
     repository.findTreeImagesByIds.mockResolvedValue([
       {
         id: 1n,
+        createdAt: new Date('2026-03-31T10:00:00.000Z'),
         images: [{ s3Key: 'trees/1/a.jpg' }],
       },
     ]);
@@ -343,12 +482,17 @@ describe('BlogDraftsService', () => {
     expect(repository.findDraftByIdAndUserId).toHaveBeenCalledWith(1, 1);
     expect(repository.findTreeImagesByIds).toHaveBeenCalledWith(1, [1]);
     expect(s3Service.getPresignedUrl).toHaveBeenCalledWith('trees/1/a.jpg');
-    expect(result.items).toEqual([
+    expect(result.days).toEqual([
       {
-        treeId: 1,
-        imageUrl: 'https://signed/trees/1/a.jpg',
-        placeName: '포그레인 공원',
-        content: '본문',
+        date: '2026-03-31',
+        items: [
+          {
+            treeId: 1,
+            imageUrl: 'https://signed/trees/1/a.jpg',
+            placeName: '포그레인 공원',
+            content: '본문',
+          },
+        ],
       },
     ]);
   });
@@ -369,6 +513,7 @@ describe('BlogDraftsService', () => {
     repository.findTreeImagesByIds.mockResolvedValue([
       {
         id: 1n,
+        createdAt: new Date('2026-03-31T10:00:00.000Z'),
         images: [{ s3Key: 'trees/1/a.jpg' }],
       },
     ]);
@@ -384,7 +529,7 @@ describe('BlogDraftsService', () => {
         thumbnailUrl: 'https://signed/trees/1/a.jpg',
         startDate: '2026-03-31',
         endDate: '2026-04-01',
-        createdAt: '2026-04-02T10:00:00',
+        createdAt: '2026-04-02T19:00:00',
       },
     ]);
   });
@@ -393,10 +538,21 @@ describe('BlogDraftsService', () => {
     try {
       await service.saveDraft(1, {
         title: '   ',
-        items: [{ placeName: '포그레인 공원', content: '본문' }],
+        days: [
+          {
+            date: '2026-03-31',
+            items: [
+              {
+                treeId: 1,
+                imageUrl: null,
+                placeName: '포그레인 공원',
+                content: '본문',
+              },
+            ],
+          },
+        ],
         startDate: '2026-03-31',
         endDate: '2026-04-01',
-        treeIds: [1],
       });
       throw new Error('Expected AppException');
     } catch (error) {
@@ -414,10 +570,21 @@ describe('BlogDraftsService', () => {
     try {
       await service.saveDraft(1, {
         title: '제목',
-        items: [{ placeName: '포그레인 공원', content: '   ' }],
+        days: [
+          {
+            date: '2026-03-31',
+            items: [
+              {
+                treeId: 1,
+                imageUrl: null,
+                placeName: '포그레인 공원',
+                content: '   ',
+              },
+            ],
+          },
+        ],
         startDate: '2026-03-31',
         endDate: '2026-04-01',
-        treeIds: [1],
       });
       throw new Error('Expected AppException');
     } catch (error) {
@@ -473,26 +640,113 @@ describe('BlogDraftsService', () => {
 
     expect(repository.findGenerateSource).toHaveBeenCalledWith(
       1,
-      new Date('2026-03-31T00:00:00.000Z'),
-      new Date('2026-04-02T00:00:00.000Z'),
+      new Date('2026-03-30T15:00:00.000Z'),
+      new Date('2026-04-01T15:00:00.000Z'),
       [1],
     );
     expect(repository.consumeUsageWithinLimit).toHaveBeenCalledWith(
       1n,
-      new Date('2026-07-01T00:00:00.000Z'),
-      new Date('2026-08-01T00:00:00.000Z'),
+      new Date('2026-06-30T15:00:00.000Z'),
+      new Date('2026-07-31T15:00:00.000Z'),
       1,
     );
     expect(result).toEqual({
       title: '[여행 기록] 3월 31일 ~ 4월 1일',
-      items: [
+      days: [
         {
-          placeName: '포그레인 공원',
-          content: '생성된 블로그 초안 내용입니다.',
+          date: '2026-03-31',
+          items: [
+            {
+              treeId: 1,
+              imageUrl: null,
+              placeName: '포그레인 공원',
+              content: '생성된 블로그 초안 내용입니다.',
+            },
+          ],
         },
       ],
       startDate: '2026-03-31',
       endDate: '2026-04-01',
     });
+  });
+
+  it('초안 생성 응답 item은 placeName을 우선해 나무 정보와 매핑한다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: null,
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(0);
+    repository.findGenerateSource.mockResolvedValue({
+      trees: [
+        {
+          id: 1n,
+          name: '포그레인 공원',
+          description: null,
+          address: null,
+          mood: '😍',
+          defaultImage: 'DEFAULT_1',
+          createdAt: new Date('2026-03-31T10:00:00.000Z'),
+          images: [],
+        },
+        {
+          id: 2n,
+          name: '피자 맛집',
+          description: null,
+          address: null,
+          mood: '😋',
+          defaultImage: 'DEFAULT_1',
+          createdAt: new Date('2026-04-01T10:00:00.000Z'),
+          images: [],
+        },
+      ],
+      timelines: [],
+    });
+    openAiService.generate.mockResolvedValue({
+      title: '제목',
+      items: [
+        {
+          placeName: '피자 맛집',
+          content: '피자를 먹었음.',
+        },
+        {
+          placeName: '포그레인 공원',
+          content: '공원을 걸었음.',
+        },
+      ],
+    });
+    repository.consumeUsageWithinLimit.mockResolvedValue();
+
+    const result = await service.generateDraft(1, {
+      startDate: '2026-03-31',
+      endDate: '2026-04-01',
+      treeIds: [1, 2],
+      tone: BlogDraftTone.RECORD,
+    });
+
+    expect(result.days).toEqual([
+      {
+        date: '2026-04-01',
+        items: [
+          {
+            treeId: 2,
+            imageUrl: null,
+            placeName: '피자 맛집',
+            content: '피자를 먹었음.',
+          },
+        ],
+      },
+      {
+        date: '2026-03-31',
+        items: [
+          {
+            treeId: 1,
+            imageUrl: null,
+            placeName: '포그레인 공원',
+            content: '공원을 걸었음.',
+          },
+        ],
+      },
+    ]);
   });
 });

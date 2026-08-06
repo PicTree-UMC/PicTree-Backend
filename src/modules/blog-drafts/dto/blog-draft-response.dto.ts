@@ -32,6 +32,17 @@ export class BlogDraftDetailItemResponseDto {
   content!: string;
 }
 
+export class BlogDraftDayResponseDto {
+  @ApiProperty({ example: '2026-03-31', description: '방문 날짜 (KST)' })
+  date!: string;
+
+  @ApiProperty({
+    type: [BlogDraftDetailItemResponseDto],
+    description: '해당 날짜의 장소별 초안 본문 목록',
+  })
+  items!: BlogDraftDetailItemResponseDto[];
+}
+
 export class GeneratedBlogDraftResponseDto {
   @ApiProperty({
     example: '[여행 기록] 3월 31일 ~ 4월 1일',
@@ -40,10 +51,10 @@ export class GeneratedBlogDraftResponseDto {
   title!: string;
 
   @ApiProperty({
-    type: [BlogDraftItemResponseDto],
-    description: '장소별 초안 본문 목록',
+    type: [BlogDraftDayResponseDto],
+    description: '날짜별 초안 본문 목록',
   })
-  items!: BlogDraftItemResponseDto[];
+  days!: BlogDraftDayResponseDto[];
 
   @ApiProperty({ example: '2026-03-31', description: '시작일' })
   startDate!: string;
@@ -106,10 +117,10 @@ export class BlogDraftDetailResponseDto {
   title!: string;
 
   @ApiProperty({
-    type: [BlogDraftDetailItemResponseDto],
-    description: '장소별 초안 본문 목록',
+    type: [BlogDraftDayResponseDto],
+    description: '날짜별 초안 본문 목록',
   })
-  items!: BlogDraftDetailItemResponseDto[];
+  days!: BlogDraftDayResponseDto[];
 
   @ApiProperty({ example: '2026-03-31', description: '시작일' })
   startDate!: string;
