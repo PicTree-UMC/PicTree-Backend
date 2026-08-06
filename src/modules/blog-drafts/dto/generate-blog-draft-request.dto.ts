@@ -4,10 +4,11 @@ import {
   ArrayMinSize,
   IsEnum,
   IsArray,
-  IsDateString,
   IsInt,
+  Matches,
   Min,
 } from 'class-validator';
+import { DATE_ONLY_REGEX } from '../../../common/constants/date-regex.constant';
 import { BLOG_DRAFT_MAX_TREE_COUNT } from '../blog-drafts.constant';
 
 export enum BlogDraftTone {
@@ -19,11 +20,11 @@ export enum BlogDraftTone {
 
 export class GenerateBlogDraftRequestDto {
   @ApiProperty({ example: '2026-03-31', description: '시작일' })
-  @IsDateString()
+  @Matches(DATE_ONLY_REGEX)
   startDate!: string;
 
   @ApiProperty({ example: '2026-04-01', description: '종료일' })
-  @IsDateString()
+  @Matches(DATE_ONLY_REGEX)
   endDate!: string;
 
   @ApiProperty({

@@ -4,14 +4,15 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
-  IsDateString,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
+import { DATE_ONLY_REGEX } from '../../../common/constants/date-regex.constant';
 
 export class SaveBlogDraftItemRequestDto {
   @ApiProperty({ example: 1, description: '연결된 나무 ID' })
@@ -46,7 +47,7 @@ export class SaveBlogDraftItemRequestDto {
 
 export class SaveBlogDraftDayRequestDto {
   @ApiProperty({ example: '2026-03-31', description: '방문 날짜 (KST)' })
-  @IsDateString()
+  @Matches(DATE_ONLY_REGEX)
   date!: string;
 
   @ApiProperty({
@@ -81,10 +82,10 @@ export class SaveBlogDraftRequestDto {
   days!: SaveBlogDraftDayRequestDto[];
 
   @ApiProperty({ example: '2026-03-31', description: '시작일' })
-  @IsDateString()
+  @Matches(DATE_ONLY_REGEX)
   startDate!: string;
 
   @ApiProperty({ example: '2026-04-01', description: '종료일' })
-  @IsDateString()
+  @Matches(DATE_ONLY_REGEX)
   endDate!: string;
 }
