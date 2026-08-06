@@ -6,6 +6,7 @@ import {
   BLOG_DRAFT_MAX_TREE_COUNT,
 } from './blog-drafts.constant';
 import {
+  BlogDraftDetailItemResponseDto,
   BlogDraftDetailResponseDto,
   BlogDraftListResponseDto,
   BlogDraftSummaryResponseDto,
@@ -83,12 +84,15 @@ export class BlogDraftsService {
       request.endDate,
     );
     this.validateDraftContent(request.title, request.items);
+    this.validateDraftItemTreeIds(request.items, request.treeIds);
     await this.getAvailableUserOrThrow(userId);
     await this.validateTreeIds(userId, request.treeIds);
     const saved = await this.blogDraftsRepository.createDraft({
       userId: BigInt(userId),
       title: request.title,
-      content: JSON.stringify(request.items),
+      content: JSON.stringify(
+        this.buildSavedDraftItems(request.items, request.treeIds),
+      ),
       startDate,
       endDate,
     });
@@ -352,6 +356,25 @@ export class BlogDraftsService {
     }
   };
 
+  private validateDraftItemTreeIds = (
+    items: BlogDraftItem[],
+    treeIds: number[],
+  ): void => {
+    if (items.length !== treeIds.length) {
+      throw new AppException(ErrorCode.BLOG_DRAFT_INVALID_REQUEST);
+    }
+  };
+
+  private buildSavedDraftItems = (
+    items: BlogDraftItem[],
+    treeIds: number[],
+  ): BlogDraftItem[] =>
+    items.map((item, index) => ({
+      treeId: treeIds[index],
+      placeName: item.placeName,
+      content: item.content,
+    }));
+
   private toExclusiveEndDate = (endDate: Date): Date => {
     return new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
   };
@@ -367,12 +390,12 @@ export class BlogDraftsService {
     createdAt: draft.createdAt.toISOString().slice(0, 19),
   });
 
-  private parseDraftItems = (content: string): BlogDraftItem[] => {
+  private parseDraftItems = (content: string): BlogDraftDetailItemResponseDto[] => {
     try {
       const parsed = JSON.parse(content) as unknown;
 
       if (!Array.isArray(parsed)) {
-        return [{ placeName: '여행 기록', content }];
+        return [{ treeId: null, placeName: '여행 기록', content }];
       }
 
       const items = parsed
@@ -389,21 +412,26 @@ export class BlogDraftsService {
           }
 
           return {
+            treeId: this.getDraftItemTreeId(item),
             placeName,
             content: itemContent,
           };
         })
-        .filter((item): item is BlogDraftItem => item !== null);
+        .filter(
+          (item): item is BlogDraftDetailItemResponseDto => item !== null,
+        );
 
-      return items.length > 0 ? items : [{ placeName: '여행 기록', content }];
+      return items.length > 0
+        ? items
+        : [{ treeId: null, placeName: '여행 기록', content }];
     } catch {
-      return [{ placeName: '여행 기록', content }];
+      return [{ treeId: null, placeName: '여행 기록', content }];
     }
   };
 
   private isDraftItemLike = (
     item: unknown,
-  ): item is { placeName: string; content: string } => {
+  ): item is { treeId?: unknown; placeName: string; content: string } => {
     if (typeof item !== 'object' || item === null) {
       return false;
     }
@@ -414,6 +442,14 @@ export class BlogDraftsService {
       typeof draftItem.placeName === 'string' &&
       typeof draftItem.content === 'string'
     );
+  };
+
+  private getDraftItemTreeId = (item: { treeId?: unknown }): number | null => {
+    if (typeof item.treeId !== 'number') {
+      return null;
+    }
+
+    return item.treeId;
   };
 
   private toBlogDraftSummaryResponseDto = (

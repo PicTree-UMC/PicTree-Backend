@@ -302,13 +302,39 @@ describe('BlogDraftsService', () => {
     expect(repository.createDraft).toHaveBeenCalledWith(
       expect.objectContaining({
         content: JSON.stringify([
-          { placeName: '포그레인 공원', content: '본문' },
+          { treeId: 1, placeName: '포그레인 공원', content: '본문' },
         ]),
       }),
     );
     expect(result).toEqual({
       draftId: 1,
     });
+  });
+
+  it('초안 상세 조회 시 장소별 item에 treeId를 포함한다', async () => {
+    repository.findDraftByIdAndUserId.mockResolvedValue({
+      id: 1n,
+      userId: 1n,
+      title: '제목',
+      content: JSON.stringify([
+        { treeId: 1, placeName: '포그레인 공원', content: '본문' },
+      ]),
+      startDate: new Date('2026-03-31T00:00:00.000Z'),
+      endDate: new Date('2026-04-01T00:00:00.000Z'),
+      createdAt: new Date('2026-04-02T10:00:00.000Z'),
+      updatedAt: new Date('2026-04-02T10:00:00.000Z'),
+    });
+
+    const result = await service.getDraft(1, 1);
+
+    expect(repository.findDraftByIdAndUserId).toHaveBeenCalledWith(1, 1);
+    expect(result.items).toEqual([
+      {
+        treeId: 1,
+        placeName: '포그레인 공원',
+        content: '본문',
+      },
+    ]);
   });
 
   it('저장할 제목이 비어 있으면 BLOG400-3 예외를 던진다', async () => {

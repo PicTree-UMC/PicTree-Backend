@@ -75,6 +75,7 @@ export interface CreateBlogDraftData {
 }
 
 export interface BlogDraftItem {
+  treeId?: number | null;
   placeName: string;
   content: string;
 }
