@@ -250,9 +250,15 @@ export class BlogDraftsService {
       );
     }
 
+    return this.resolveFreeUsageWindow(now);
+  };
+
+  private resolveFreeUsageWindow = (now: Date): [Date, Date] => {
+    const { year, monthIndex } = this.toKstDateParts(now);
+
     return [
-      new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
-      new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)),
+      this.createKstMonthlyAnchor(year, monthIndex, 1),
+      this.createKstMonthlyAnchor(year, monthIndex + 1, 1),
     ];
   };
 
@@ -260,50 +266,36 @@ export class BlogDraftsService {
     startedAt: Date,
     now: Date,
   ): [Date, Date] => {
-    const startedDay = startedAt.getUTCDate();
-    const currentMonthAnchor = this.createMonthlyAnchor(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
+    const { day: startedDay } = this.toKstDateParts(startedAt);
+    const { year, monthIndex } = this.toKstDateParts(now);
+    const currentMonthAnchor = this.createKstMonthlyAnchor(
+      year,
+      monthIndex,
       startedDay,
     );
 
     if (now >= currentMonthAnchor) {
       return [
         currentMonthAnchor,
-        this.createMonthlyAnchor(
-          now.getUTCFullYear(),
-          now.getUTCMonth() + 1,
-          startedDay,
-        ),
+        this.createKstMonthlyAnchor(year, monthIndex + 1, startedDay),
       ];
     }
 
     return [
-      this.createMonthlyAnchor(
-        now.getUTCFullYear(),
-        now.getUTCMonth() - 1,
-        startedDay,
-      ),
+      this.createKstMonthlyAnchor(year, monthIndex - 1, startedDay),
       currentMonthAnchor,
     ];
   };
 
-  private createMonthlyAnchor = (
+  private createKstMonthlyAnchor = (
     year: number,
-    month: number,
+    monthIndex: number,
     day: number,
   ): Date => {
-    const monthStart = new Date(Date.UTC(year, month, 1));
-    const lastDay = new Date(
-      Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 0),
-    ).getUTCDate();
+    const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
 
     return new Date(
-      Date.UTC(
-        monthStart.getUTCFullYear(),
-        monthStart.getUTCMonth(),
-        Math.min(day, lastDay),
-      ),
+      Date.UTC(year, monthIndex, Math.min(day, lastDay)) - KST_OFFSET_MS,
     );
   };
 
@@ -343,14 +335,10 @@ export class BlogDraftsService {
     startDate: string,
     endDate: string,
   ): [Date, Date] => {
-    const start = new Date(`${startDate}T00:00:00.000Z`);
-    const end = new Date(`${endDate}T00:00:00.000Z`);
+    const start = this.parseKstDate(startDate);
+    const end = this.parseKstDate(endDate);
 
-    if (
-      Number.isNaN(start.getTime()) ||
-      Number.isNaN(end.getTime()) ||
-      start > end
-    ) {
+    if (start === null || end === null || start > end) {
       throw new AppException(ErrorCode.BLOG_DRAFT_INVALID_REQUEST);
     }
 
@@ -407,7 +395,7 @@ export class BlogDraftsService {
   ): Promise<BlogDraftDetailResponseDto> => {
     const items = this.parseDraftItems(draft.content);
     const contextByTreeId = await this.getTreeContextByTreeId(userId, items);
-    const fallbackDate = draft.startDate.toISOString().slice(0, 10);
+    const fallbackDate = this.formatKstDate(draft.startDate);
 
     return {
       draftId: Number(draft.id),
@@ -423,9 +411,9 @@ export class BlogDraftsService {
         contextByTreeId,
         fallbackDate,
       ),
-      startDate: draft.startDate.toISOString().slice(0, 10),
-      endDate: draft.endDate.toISOString().slice(0, 10),
-      createdAt: draft.createdAt.toISOString().slice(0, 19),
+      startDate: this.formatKstDate(draft.startDate),
+      endDate: this.formatKstDate(draft.endDate),
+      createdAt: this.formatKstDateTime(draft.createdAt),
     };
   };
 
@@ -469,9 +457,7 @@ export class BlogDraftsService {
 
       return items.length > 0
         ? items
-        : [
-            { treeId: null, imageUrl: null, placeName: '여행 기록', content },
-          ];
+        : [{ treeId: null, imageUrl: null, placeName: '여행 기록', content }];
     } catch {
       return [
         { treeId: null, imageUrl: null, placeName: '여행 기록', content },
@@ -640,9 +626,9 @@ export class BlogDraftsService {
     draftId: Number(draft.id),
     title: draft.title,
     thumbnailUrl: this.getSummaryThumbnailUrl(draft, thumbnailUrlByTreeId),
-    startDate: draft.startDate.toISOString().slice(0, 10),
-    endDate: draft.endDate.toISOString().slice(0, 10),
-    createdAt: draft.createdAt.toISOString().slice(0, 19),
+    startDate: this.formatKstDate(draft.startDate),
+    endDate: this.formatKstDate(draft.endDate),
+    createdAt: this.formatKstDateTime(draft.createdAt),
   });
 
   private getSummaryThumbnailUrl = (
@@ -662,5 +648,47 @@ export class BlogDraftsService {
     const kstDate = new Date(date.getTime() + KST_OFFSET_MS);
 
     return kstDate.toISOString().slice(0, 10);
+  };
+
+  private formatKstDateTime = (date: Date): string => {
+    const kstDate = new Date(date.getTime() + KST_OFFSET_MS);
+
+    return kstDate.toISOString().slice(0, 19);
+  };
+
+  private parseKstDate = (dateText: string): Date | null => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateText);
+
+    if (!match) {
+      return null;
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const date = new Date(Date.UTC(year, month - 1, day) - KST_OFFSET_MS);
+    const kstParts = this.toKstDateParts(date);
+
+    if (
+      kstParts.year !== year ||
+      kstParts.monthIndex !== month - 1 ||
+      kstParts.day !== day
+    ) {
+      return null;
+    }
+
+    return date;
+  };
+
+  private toKstDateParts = (
+    date: Date,
+  ): { year: number; monthIndex: number; day: number } => {
+    const kstDate = new Date(date.getTime() + KST_OFFSET_MS);
+
+    return {
+      year: kstDate.getUTCFullYear(),
+      monthIndex: kstDate.getUTCMonth(),
+      day: kstDate.getUTCDate(),
+    };
   };
 }

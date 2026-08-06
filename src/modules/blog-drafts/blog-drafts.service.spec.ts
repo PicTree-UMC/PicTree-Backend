@@ -173,7 +173,7 @@ describe('BlogDraftsService', () => {
     ).rejects.toBeInstanceOf(AppException);
   });
 
-  it('무료 플랜은 매월 1일 기준으로 사용량을 집계한다', async () => {
+  it('무료 플랜은 KST 매월 1일 기준으로 사용량을 집계한다', async () => {
     repository.findUserById.mockResolvedValue({
       id: 1n,
       status: 'ACTIVE',
@@ -210,12 +210,12 @@ describe('BlogDraftsService', () => {
 
     expect(repository.countGeneratedDraftsInRange).toHaveBeenCalledWith(
       1,
-      new Date('2026-07-01T00:00:00.000Z'),
-      new Date('2026-08-01T00:00:00.000Z'),
+      new Date('2026-06-30T15:00:00.000Z'),
+      new Date('2026-07-31T15:00:00.000Z'),
     );
   });
 
-  it('유료 플랜은 결제일 기준으로 사용량을 집계한다', async () => {
+  it('유료 플랜은 KST 결제일 기준으로 사용량을 집계한다', async () => {
     repository.findUserById.mockResolvedValue({
       id: 1n,
       status: 'ACTIVE',
@@ -258,8 +258,8 @@ describe('BlogDraftsService', () => {
 
     expect(repository.countGeneratedDraftsInRange).toHaveBeenCalledWith(
       1,
-      new Date('2026-07-10T00:00:00.000Z'),
-      new Date('2026-08-10T00:00:00.000Z'),
+      new Date('2026-07-09T15:00:00.000Z'),
+      new Date('2026-08-09T15:00:00.000Z'),
     );
   });
 
@@ -310,6 +310,8 @@ describe('BlogDraftsService', () => {
         content: JSON.stringify([
           { treeId: 1, placeName: '포그레인 공원', content: '본문' },
         ]),
+        startDate: new Date('2026-03-30T15:00:00.000Z'),
+        endDate: new Date('2026-03-31T15:00:00.000Z'),
       }),
     );
     expect(result).toEqual({
@@ -391,7 +393,7 @@ describe('BlogDraftsService', () => {
         thumbnailUrl: 'https://signed/trees/1/a.jpg',
         startDate: '2026-03-31',
         endDate: '2026-04-01',
-        createdAt: '2026-04-02T10:00:00',
+        createdAt: '2026-04-02T19:00:00',
       },
     ]);
   });
@@ -480,14 +482,14 @@ describe('BlogDraftsService', () => {
 
     expect(repository.findGenerateSource).toHaveBeenCalledWith(
       1,
-      new Date('2026-03-31T00:00:00.000Z'),
-      new Date('2026-04-02T00:00:00.000Z'),
+      new Date('2026-03-30T15:00:00.000Z'),
+      new Date('2026-04-01T15:00:00.000Z'),
       [1],
     );
     expect(repository.consumeUsageWithinLimit).toHaveBeenCalledWith(
       1n,
-      new Date('2026-07-01T00:00:00.000Z'),
-      new Date('2026-08-01T00:00:00.000Z'),
+      new Date('2026-06-30T15:00:00.000Z'),
+      new Date('2026-07-31T15:00:00.000Z'),
       1,
     );
     expect(result).toEqual({

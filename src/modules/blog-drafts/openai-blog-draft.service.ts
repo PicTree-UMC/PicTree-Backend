@@ -33,6 +33,7 @@ type OpenAiResponsesApiResponse = {
 
 const OPENAI_REQUEST_TIMEOUT_MS = 20_000;
 const BLOG_DRAFT_TITLE_MAX_LENGTH = 50;
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 @Injectable()
 export class OpenAiBlogDraftService {
@@ -288,7 +289,7 @@ export class OpenAiBlogDraftService {
     const timelineLines = source.timelines.map((timeline, index) =>
       [
         `${index + 1}. 제목: ${timeline.title}`,
-        `- 방문시각: ${timeline.visitedAt.toISOString()}`,
+        `- 방문시각: ${this.formatDateTime(timeline.visitedAt)}`,
         `- 카테고리: ${timeline.category}`,
         timeline.tree ? `- 관련 장소: ${timeline.tree.name}` : null,
         timeline.content ? `- 내용: ${timeline.content}` : null,
@@ -445,6 +446,14 @@ export class OpenAiBlogDraftService {
   };
 
   private formatDate = (date: Date): string => {
-    return date.toISOString().slice(0, 10);
+    const kstDate = new Date(date.getTime() + KST_OFFSET_MS);
+
+    return kstDate.toISOString().slice(0, 10);
+  };
+
+  private formatDateTime = (date: Date): string => {
+    const kstDate = new Date(date.getTime() + KST_OFFSET_MS);
+
+    return kstDate.toISOString().slice(0, 19);
   };
 }
