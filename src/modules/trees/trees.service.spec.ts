@@ -45,7 +45,7 @@ describe('TreesService', () => {
     id: 1n,
     name: '오아시스 만난 곳',
     description: '길 가다가 오아시스 자만추',
-    createdAt: new Date('2026-03-30T10:00:00.000Z'),
+    createdAt: new Date('2026-03-30T15:30:00.000Z'),
     image: {
       id: 11n,
       timelineRecordId: null,
@@ -351,7 +351,7 @@ describe('TreesService', () => {
           treeId: 1,
           name: '오아시스 만난 곳',
           description: '길 가다가 오아시스 자만추',
-          createdAt: '2026-03-30',
+          createdAt: '2026-03-31',
           imageUrl: 'https://signed/trees/1/a.jpg',
         },
       ],

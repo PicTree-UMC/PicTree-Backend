@@ -34,6 +34,8 @@ import {
   TreeWithImagesRecord,
 } from './trees.types';
 
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
 @Injectable()
 export class TreesService {
   private readonly logger = new Logger(TreesService.name);
@@ -312,7 +314,7 @@ export class TreesService {
       treeId: Number(tree.id),
       name: tree.name,
       description: tree.description,
-      createdAt: tree.createdAt.toISOString().slice(0, 10),
+      createdAt: this.formatKstDate(tree.createdAt),
       // 버킷이 private 이므로 조회용 임시 서명 URL 을 발급한다.
       imageUrl: tree.image
         ? await this.s3Service.getPresignedUrl(tree.image.s3Key)
@@ -329,4 +331,10 @@ export class TreesService {
     timelineRecordId:
       image.timelineRecordId === null ? null : Number(image.timelineRecordId),
   });
+
+  private formatKstDate = (date: Date): string => {
+    const kstDate = new Date(date.getTime() + KST_OFFSET_MS);
+
+    return kstDate.toISOString().slice(0, 10);
+  };
 }

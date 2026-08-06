@@ -16,7 +16,7 @@ export class FavoriteTreeResponseDto {
 
   @ApiProperty({
     example: '2026-03-30',
-    description: '나무 생성일',
+    description: '나무 생성일 (KST, YYYY-MM-DD)',
   })
   createdAt!: string;
 
