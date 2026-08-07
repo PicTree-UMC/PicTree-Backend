@@ -47,8 +47,6 @@ describe('TreesService', () => {
     description: '길 가다가 오아시스 자만추',
     createdAt: new Date('2026-03-30T15:30:00.000Z'),
     image: {
-      id: 11n,
-      timelineRecordId: null,
       s3Key: 'trees/1/a.jpg',
     },
   };
