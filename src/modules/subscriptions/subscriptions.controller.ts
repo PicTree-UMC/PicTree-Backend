@@ -15,13 +15,16 @@ import { SuccessCode } from '../../common/responses/success-code';
 import { AccessTokenGuard } from '../auth/access-token.guard';
 import type { JwtPayload } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { ChangeSubscriptionPlanRequestDto } from './dto/change-subscription-plan-request.dto';
 import { CreateSubscriptionRequestDto } from './dto/create-subscription-request.dto';
 import { SubscriptionResponseDto } from './dto/subscription-response.dto';
 import {
   ApiCancelSubscription,
+  ApiCancelSubscriptionPlanChange,
   ApiCreateSubscription,
   ApiGetMySubscription,
   ApiResumeSubscription,
+  ApiScheduleSubscriptionPlanChange,
 } from './subscriptions.swagger';
 import { SubscriptionsService } from './subscriptions.service';
 
@@ -85,5 +88,43 @@ export class SubscriptionsController {
     );
 
     return ApiResponse.success(SuccessCode.SUBSCRIPTION_RESUMED, data);
+  }
+
+  @Post(':subscriptionId/plan-change')
+  @HttpCode(HttpStatus.OK)
+  @ApiScheduleSubscriptionPlanChange()
+  async schedulePlanChange(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('subscriptionId', ParseIntPipe) subscriptionId: number,
+    @Body() request: ChangeSubscriptionPlanRequestDto,
+  ): Promise<ApiResponse<SubscriptionResponseDto>> {
+    const data = await this.subscriptionsService.schedulePlanChange(
+      currentUser.userId,
+      subscriptionId,
+      request,
+    );
+
+    return ApiResponse.success(
+      SuccessCode.SUBSCRIPTION_PLAN_CHANGE_SCHEDULED,
+      data,
+    );
+  }
+
+  @Post(':subscriptionId/plan-change/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiCancelSubscriptionPlanChange()
+  async cancelPlanChange(
+    @CurrentUser() currentUser: JwtPayload,
+    @Param('subscriptionId', ParseIntPipe) subscriptionId: number,
+  ): Promise<ApiResponse<SubscriptionResponseDto>> {
+    const data = await this.subscriptionsService.cancelPlanChange(
+      currentUser.userId,
+      subscriptionId,
+    );
+
+    return ApiResponse.success(
+      SuccessCode.SUBSCRIPTION_PLAN_CHANGE_CANCELED,
+      data,
+    );
   }
 }

@@ -17,6 +17,23 @@ export class SubscriptionPlanSummaryDto {
   billingCycle!: string;
 }
 
+export class PendingPlanChangeDto {
+  @ApiProperty({ type: SubscriptionPlanSummaryDto })
+  plan!: SubscriptionPlanSummaryDto;
+
+  @ApiProperty({
+    example: '2026-08-21T10:00:00.000Z',
+    description: '변경 플랜 적용 및 결제 예정일',
+  })
+  effectiveAt!: Date;
+
+  @ApiProperty({
+    example: '2026-08-08T10:00:00.000Z',
+    description: '플랜 변경 요청일',
+  })
+  requestedAt!: Date;
+}
+
 export class SubscriptionResponseDto {
   @ApiProperty({
     example: 1,
@@ -54,4 +71,11 @@ export class SubscriptionResponseDto {
     description: '다음 결제 예정일',
   })
   nextBillingAt!: Date | null;
+
+  @ApiProperty({
+    type: PendingPlanChangeDto,
+    nullable: true,
+    description: '예약된 플랜 변경. 예약이 없으면 null',
+  })
+  pendingPlanChange!: PendingPlanChangeDto | null;
 }

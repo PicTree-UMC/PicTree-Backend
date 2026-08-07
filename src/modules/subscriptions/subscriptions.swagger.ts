@@ -15,6 +15,7 @@ import {
 } from '@nestjs/swagger';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import { SuccessCode } from '../../common/responses/success-code';
+import { ChangeSubscriptionPlanRequestDto } from './dto/change-subscription-plan-request.dto';
 import { CreateSubscriptionRequestDto } from './dto/create-subscription-request.dto';
 
 const failResponse = (code: string, message: string) => ({
@@ -37,6 +38,22 @@ const activeSubscriptionExample = {
   expiresAt: '2026-08-21T10:00:00.000Z',
   autoRenew: true,
   nextBillingAt: '2026-08-21T10:00:00.000Z',
+  pendingPlanChange: null,
+};
+
+const subscriptionWithPendingPlanExample = {
+  ...activeSubscriptionExample,
+  pendingPlanChange: {
+    plan: {
+      id: 3,
+      code: 'MAX',
+      name: '맥스',
+      price: 5900,
+      billingCycle: 'MONTHLY',
+    },
+    effectiveAt: activeSubscriptionExample.expiresAt,
+    requestedAt: '2026-08-08T10:00:00.000Z',
+  },
 };
 
 const protectedSubscriptionResponses = () =>
@@ -191,4 +208,70 @@ export const ApiResumeSubscription = () =>
     SuccessCode.SUBSCRIPTION_RESUMED.message,
     ErrorCode.SUBSCRIPTION_RESUME_NOT_ALLOWED.message,
     true,
+  );
+
+const subscriptionPlanChangeResponses = (
+  summary: string,
+  successMessage: string,
+  responseExample: Record<string, unknown>,
+) =>
+  applyDecorators(
+    protectedSubscriptionResponses(),
+    ApiOperation({ summary }),
+    ApiParam({ name: 'subscriptionId', example: 1 }),
+    ApiOkResponse({
+      description: successMessage,
+      schema: {
+        example: {
+          success: true,
+          code: 'SUBSCRIPTION200',
+          message: successMessage,
+          data: responseExample,
+        },
+      },
+    }),
+    ApiNotFoundResponse({
+      description: '구독 또는 변경할 요금제를 찾을 수 없음',
+      schema: {
+        example: failResponse(
+          'SUBSCRIPTION404',
+          ErrorCode.SUBSCRIPTION_NOT_FOUND.message,
+        ),
+      },
+    }),
+    ApiConflictResponse({
+      description: '현재 구독에서 플랜 변경 불가',
+      schema: {
+        example: failResponse(
+          'SUBSCRIPTION409',
+          ErrorCode.SUBSCRIPTION_PLAN_CHANGE_NOT_ALLOWED.message,
+        ),
+      },
+    }),
+  );
+
+export const ApiScheduleSubscriptionPlanChange = () =>
+  applyDecorators(
+    ApiBody({ type: ChangeSubscriptionPlanRequestDto }),
+    subscriptionPlanChangeResponses(
+      '구독 플랜 변경 예약',
+      SuccessCode.SUBSCRIPTION_PLAN_CHANGE_SCHEDULED.message,
+      subscriptionWithPendingPlanExample,
+    ),
+    ApiBadRequestResponse({
+      description: '요청값 또는 변경 불가 요금제',
+      schema: {
+        example: failResponse(
+          'SUBSCRIPTION400',
+          ErrorCode.SUBSCRIPTION_PLAN_NOT_SUBSCRIBABLE.message,
+        ),
+      },
+    }),
+  );
+
+export const ApiCancelSubscriptionPlanChange = () =>
+  subscriptionPlanChangeResponses(
+    '예약된 구독 플랜 변경 취소',
+    SuccessCode.SUBSCRIPTION_PLAN_CHANGE_CANCELED.message,
+    activeSubscriptionExample,
   );

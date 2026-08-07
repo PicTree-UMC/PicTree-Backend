@@ -11,6 +11,7 @@ export type SubscriptionBillingKeyRecord = Prisma.BillingKeyGetPayload<
 export type SubscriptionRecord = Prisma.UserSubscriptionGetPayload<{
   include: {
     subscriptionPlan: true;
+    pendingPlan: true;
   };
 }>;
 
@@ -67,4 +68,51 @@ export type SubscriptionAutoRenewalUpdateResult = {
   subscription: SubscriptionRecord | null;
   isCurrent: boolean;
   isExpired: boolean;
+};
+
+export type UpdatePendingPlanChangeData = {
+  userId: number;
+  subscriptionId: number;
+  pendingPlanId: number | null;
+  changedAt: Date;
+};
+
+export type PendingPlanChangeUpdateResult = {
+  subscription: SubscriptionRecord | null;
+  targetPlan: SubscriptionPlanRecord | null;
+  isCurrent: boolean;
+  isExpired: boolean;
+  isAutoRenewEnabled: boolean;
+  isSameCurrentPlan: boolean;
+};
+
+export type DueSubscriptionRenewal = {
+  id: bigint;
+  userId: bigint;
+};
+
+export type SubscriptionRenewalReservationStatus =
+  | 'READY'
+  | 'NOT_ELIGIBLE'
+  | 'PLAN_UNAVAILABLE'
+  | 'BILLING_KEY_UNAVAILABLE'
+  | 'FAILED_PAYMENT';
+
+export type SubscriptionRenewalReservation = {
+  status: SubscriptionRenewalReservationStatus;
+  attemptNumber: number | null;
+  sourceSubscription: SubscriptionRecord | null;
+  user: SubscriptionUserRecord | null;
+  plan: SubscriptionPlanRecord | null;
+  billingKey: SubscriptionBillingKeyRecord | null;
+  payment: SubscriptionPaymentRecord | null;
+};
+
+export type RecordSubscriptionRenewalFailureData = {
+  userId: bigint;
+  subscriptionId: bigint;
+  attemptNumber: number;
+  failedAt: Date;
+  retryAt: Date;
+  maxAttempts: number;
 };
