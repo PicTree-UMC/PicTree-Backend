@@ -1,5 +1,8 @@
 import { AppException } from '../../common/exceptions/app.exception';
 import { S3Service } from '../../common/s3/s3.service';
+import { BlogDraftContentService } from './services/blog-draft-content.service';
+import { BlogDraftResponseBuilderService } from './services/blog-draft-response-builder.service';
+import { BlogDraftUsageService } from './services/blog-draft-usage.service';
 import { BlogDraftsRepository } from './blog-drafts.repository';
 import { BlogDraftsService } from './blog-drafts.service';
 import { BlogDraftTone } from './dto/generate-blog-draft-request.dto';
@@ -9,6 +12,9 @@ describe('BlogDraftsService', () => {
   let repository: jest.Mocked<BlogDraftsRepository>;
   let openAiService: jest.Mocked<OpenAiBlogDraftService>;
   let s3Service: jest.Mocked<S3Service>;
+  let blogDraftContentService: BlogDraftContentService;
+  let blogDraftUsageService: BlogDraftUsageService;
+  let blogDraftResponseBuilderService: BlogDraftResponseBuilderService;
   let service: BlogDraftsService;
 
   beforeEach(() => {
@@ -31,7 +37,20 @@ describe('BlogDraftsService', () => {
     s3Service = {
       getPresignedUrl: jest.fn(),
     } as unknown as jest.Mocked<S3Service>;
-    service = new BlogDraftsService(repository, openAiService, s3Service);
+    blogDraftContentService = new BlogDraftContentService();
+    blogDraftUsageService = new BlogDraftUsageService(repository);
+    blogDraftResponseBuilderService = new BlogDraftResponseBuilderService(
+      repository,
+      s3Service,
+      blogDraftContentService,
+    );
+    service = new BlogDraftsService(
+      repository,
+      openAiService,
+      blogDraftUsageService,
+      blogDraftContentService,
+      blogDraftResponseBuilderService,
+    );
   });
 
   afterEach(() => {
