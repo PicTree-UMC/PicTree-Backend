@@ -242,6 +242,21 @@ export class BlogDraftsRepository {
     });
   };
 
+  countOwnedTreesByIds = (
+    userId: number,
+    treeIds: number[],
+  ): Promise<number> => {
+    return this.prisma.tree.count({
+      where: {
+        userId: BigInt(userId),
+        deletedAt: null,
+        id: {
+          in: treeIds.map((treeId) => BigInt(treeId)),
+        },
+      },
+    });
+  };
+
   deleteDraft = (
     draftId: number,
     userId: number,

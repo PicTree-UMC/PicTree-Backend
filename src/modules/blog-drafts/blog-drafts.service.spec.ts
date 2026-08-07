@@ -29,6 +29,7 @@ describe('BlogDraftsService', () => {
       findSavedDraftsByUserId: jest.fn(),
       findDraftByIdAndUserId: jest.fn(),
       findTreeImagesByIds: jest.fn(),
+      countOwnedTreesByIds: jest.fn(),
       deleteDraft: jest.fn(),
     } as unknown as jest.Mocked<BlogDraftsRepository>;
     openAiService = {
@@ -288,21 +289,7 @@ describe('BlogDraftsService', () => {
       status: 'ACTIVE',
       currentSubscription: null,
     });
-    repository.findGenerateSource.mockResolvedValue({
-      trees: [
-        {
-          id: 1n,
-          name: '포그레인 공원',
-          description: null,
-          address: null,
-          mood: '😍',
-          defaultImage: 'DEFAULT_1',
-          createdAt: new Date('2026-03-31T10:00:00.000Z'),
-          images: [],
-        },
-      ],
-      timelines: [],
-    });
+    repository.countOwnedTreesByIds.mockResolvedValue(1);
     repository.createDraft.mockResolvedValue({
       id: 1n,
       userId: 1n,
@@ -358,21 +345,7 @@ describe('BlogDraftsService', () => {
       status: 'ACTIVE',
       currentSubscription: null,
     });
-    repository.findGenerateSource.mockResolvedValue({
-      trees: [
-        {
-          id: 1n,
-          name: '포그레인 공원',
-          description: null,
-          address: null,
-          mood: '😍',
-          defaultImage: 'DEFAULT_1',
-          createdAt: new Date('2026-03-31T10:00:00.000Z'),
-          images: [],
-        },
-      ],
-      timelines: [],
-    });
+    repository.countOwnedTreesByIds.mockResolvedValue(1);
     repository.createDraft.mockResolvedValue({
       id: 1n,
       userId: 1n,
@@ -409,12 +382,7 @@ describe('BlogDraftsService', () => {
       endDate: '2026-04-01',
     });
 
-    expect(repository.findGenerateSource).toHaveBeenCalledWith(
-      1,
-      new Date('1970-01-01T00:00:00.000Z'),
-      new Date('9999-12-31T00:00:00.000Z'),
-      [1],
-    );
+    expect(repository.countOwnedTreesByIds).toHaveBeenCalledWith(1, [1]);
     expect(repository.createDraft).toHaveBeenCalledWith(
       expect.objectContaining({
         content: JSON.stringify([
@@ -468,6 +436,7 @@ describe('BlogDraftsService', () => {
 
     expect(repository.findUserById).not.toHaveBeenCalled();
     expect(repository.findGenerateSource).not.toHaveBeenCalled();
+    expect(repository.countOwnedTreesByIds).not.toHaveBeenCalled();
     expect(repository.createDraft).not.toHaveBeenCalled();
   });
 

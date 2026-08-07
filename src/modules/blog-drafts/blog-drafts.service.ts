@@ -189,14 +189,12 @@ export class BlogDraftsService {
     userId: number,
     treeIds: number[],
   ): Promise<void> => {
-    const source = await this.blogDraftsRepository.findGenerateSource(
+    const ownedTreeCount = await this.blogDraftsRepository.countOwnedTreesByIds(
       userId,
-      new Date('1970-01-01T00:00:00.000Z'),
-      new Date('9999-12-31T00:00:00.000Z'),
       treeIds,
     );
 
-    if (source.trees.length !== treeIds.length) {
+    if (ownedTreeCount !== treeIds.length) {
       throw new AppException(ErrorCode.TREE_NOT_FOUND);
     }
   };
