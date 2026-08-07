@@ -46,7 +46,7 @@ export interface FavoriteTreeRecord {
   name: string;
   description: string | null;
   createdAt: Date;
-  image: TreeImageRecord | null;
+  image: { s3Key: string } | null;
 }
 
 export interface CreateTreeData {
