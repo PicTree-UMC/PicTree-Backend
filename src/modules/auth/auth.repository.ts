@@ -156,14 +156,16 @@ export class AuthRepository {
   findExpiredWithdrawnUserIds = async (
     now: Date,
     take: number,
+    afterUserId?: bigint,
   ): Promise<bigint[]> => {
     const users = await this.prisma.user.findMany({
       where: {
         status: UserStatus.WITHDRAWN,
         scheduledDeletionAt: { lte: now },
+        ...(afterUserId === undefined ? {} : { id: { gt: afterUserId } }),
       },
       select: { id: true },
-      orderBy: { scheduledDeletionAt: 'asc' },
+      orderBy: { id: 'asc' },
       take,
     });
 
@@ -187,6 +189,7 @@ export class AuthRepository {
         select: {
           id: true,
           status: true,
+          deletedAt: true,
           scheduledDeletionAt: true,
         },
       });
@@ -224,6 +227,7 @@ export class AuthRepository {
           nickname: `탈퇴회원_${userId.toString()}`,
           profileImageUrl: null,
           status: UserStatus.DELETED,
+          deletedAt: user.deletedAt,
           currentSubscriptionId: null,
           notification: false,
           scheduledDeletionAt: null,

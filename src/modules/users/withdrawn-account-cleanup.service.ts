@@ -14,6 +14,7 @@ export class WithdrawnAccountCleanupService
   private readonly logger = new Logger(WithdrawnAccountCleanupService.name);
   private cleanupTimer?: NodeJS.Timeout;
   private isRunning = false;
+  private currentRun?: Promise<number>;
 
   constructor(private readonly authRepository: AuthRepository) {}
 
@@ -26,40 +27,55 @@ export class WithdrawnAccountCleanupService
     this.cleanupTimer.unref();
   };
 
-  onModuleDestroy = (): void => {
+  onModuleDestroy = async (): Promise<void> => {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
     }
+
+    await this.currentRun;
   };
 
-  cleanupExpiredWithdrawals = async (): Promise<number> => {
+  cleanupExpiredWithdrawals = (): Promise<number> => {
     if (this.isRunning) {
-      return 0;
+      return Promise.resolve(0);
     }
 
     this.isRunning = true;
+    const currentRun = this.runCleanup().finally(() => {
+      this.isRunning = false;
+
+      if (this.currentRun === currentRun) {
+        this.currentRun = undefined;
+      }
+    });
+    this.currentRun = currentRun;
+
+    return currentRun;
+  };
+
+  private runCleanup = async (): Promise<number> => {
     let finalizedCount = 0;
+    const runStartedAt = new Date();
+    let afterUserId: bigint | undefined;
 
     try {
       while (true) {
-        const now = new Date();
         const userIds = await this.authRepository.findExpiredWithdrawnUserIds(
-          now,
+          runStartedAt,
           AccountRecoveryPolicy.CLEANUP_BATCH_SIZE,
+          afterUserId,
         );
-        let finalizedInBatch = 0;
 
         for (const userId of userIds) {
           try {
             const finalized =
               await this.authRepository.finalizeExpiredWithdrawnUser(
                 userId,
-                now,
+                runStartedAt,
               );
 
             if (finalized) {
               finalizedCount += 1;
-              finalizedInBatch += 1;
             }
           } catch (error) {
             this.logger.error(
@@ -69,12 +85,11 @@ export class WithdrawnAccountCleanupService
           }
         }
 
-        if (
-          userIds.length < AccountRecoveryPolicy.CLEANUP_BATCH_SIZE ||
-          finalizedInBatch === 0
-        ) {
+        if (userIds.length < AccountRecoveryPolicy.CLEANUP_BATCH_SIZE) {
           break;
         }
+
+        afterUserId = userIds[userIds.length - 1];
       }
 
       if (finalizedCount > 0) {
@@ -88,8 +103,6 @@ export class WithdrawnAccountCleanupService
         error instanceof Error ? error.stack : undefined,
       );
       return finalizedCount;
-    } finally {
-      this.isRunning = false;
     }
   };
 }
