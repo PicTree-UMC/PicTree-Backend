@@ -1,5 +1,8 @@
 import { AppException } from '../../common/exceptions/app.exception';
 import { S3Service } from '../../common/s3/s3.service';
+import { BlogDraftContentService } from './services/blog-draft-content.service';
+import { BlogDraftResponseBuilderService } from './services/blog-draft-response-builder.service';
+import { BlogDraftUsageService } from './services/blog-draft-usage.service';
 import { BlogDraftsRepository } from './blog-drafts.repository';
 import { BlogDraftsService } from './blog-drafts.service';
 import { BlogDraftTone } from './dto/generate-blog-draft-request.dto';
@@ -9,6 +12,9 @@ describe('BlogDraftsService', () => {
   let repository: jest.Mocked<BlogDraftsRepository>;
   let openAiService: jest.Mocked<OpenAiBlogDraftService>;
   let s3Service: jest.Mocked<S3Service>;
+  let blogDraftContentService: BlogDraftContentService;
+  let blogDraftUsageService: BlogDraftUsageService;
+  let blogDraftResponseBuilderService: BlogDraftResponseBuilderService;
   let service: BlogDraftsService;
 
   beforeEach(() => {
@@ -23,6 +29,7 @@ describe('BlogDraftsService', () => {
       findSavedDraftsByUserId: jest.fn(),
       findDraftByIdAndUserId: jest.fn(),
       findTreeImagesByIds: jest.fn(),
+      countOwnedTreesByIds: jest.fn(),
       deleteDraft: jest.fn(),
     } as unknown as jest.Mocked<BlogDraftsRepository>;
     openAiService = {
@@ -31,7 +38,20 @@ describe('BlogDraftsService', () => {
     s3Service = {
       getPresignedUrl: jest.fn(),
     } as unknown as jest.Mocked<S3Service>;
-    service = new BlogDraftsService(repository, openAiService, s3Service);
+    blogDraftContentService = new BlogDraftContentService();
+    blogDraftUsageService = new BlogDraftUsageService(repository);
+    blogDraftResponseBuilderService = new BlogDraftResponseBuilderService(
+      repository,
+      s3Service,
+      blogDraftContentService,
+    );
+    service = new BlogDraftsService(
+      repository,
+      openAiService,
+      blogDraftUsageService,
+      blogDraftContentService,
+      blogDraftResponseBuilderService,
+    );
   });
 
   afterEach(() => {
@@ -269,21 +289,7 @@ describe('BlogDraftsService', () => {
       status: 'ACTIVE',
       currentSubscription: null,
     });
-    repository.findGenerateSource.mockResolvedValue({
-      trees: [
-        {
-          id: 1n,
-          name: '포그레인 공원',
-          description: null,
-          address: null,
-          mood: '😍',
-          defaultImage: 'DEFAULT_1',
-          createdAt: new Date('2026-03-31T10:00:00.000Z'),
-          images: [],
-        },
-      ],
-      timelines: [],
-    });
+    repository.countOwnedTreesByIds.mockResolvedValue(1);
     repository.createDraft.mockResolvedValue({
       id: 1n,
       userId: 1n,
@@ -339,21 +345,7 @@ describe('BlogDraftsService', () => {
       status: 'ACTIVE',
       currentSubscription: null,
     });
-    repository.findGenerateSource.mockResolvedValue({
-      trees: [
-        {
-          id: 1n,
-          name: '포그레인 공원',
-          description: null,
-          address: null,
-          mood: '😍',
-          defaultImage: 'DEFAULT_1',
-          createdAt: new Date('2026-03-31T10:00:00.000Z'),
-          images: [],
-        },
-      ],
-      timelines: [],
-    });
+    repository.countOwnedTreesByIds.mockResolvedValue(1);
     repository.createDraft.mockResolvedValue({
       id: 1n,
       userId: 1n,
@@ -390,12 +382,7 @@ describe('BlogDraftsService', () => {
       endDate: '2026-04-01',
     });
 
-    expect(repository.findGenerateSource).toHaveBeenCalledWith(
-      1,
-      new Date('1970-01-01T00:00:00.000Z'),
-      new Date('9999-12-31T00:00:00.000Z'),
-      [1],
-    );
+    expect(repository.countOwnedTreesByIds).toHaveBeenCalledWith(1, [1]);
     expect(repository.createDraft).toHaveBeenCalledWith(
       expect.objectContaining({
         content: JSON.stringify([
@@ -449,6 +436,7 @@ describe('BlogDraftsService', () => {
 
     expect(repository.findUserById).not.toHaveBeenCalled();
     expect(repository.findGenerateSource).not.toHaveBeenCalled();
+    expect(repository.countOwnedTreesByIds).not.toHaveBeenCalled();
     expect(repository.createDraft).not.toHaveBeenCalled();
   });
 
@@ -493,6 +481,29 @@ describe('BlogDraftsService', () => {
             content: '본문',
           },
         ],
+      },
+    ]);
+  });
+
+  it('초안 상세 조회 시 빈 배열 content는 fallback 본문으로 노출하지 않는다', async () => {
+    repository.findDraftByIdAndUserId.mockResolvedValue({
+      id: 1n,
+      userId: 1n,
+      title: '제목',
+      content: '[]',
+      startDate: new Date('2026-03-31T00:00:00.000Z'),
+      endDate: new Date('2026-04-01T00:00:00.000Z'),
+      createdAt: new Date('2026-04-02T10:00:00.000Z'),
+      updatedAt: new Date('2026-04-02T10:00:00.000Z'),
+    });
+
+    const result = await service.getDraft(1, 1);
+
+    expect(repository.findTreeImagesByIds).not.toHaveBeenCalled();
+    expect(result.days).toEqual([
+      {
+        date: '2026-03-31',
+        items: [],
       },
     ]);
   });
@@ -726,17 +737,6 @@ describe('BlogDraftsService', () => {
 
     expect(result.days).toEqual([
       {
-        date: '2026-04-01',
-        items: [
-          {
-            treeId: 2,
-            imageUrl: null,
-            placeName: '피자 맛집',
-            content: '피자를 먹었음.',
-          },
-        ],
-      },
-      {
         date: '2026-03-31',
         items: [
           {
@@ -744,6 +744,17 @@ describe('BlogDraftsService', () => {
             imageUrl: null,
             placeName: '포그레인 공원',
             content: '공원을 걸었음.',
+          },
+        ],
+      },
+      {
+        date: '2026-04-01',
+        items: [
+          {
+            treeId: 2,
+            imageUrl: null,
+            placeName: '피자 맛집',
+            content: '피자를 먹었음.',
           },
         ],
       },
