@@ -5,6 +5,9 @@ export class SocialLoginResponseDto {
   @ApiProperty({ example: true, description: '신규 가입 여부' })
   isNewUser!: boolean;
 
+  @ApiProperty({ example: false, description: '탈퇴 계정 복구 여부' })
+  isRecovered!: boolean;
+
   @ApiProperty({ example: true, description: '약관 동의 필요 여부' })
   needTermsAgreement!: boolean;
 

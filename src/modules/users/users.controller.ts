@@ -20,6 +20,7 @@ import type { JwtPayload } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { UpdateUserRequestDto } from './dto/update-user-request.dto';
 import { UserResponseDto } from './dto/user-response.dto';
+import { WithdrawUserResponseDto } from './dto/withdraw-user-response.dto';
 import { ApiGetMe, ApiUpdateMe, ApiWithdrawMe } from './users.swagger';
 import { UsersService } from './users.service';
 
@@ -62,14 +63,14 @@ export class UsersController {
   async withdrawMe(
     @CurrentUser() currentUser: JwtPayload,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<ApiResponse<null>> {
-    await this.usersService.withdrawMe(currentUser.userId);
+  ): Promise<ApiResponse<WithdrawUserResponseDto>> {
+    const data = await this.usersService.withdrawMe(currentUser.userId);
     response.cookie(
       AuthCookie.REFRESH_TOKEN,
       '',
       this.authTokenService.getClearRefreshTokenCookieOptions(),
     );
 
-    return ApiResponse.success(SuccessCode.OK, null);
+    return ApiResponse.success(SuccessCode.OK, data);
   }
 }

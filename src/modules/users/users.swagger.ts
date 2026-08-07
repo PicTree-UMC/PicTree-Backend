@@ -98,7 +98,11 @@ export const ApiUpdateMe = () =>
 
 export const ApiWithdrawMe = () =>
   applyDecorators(
-    ApiOperation({ summary: '회원 탈퇴' }),
+    ApiOperation({
+      summary: '회원 탈퇴',
+      description:
+        '탈퇴 후 30일 동안 소셜 로그인으로 계정을 복구할 수 있습니다.',
+    }),
     protectedUserResponses(),
     ApiOkResponse({
       description: '회원 탈퇴 성공',
@@ -107,7 +111,9 @@ export const ApiWithdrawMe = () =>
           success: true,
           code: 'COMMON200',
           message: '요청이 성공했습니다.',
-          data: null,
+          data: {
+            recoverableUntil: '2026-09-07T10:00:00.000Z',
+          },
         },
       },
     }),

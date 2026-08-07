@@ -10,9 +10,11 @@ import { SocialLoginRequestDto } from './dto/social-login-request.dto';
 import { TokenRefreshResponseDto } from './dto/token-refresh-response.dto';
 import {
   AuthUserRecord,
+  ResolvedSocialUser,
   SocialLoginResult,
   SocialUserInfo,
 } from './auth.types';
+import { UserStatus } from '../users/users.constant';
 
 @Injectable()
 export class AuthService {
@@ -33,14 +35,11 @@ export class AuthService {
       socialUserInfo.providerUserId,
     );
     const socialUserResult = socialAccount
-      ? {
-          user: socialAccount.user,
-          isNewUser: false,
-        }
-      : await this.authRepository.createUserWithSocialAccount(
+      ? await this.resolveExistingSocialAccount(
+          socialAccount.user,
           socialUserInfo,
-          this.createNickname(socialUserInfo),
-        );
+        )
+      : await this.createSocialUser(socialUserInfo);
     const { user, isNewUser } = socialUserResult;
 
     this.validateAvailableUser(user);
@@ -48,10 +47,12 @@ export class AuthService {
     const tokens = await this.authTokenService.issueTokens({
       userId: Number(user.id),
       role: user.role,
+      tokenVersion: user.tokenVersion,
     });
 
     return {
       isNewUser,
+      isRecovered: socialUserResult.isRecovered,
       needTermsAgreement: isNewUser,
       needProfileSetup: !socialUserInfo.nickname,
       accessToken: tokens.accessToken,
@@ -77,10 +78,12 @@ export class AuthService {
     }
 
     this.validateAvailableUser(user);
+    this.validateRefreshTokenVersion(user, payload);
 
     return this.authTokenService.issueAccessToken({
       userId: Number(user.id),
       role: user.role,
+      tokenVersion: user.tokenVersion,
     });
   };
 
@@ -104,10 +107,12 @@ export class AuthService {
     const tokens = await this.authTokenService.issueTokens({
       userId: Number(user.id),
       role: user.role,
+      tokenVersion: user.tokenVersion,
     });
 
     return {
       isNewUser: false,
+      isRecovered: false,
       needTermsAgreement: false,
       needProfileSetup: false,
       accessToken: tokens.accessToken,
@@ -118,9 +123,52 @@ export class AuthService {
   };
 
   private validateAvailableUser = (user: AuthUserRecord): void => {
-    if (user.status !== 'ACTIVE') {
+    if (user.status !== UserStatus.ACTIVE) {
       throw new AppException(ErrorCode.USER_UNAVAILABLE);
     }
+  };
+
+  private validateRefreshTokenVersion = (
+    user: AuthUserRecord,
+    payload: { tokenVersion?: number },
+  ): void => {
+    if ((payload.tokenVersion ?? 0) !== user.tokenVersion) {
+      throw new AppException(ErrorCode.AUTH_INVALID_REFRESH_TOKEN);
+    }
+  };
+
+  private resolveExistingSocialAccount = async (
+    user: AuthUserRecord,
+    socialUserInfo: SocialUserInfo,
+  ): Promise<ResolvedSocialUser> => {
+    if (user.status !== UserStatus.WITHDRAWN) {
+      return { user, isNewUser: false, isRecovered: false };
+    }
+
+    const now = new Date();
+    const recoveredUser = await this.authRepository.recoverWithdrawnUser(
+      user.id,
+      now,
+    );
+
+    if (recoveredUser) {
+      return { user: recoveredUser, isNewUser: false, isRecovered: true };
+    }
+
+    await this.authRepository.finalizeExpiredWithdrawnUser(user.id, now);
+
+    return this.createSocialUser(socialUserInfo);
+  };
+
+  private createSocialUser = (
+    socialUserInfo: SocialUserInfo,
+  ): Promise<ResolvedSocialUser> => {
+    return this.authRepository
+      .createUserWithSocialAccount(
+        socialUserInfo,
+        this.createNickname(socialUserInfo),
+      )
+      .then((result) => ({ ...result, isRecovered: false }));
   };
 
   private createNickname = (socialUserInfo: SocialUserInfo): string => {

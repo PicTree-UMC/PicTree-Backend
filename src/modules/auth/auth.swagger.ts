@@ -29,6 +29,7 @@ export const ApiSocialLogin = () =>
           message: '요청이 성공했습니다.',
           data: {
             isNewUser: true,
+            isRecovered: false,
             needTermsAgreement: true,
             needProfileSetup: false,
             accessToken: '서비스 JWT Access Token',
@@ -132,6 +133,7 @@ export const ApiDevLogin = () =>
           message: '요청이 성공했습니다.',
           data: {
             isNewUser: false,
+            isRecovered: false,
             needTermsAgreement: false,
             needProfileSetup: false,
             accessToken: '서비스 JWT Access Token',

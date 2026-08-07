@@ -6,6 +6,7 @@ export enum SocialProvider {
 export interface JwtPayload {
   userId: number;
   role: string;
+  tokenVersion?: number;
 }
 
 export interface AuthTokens {
@@ -26,11 +27,19 @@ export interface AuthUserRecord {
   profileImageUrl: string | null;
   role: string;
   status: string;
+  tokenVersion: number;
+  deletedAt: Date | null;
+  scheduledDeletionAt: Date | null;
   currentSubscription: {
     subscriptionPlan: {
       code: string;
     };
   } | null;
+}
+
+export interface TokenUserRecord {
+  status: string;
+  tokenVersion: number;
 }
 
 export interface SocialAccountWithUser {
@@ -49,6 +58,7 @@ export interface CreateSocialUserResult {
 
 export interface SocialLoginResult {
   isNewUser: boolean;
+  isRecovered: boolean;
   needTermsAgreement: boolean;
   needProfileSetup: boolean;
   accessToken: string;
@@ -77,4 +87,10 @@ export interface SocialUserInfo {
   email: string | null;
   nickname: string | null;
   profileImageUrl: string | null;
+}
+
+export interface ResolvedSocialUser {
+  user: AuthUserRecord;
+  isNewUser: boolean;
+  isRecovered: boolean;
 }
