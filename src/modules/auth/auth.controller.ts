@@ -34,6 +34,7 @@ export class AuthController {
     const data = await this.authService.socialLogin(socialLoginRequestDto);
     const responseBody: SocialLoginResponseDto = {
       isNewUser: data.isNewUser,
+      isRecovered: data.isRecovered,
       needTermsAgreement: data.needTermsAgreement,
       needProfileSetup: data.needProfileSetup,
       accessToken: data.accessToken,
@@ -59,6 +60,7 @@ export class AuthController {
     const data = await this.authService.devLogin(devLoginRequestDto);
     const responseBody: SocialLoginResponseDto = {
       isNewUser: data.isNewUser,
+      isRecovered: data.isRecovered,
       needTermsAgreement: data.needTermsAgreement,
       needProfileSetup: data.needProfileSetup,
       accessToken: data.accessToken,

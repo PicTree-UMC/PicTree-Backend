@@ -17,6 +17,11 @@ import { AccessTokenGuard } from './access-token.guard';
     AuthRepository,
     AccessTokenGuard,
   ],
-  exports: [AuthTokenService, AuthSocialService, AccessTokenGuard],
+  exports: [
+    AuthTokenService,
+    AuthSocialService,
+    AuthRepository,
+    AccessTokenGuard,
+  ],
 })
 export class AuthModule {}

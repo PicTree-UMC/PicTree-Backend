@@ -19,11 +19,13 @@ model User {
   profileImageUrl       String?              @map("profile_image_url") @db.VarChar(500)
   role                  String               @default("USER") @db.VarChar(20)
   status                String               @default("ACTIVE") @db.VarChar(20)
+  tokenVersion          Int                  @default(0) @map("token_version")
   currentSubscriptionId BigInt?              @map("current_subscription_id") @db.BigInt
   notification          Boolean              @default(true)
   createdAt             DateTime             @default(now()) @map("created_at")
   updatedAt             DateTime             @updatedAt @map("updated_at")
   deletedAt             DateTime?            @map("deleted_at")
+  scheduledDeletionAt   DateTime?            @map("scheduled_deletion_at")
   socialAccounts        SocialAccount[]
   termAgreements        UserTermsAgreement[]
   currentSubscription   UserSubscription?    @relation("CurrentUserSubscription", fields: [currentSubscriptionId, id], references: [id, userId])
@@ -39,6 +41,7 @@ model User {
   nearbyAlertLogs       NearbyAlertLog[]
 
   @@unique([currentSubscriptionId, id])
+  @@index([status, scheduledDeletionAt])
   @@map("users")
 }
 

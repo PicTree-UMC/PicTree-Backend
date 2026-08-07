@@ -3,6 +3,8 @@ import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import { UpdateUserRequestDto } from './dto/update-user-request.dto';
 import { UserResponseDto } from './dto/user-response.dto';
+import { WithdrawUserResponseDto } from './dto/withdraw-user-response.dto';
+import { AccountRecoveryPolicy, UserStatus } from './users.constant';
 import { UsersRepository } from './users.repository';
 import { UserRecord } from './users.types';
 
@@ -35,17 +37,30 @@ export class UsersService {
     return this.toUserResponseDto(updatedUser);
   };
 
-  withdrawMe = async (userId: number): Promise<null> => {
-    const user = await this.getUserOrThrow(userId);
+  withdrawMe = async (userId: number): Promise<WithdrawUserResponseDto> => {
+    const withdrawnAt = new Date();
+    const scheduledDeletionAt = new Date(
+      withdrawnAt.getTime() + AccountRecoveryPolicy.GRACE_PERIOD_MS,
+    );
+    const result = await this.usersRepository.withdrawUser(
+      userId,
+      withdrawnAt,
+      scheduledDeletionAt,
+    );
 
-    if (user.status === 'WITHDRAWN') {
+    if (!result.user) {
+      throw new AppException(ErrorCode.USER_NOT_FOUND);
+    }
+
+    if (!result.withdrawn && result.user.status === UserStatus.WITHDRAWN) {
       throw new AppException(ErrorCode.USER_ALREADY_WITHDRAWN);
     }
 
-    this.validateAvailableUser(user);
-    await this.usersRepository.withdrawUser(userId, new Date());
+    if (!result.withdrawn) {
+      throw new AppException(ErrorCode.USER_UNAVAILABLE);
+    }
 
-    return null;
+    return { recoverableUntil: scheduledDeletionAt };
   };
 
   private getUserOrThrow = async (userId: number): Promise<UserRecord> => {
@@ -59,7 +74,7 @@ export class UsersService {
   };
 
   private validateAvailableUser = (user: UserRecord): void => {
-    if (user.status !== 'ACTIVE') {
+    if (user.status !== UserStatus.ACTIVE) {
       throw new AppException(ErrorCode.USER_UNAVAILABLE);
     }
   };
