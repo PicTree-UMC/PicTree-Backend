@@ -286,7 +286,9 @@ export class BlogDraftResponseBuilderService {
       groups.set(date, group);
     }
 
-    return Array.from(groups.values());
+    return Array.from(groups.values()).sort((a, b) =>
+      a.date.localeCompare(b.date),
+    );
   };
 
   private getThumbnailUrlByTreeId = async (

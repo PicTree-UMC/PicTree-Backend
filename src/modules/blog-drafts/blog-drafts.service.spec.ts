@@ -714,17 +714,6 @@ describe('BlogDraftsService', () => {
 
     expect(result.days).toEqual([
       {
-        date: '2026-04-01',
-        items: [
-          {
-            treeId: 2,
-            imageUrl: null,
-            placeName: '피자 맛집',
-            content: '피자를 먹었음.',
-          },
-        ],
-      },
-      {
         date: '2026-03-31',
         items: [
           {
@@ -732,6 +721,17 @@ describe('BlogDraftsService', () => {
             imageUrl: null,
             placeName: '포그레인 공원',
             content: '공원을 걸었음.',
+          },
+        ],
+      },
+      {
+        date: '2026-04-01',
+        items: [
+          {
+            treeId: 2,
+            imageUrl: null,
+            placeName: '피자 맛집',
+            content: '피자를 먹었음.',
           },
         ],
       },
