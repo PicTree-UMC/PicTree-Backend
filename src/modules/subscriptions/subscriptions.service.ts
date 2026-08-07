@@ -9,18 +9,22 @@ import {
 } from '../payments/toss-payments.exception';
 import { TossPaymentsService } from '../payments/toss-payments.service';
 import { TossPaymentConfirmResult } from '../payments/toss-payments.types';
+import { ChangeSubscriptionPlanRequestDto } from './dto/change-subscription-plan-request.dto';
 import { CreateSubscriptionRequestDto } from './dto/create-subscription-request.dto';
 import { SubscriptionResponseDto } from './dto/subscription-response.dto';
 import {
   SubscriptionBillingCycle,
   SubscriptionOrder,
+  SubscriptionRenewalPolicy,
   SubscriptionStatus,
 } from './subscriptions.constant';
 import { SubscriptionsRepository } from './subscriptions.repository';
 import {
   SubscriptionPaymentRecord,
+  PendingPlanChangeUpdateResult,
   SubscriptionPlanRecord,
   SubscriptionRecord,
+  SubscriptionRenewalReservation,
   SubscriptionStartReservation,
 } from './subscriptions.types';
 
@@ -118,6 +122,88 @@ export class SubscriptionsService {
     return this.updateSubscriptionAutoRenewal(userId, subscriptionId, true);
   };
 
+  schedulePlanChange = async (
+    userId: number,
+    subscriptionId: number,
+    request: ChangeSubscriptionPlanRequestDto,
+  ): Promise<SubscriptionResponseDto> => {
+    const targetPlan = await this.subscriptionsRepository.findActivePlanById(
+      request.subscriptionPlanId,
+    );
+
+    if (!targetPlan) {
+      throw new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND);
+    }
+
+    this.validateSubscribablePlan(targetPlan);
+
+    const result = await this.subscriptionsRepository.updatePendingPlanChange({
+      userId,
+      subscriptionId,
+      pendingPlanId: request.subscriptionPlanId,
+      changedAt: new Date(),
+    });
+
+    return this.toValidatedPlanChangeResponse(result, true);
+  };
+
+  cancelPlanChange = async (
+    userId: number,
+    subscriptionId: number,
+  ): Promise<SubscriptionResponseDto> => {
+    const result = await this.subscriptionsRepository.updatePendingPlanChange({
+      userId,
+      subscriptionId,
+      pendingPlanId: null,
+      changedAt: new Date(),
+    });
+
+    return this.toValidatedPlanChangeResponse(result, false);
+  };
+
+  processDueSubscriptionRenewals = async (): Promise<number> => {
+    const runStartedAt = new Date();
+    let renewedCount = 0;
+    let afterSubscriptionId: bigint | undefined;
+
+    while (true) {
+      const renewals =
+        await this.subscriptionsRepository.findDueSubscriptionRenewals(
+          runStartedAt,
+          SubscriptionRenewalPolicy.BATCH_SIZE,
+          SubscriptionRenewalPolicy.MAX_ATTEMPTS,
+          afterSubscriptionId,
+        );
+
+      for (const renewal of renewals) {
+        try {
+          const renewed = await this.processSubscriptionRenewal(
+            renewal.userId,
+            renewal.id,
+            runStartedAt,
+          );
+
+          if (renewed) {
+            renewedCount += 1;
+          }
+        } catch (error: unknown) {
+          this.logger.error('구독 자동갱신 처리에 실패했습니다.', {
+            subscriptionId: renewal.id.toString(),
+            error,
+          });
+        }
+      }
+
+      if (renewals.length < SubscriptionRenewalPolicy.BATCH_SIZE) {
+        break;
+      }
+
+      afterSubscriptionId = renewals[renewals.length - 1].id;
+    }
+
+    return renewedCount;
+  };
+
   private updateSubscriptionAutoRenewal = async (
     userId: number,
     subscriptionId: number,
@@ -144,6 +230,104 @@ export class SubscriptionsService {
     }
 
     return this.toSubscriptionResponseDto(result.subscription);
+  };
+
+  private toValidatedPlanChangeResponse = (
+    result: PendingPlanChangeUpdateResult,
+    targetPlanRequired: boolean,
+  ): SubscriptionResponseDto => {
+    if (!result.subscription) {
+      throw new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND);
+    }
+
+    if (targetPlanRequired && !result.targetPlan) {
+      throw new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND);
+    }
+
+    if (
+      !result.isCurrent ||
+      result.isExpired ||
+      !result.isAutoRenewEnabled ||
+      result.isSameCurrentPlan
+    ) {
+      throw new AppException(ErrorCode.SUBSCRIPTION_PLAN_CHANGE_NOT_ALLOWED);
+    }
+
+    return this.toSubscriptionResponseDto(result.subscription);
+  };
+
+  private processSubscriptionRenewal = async (
+    userId: bigint,
+    subscriptionId: bigint,
+    now: Date,
+  ): Promise<boolean> => {
+    const reservation =
+      await this.subscriptionsRepository.reserveSubscriptionRenewal(
+        userId,
+        subscriptionId,
+        now,
+        SubscriptionRenewalPolicy.MAX_ATTEMPTS,
+      );
+
+    if (reservation.status === 'NOT_ELIGIBLE') {
+      return false;
+    }
+
+    if (reservation.status !== 'READY') {
+      await this.recordRenewalFailure(reservation, now);
+      return false;
+    }
+
+    const { sourceSubscription, user, plan, billingKey, payment } = reservation;
+
+    if (!sourceSubscription || !user || !plan || !billingKey || !payment) {
+      throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
+    }
+
+    const onRejected = () => this.recordRenewalFailure(reservation, new Date());
+    const tossPayment =
+      payment.status === PaymentStatus.DONE
+        ? await this.reconcileTossBillingPayment(
+            payment.orderId,
+            payment.amount,
+          )
+        : await this.approveTossBillingPayment(
+            payment,
+            billingKey.billingKey,
+            billingKey.customerKey,
+            user.email,
+            user.nickname,
+            onRejected,
+          );
+
+    await this.saveSubscriptionWithRecovery(
+      Number(user.id),
+      payment,
+      plan,
+      tossPayment,
+    );
+
+    return true;
+  };
+
+  private recordRenewalFailure = async (
+    reservation: SubscriptionRenewalReservation,
+    failedAt: Date,
+  ): Promise<void> => {
+    if (!reservation.sourceSubscription || !reservation.attemptNumber) {
+      return;
+    }
+
+    await this.subscriptionsRepository.recordSubscriptionRenewalFailure({
+      userId: reservation.sourceSubscription.userId,
+      subscriptionId: reservation.sourceSubscription.id,
+      attemptNumber: reservation.attemptNumber,
+      failedAt,
+      retryAt: new Date(
+        failedAt.getTime() + SubscriptionRenewalPolicy.RETRY_DELAY_MS,
+      ),
+      maxAttempts: SubscriptionRenewalPolicy.MAX_ATTEMPTS,
+    });
   };
 
   private validateReservation = (
@@ -220,6 +404,7 @@ export class SubscriptionsService {
     customerKey: string,
     customerEmail: string | null,
     customerName: string,
+    onRejected?: () => Promise<void>,
   ): Promise<TossPaymentConfirmResult> => {
     try {
       const tossPayment = await this.tossPaymentsService.approveBillingPayment(
@@ -234,7 +419,11 @@ export class SubscriptionsService {
         },
       );
 
-      return this.validateApprovedTossPayment(tossPayment, payment.orderId);
+      return this.validateApprovedTossPayment(
+        tossPayment,
+        payment.orderId,
+        payment.amount,
+      );
     } catch (error) {
       if (this.isPaymentConfigMissingError(error)) {
         throw error;
@@ -245,12 +434,16 @@ export class SubscriptionsService {
           payment.id,
           new Date(),
         );
+        await onRejected?.();
 
         throw new AppException(ErrorCode.SUBSCRIPTION_PAYMENT_FAILED);
       }
 
       if (error instanceof TossPaymentResultUnknownError) {
-        return this.reconcileTossBillingPayment(payment.orderId);
+        return this.reconcileTossBillingPayment(
+          payment.orderId,
+          payment.amount,
+        );
       }
 
       throw error;
@@ -259,6 +452,7 @@ export class SubscriptionsService {
 
   private reconcileTossBillingPayment = async (
     orderId: string,
+    expectedAmount: number,
   ): Promise<TossPaymentConfirmResult> => {
     try {
       const tossPayment =
@@ -266,7 +460,11 @@ export class SubscriptionsService {
           orderId,
         );
 
-      return this.validateApprovedTossPayment(tossPayment, orderId);
+      return this.validateApprovedTossPayment(
+        tossPayment,
+        orderId,
+        expectedAmount,
+      );
     } catch (error) {
       if (this.isPaymentConfigMissingError(error)) {
         throw error;
@@ -279,9 +477,11 @@ export class SubscriptionsService {
   private validateApprovedTossPayment = (
     tossPayment: TossPaymentConfirmResult,
     orderId: string,
+    expectedAmount: number,
   ): TossPaymentConfirmResult => {
     if (
       tossPayment.orderId !== orderId ||
+      tossPayment.totalAmount !== expectedAmount ||
       tossPayment.status !== PaymentStatus.DONE ||
       !tossPayment.approvedAt
     ) {
@@ -317,6 +517,7 @@ export class SubscriptionsService {
       try {
         reconciledPayment = await this.reconcileTossBillingPayment(
           payment.orderId,
+          payment.amount,
         );
       } catch (reconcileError) {
         this.logRecoveryError(
@@ -435,6 +636,16 @@ export class SubscriptionsService {
     expiresAt: subscription.expiresAt,
     autoRenew: subscription.autoRenew,
     nextBillingAt: subscription.autoRenew ? subscription.expiresAt : null,
+    pendingPlanChange:
+      subscription.autoRenew &&
+      subscription.pendingPlan &&
+      subscription.planChangeRequestedAt
+        ? {
+            plan: this.toPlanSummary(subscription.pendingPlan),
+            effectiveAt: subscription.expiresAt,
+            requestedAt: subscription.planChangeRequestedAt,
+          }
+        : null,
   });
 
   private toFreeSubscriptionResponseDto = (
@@ -447,6 +658,7 @@ export class SubscriptionsService {
     expiresAt: null,
     autoRenew: false,
     nextBillingAt: null,
+    pendingPlanChange: null,
   });
 
   private toPlanSummary = (plan: SubscriptionPlanRecord) => ({

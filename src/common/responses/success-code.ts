@@ -53,6 +53,16 @@ export const SuccessCode = {
     code: 'SUBSCRIPTION200',
     message: '구독 자동갱신이 재개되었습니다.',
   },
+  SUBSCRIPTION_PLAN_CHANGE_SCHEDULED: {
+    status: HttpStatus.OK,
+    code: 'SUBSCRIPTION200',
+    message: '구독 플랜 변경이 예약되었습니다.',
+  },
+  SUBSCRIPTION_PLAN_CHANGE_CANCELED: {
+    status: HttpStatus.OK,
+    code: 'SUBSCRIPTION200',
+    message: '예약된 구독 플랜 변경이 취소되었습니다.',
+  },
 
   // Favorite
   FAVORITE_LIST_RETRIEVED: {

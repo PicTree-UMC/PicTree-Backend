@@ -16,6 +16,7 @@ import {
   SubscriptionPaymentRecord,
   SubscriptionPlanRecord,
   SubscriptionRecord,
+  SubscriptionRenewalReservation,
   SubscriptionStartReservation,
 } from './subscriptions.types';
 
@@ -32,9 +33,14 @@ describe('SubscriptionsService', () => {
     subscriptionsRepository = {
       findCurrentSubscription: jest.fn(),
       findActiveFreePlan: jest.fn(),
+      findActivePlanById: jest.fn(),
       reserveSubscriptionPayment: jest.fn(),
       failSubscriptionPayment: jest.fn(),
       completeSubscription: jest.fn(),
+      updatePendingPlanChange: jest.fn(),
+      findDueSubscriptionRenewals: jest.fn(),
+      reserveSubscriptionRenewal: jest.fn(),
+      recordSubscriptionRenewalFailure: jest.fn(),
       updateSubscriptionAutoRenewal: jest.fn(),
     } as unknown as jest.Mocked<SubscriptionsRepository>;
     tossPaymentsService = {
@@ -82,6 +88,28 @@ describe('SubscriptionsService', () => {
       autoRenew: false,
       plan: { code: 'FREE' },
     });
+  });
+
+  it('예약된 플랜 변경 정보를 현재 구독과 함께 조회한다', async () => {
+    const requestedAt = new Date('2026-08-08T10:00:00.000Z');
+    const expiresAt = new Date('2099-02-28T10:00:00.000Z');
+    subscriptionsRepository.findCurrentSubscription.mockResolvedValue(
+      createSubscriptionRecord({
+        pendingPlanId: 3n,
+        pendingPlan: createPlan({ id: 3n, code: 'MAX', name: '맥스' }),
+        planChangeRequestedAt: requestedAt,
+        expiresAt,
+      }),
+    );
+
+    const result = await subscriptionsService.getMySubscription(1);
+
+    expect(result.pendingPlanChange?.plan).toMatchObject({
+      id: 3,
+      code: 'MAX',
+    });
+    expect(result.pendingPlanChange?.effectiveAt).toEqual(expiresAt);
+    expect(result.pendingPlanChange?.requestedAt).toEqual(requestedAt);
   });
 
   it('자동결제를 승인하고 구독을 시작한다', async () => {
@@ -277,6 +305,159 @@ describe('SubscriptionsService', () => {
     expect(loggerErrorSpy).toHaveBeenCalledTimes(2);
   });
 
+  describe('구독 플랜 변경 예약', () => {
+    it('현재 구독의 다음 플랜을 예약한다', async () => {
+      const targetPlan = createPlan({
+        id: 3n,
+        code: 'MAX',
+        name: '맥스',
+        price: 5900,
+      });
+      const updatedSubscription = createSubscriptionRecord({
+        pendingPlanId: targetPlan.id,
+        pendingPlan: targetPlan,
+        planChangeRequestedAt: new Date('2026-08-08T10:00:00.000Z'),
+      });
+      subscriptionsRepository.findActivePlanById.mockResolvedValue(targetPlan);
+      subscriptionsRepository.updatePendingPlanChange.mockResolvedValue({
+        subscription: updatedSubscription,
+        targetPlan,
+        isCurrent: true,
+        isExpired: false,
+        isAutoRenewEnabled: true,
+        isSameCurrentPlan: false,
+      });
+
+      const result = await subscriptionsService.schedulePlanChange(1, 1, {
+        subscriptionPlanId: 3,
+      });
+
+      expect(
+        subscriptionsRepository.updatePendingPlanChange,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 1,
+          subscriptionId: 1,
+          pendingPlanId: 3,
+        }),
+      );
+      expect(result.pendingPlanChange?.plan.code).toBe('MAX');
+    });
+
+    it('현재 이용 중인 플랜으로는 변경할 수 없다', async () => {
+      const targetPlan = createPlan();
+      subscriptionsRepository.findActivePlanById.mockResolvedValue(targetPlan);
+      subscriptionsRepository.updatePendingPlanChange.mockResolvedValue({
+        subscription: createSubscriptionRecord(),
+        targetPlan,
+        isCurrent: true,
+        isExpired: false,
+        isAutoRenewEnabled: true,
+        isSameCurrentPlan: true,
+      });
+
+      await expect(
+        subscriptionsService.schedulePlanChange(1, 1, {
+          subscriptionPlanId: 2,
+        }),
+      ).rejects.toBeInstanceOf(AppException);
+    });
+
+    it('예약된 플랜 변경을 취소한다', async () => {
+      subscriptionsRepository.updatePendingPlanChange.mockResolvedValue({
+        subscription: createSubscriptionRecord(),
+        targetPlan: null,
+        isCurrent: true,
+        isExpired: false,
+        isAutoRenewEnabled: true,
+        isSameCurrentPlan: false,
+      });
+
+      const result = await subscriptionsService.cancelPlanChange(1, 1);
+
+      expect(
+        subscriptionsRepository.updatePendingPlanChange,
+      ).toHaveBeenCalledWith(expect.objectContaining({ pendingPlanId: null }));
+      expect(result.pendingPlanChange).toBeNull();
+      expect(result.autoRenew).toBe(true);
+    });
+  });
+
+  describe('구독 만료 자동갱신', () => {
+    it('예약된 결제를 승인하고 다음 구독을 생성한다', async () => {
+      subscriptionsRepository.findDueSubscriptionRenewals.mockResolvedValue([
+        { id: 1n, userId: 1n },
+      ]);
+      subscriptionsRepository.reserveSubscriptionRenewal.mockResolvedValue(
+        createRenewalReservation(),
+      );
+      tossPaymentsService.approveBillingPayment.mockResolvedValue(
+        createTossPayment(),
+      );
+      subscriptionsRepository.completeSubscription.mockResolvedValue(
+        createSubscriptionRecord({ id: 2n }),
+      );
+
+      const result =
+        await subscriptionsService.processDueSubscriptionRenewals();
+
+      expect(result).toBe(1);
+      expect(tossPaymentsService.approveBillingPayment).toHaveBeenCalledTimes(
+        1,
+      );
+      expect(subscriptionsRepository.completeSubscription).toHaveBeenCalled();
+    });
+
+    it('결제수단이 없으면 다음 재시도를 기록한다', async () => {
+      subscriptionsRepository.findDueSubscriptionRenewals.mockResolvedValue([
+        { id: 1n, userId: 1n },
+      ]);
+      subscriptionsRepository.reserveSubscriptionRenewal.mockResolvedValue(
+        createRenewalReservation({
+          status: 'BILLING_KEY_UNAVAILABLE',
+          billingKey: null,
+          payment: null,
+        }),
+      );
+
+      const result =
+        await subscriptionsService.processDueSubscriptionRenewals();
+
+      expect(result).toBe(0);
+      expect(
+        subscriptionsRepository.recordSubscriptionRenewalFailure,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          subscriptionId: 1n,
+          attemptNumber: 1,
+          maxAttempts: 3,
+        }),
+      );
+    });
+
+    it('자동결제가 거절되면 결제와 재시도 상태를 기록한다', async () => {
+      subscriptionsRepository.findDueSubscriptionRenewals.mockResolvedValue([
+        { id: 1n, userId: 1n },
+      ]);
+      subscriptionsRepository.reserveSubscriptionRenewal.mockResolvedValue(
+        createRenewalReservation(),
+      );
+      tossPaymentsService.approveBillingPayment.mockRejectedValue(
+        new TossPaymentRejectedError(),
+      );
+
+      await expect(
+        subscriptionsService.processDueSubscriptionRenewals(),
+      ).resolves.toBe(0);
+      expect(
+        subscriptionsRepository.failSubscriptionPayment,
+      ).toHaveBeenCalledWith(1n, expect.any(Date));
+      expect(
+        subscriptionsRepository.recordSubscriptionRenewalFailure,
+      ).toHaveBeenCalled();
+    });
+  });
+
   describe('구독 자동갱신 관리', () => {
     it('현재 구독의 자동갱신을 해지한다', async () => {
       subscriptionsRepository.updateSubscriptionAutoRenewal.mockResolvedValue({
@@ -375,6 +556,27 @@ describe('SubscriptionsService', () => {
       ).rejects.toBeInstanceOf(AppException);
     });
   });
+
+  it('rejects a subscription when the approved amount differs', async () => {
+    subscriptionsRepository.reserveSubscriptionPayment.mockResolvedValue(
+      createReservation(),
+    );
+    tossPaymentsService.approveBillingPayment.mockResolvedValue(
+      createTossPayment({ totalAmount: 1900 }),
+    );
+    tossPaymentsService.getPaymentByOrderIdForReconciliation.mockResolvedValue(
+      createTossPayment({ totalAmount: 1900 }),
+    );
+
+    await expect(
+      subscriptionsService.createSubscription(1, {
+        subscriptionPlanId: 2,
+        billingKeyId: 1,
+      }),
+    ).rejects.toBeInstanceOf(AppException);
+
+    expect(subscriptionsRepository.completeSubscription).not.toHaveBeenCalled();
+  });
 });
 
 function createPlan(
@@ -440,14 +642,19 @@ function createSubscriptionRecord(
     id: 1n,
     userId: 1n,
     subscriptionPlanId: 2n,
+    pendingPlanId: null,
     startedAt: new Date('2026-01-31T10:00:00.000Z'),
     expiresAt: new Date('2099-02-28T10:00:00.000Z'),
     canceledAt: null,
     autoRenew: true,
+    planChangeRequestedAt: null,
+    renewalAttemptCount: 0,
+    renewalRetryAt: null,
     createdAt: new Date('2026-01-31T10:00:00.000Z'),
     updatedAt: new Date('2026-01-31T10:00:00.000Z'),
     subscriptionPlan: createPlan(),
     ...overrides,
+    pendingPlan: overrides.pendingPlan ?? null,
   };
 }
 
@@ -470,7 +677,31 @@ function createReservation(
   };
 }
 
-function createTossPayment(): TossPaymentConfirmResult {
+function createRenewalReservation(
+  overrides: Partial<SubscriptionRenewalReservation> = {},
+): SubscriptionRenewalReservation {
+  return {
+    status: 'READY',
+    attemptNumber: 1,
+    sourceSubscription: createSubscriptionRecord({
+      expiresAt: new Date('2026-08-08T09:00:00.000Z'),
+    }),
+    user: {
+      id: 1n,
+      email: 'user@example.com',
+      nickname: '승범',
+      status: 'ACTIVE',
+    },
+    plan: createPlan(),
+    billingKey: createBillingKey(),
+    payment: createPayment(),
+    ...overrides,
+  };
+}
+
+function createTossPayment(
+  overrides: Partial<TossPaymentConfirmResult> = {},
+): TossPaymentConfirmResult {
   return {
     paymentKey: 'payment-key',
     orderId: 'SUBSCRIPTION_1_test',
@@ -480,5 +711,6 @@ function createTossPayment(): TossPaymentConfirmResult {
     approvedAt: '2026-01-31T10:00:00.000Z',
     receipt: { url: 'https://example.com/receipt' },
     cancels: null,
+    ...overrides,
   };
 }

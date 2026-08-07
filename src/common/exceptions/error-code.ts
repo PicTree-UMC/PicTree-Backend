@@ -224,6 +224,11 @@ export const ErrorCode = {
     code: 'SUBSCRIPTION409',
     message: '자동갱신을 재개할 수 없는 구독입니다.',
   },
+  SUBSCRIPTION_PLAN_CHANGE_NOT_ALLOWED: {
+    status: HttpStatus.CONFLICT,
+    code: 'SUBSCRIPTION409',
+    message: '플랜을 변경할 수 없는 구독입니다.',
+  },
 
   // Blog Draft
   BLOG_DRAFT_INVALID_REQUEST: {
