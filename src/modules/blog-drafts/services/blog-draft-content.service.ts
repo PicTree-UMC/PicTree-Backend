@@ -84,6 +84,10 @@ export class BlogDraftContentService {
         return [this.createFallbackStoredDraftDay(content)];
       }
 
+      if (parsed.length === 0) {
+        return [];
+      }
+
       const days = this.parseStoredDraftDays(parsed);
 
       return days.length > 0

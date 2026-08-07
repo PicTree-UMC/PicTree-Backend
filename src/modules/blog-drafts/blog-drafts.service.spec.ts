@@ -485,6 +485,29 @@ describe('BlogDraftsService', () => {
     ]);
   });
 
+  it('초안 상세 조회 시 빈 배열 content는 fallback 본문으로 노출하지 않는다', async () => {
+    repository.findDraftByIdAndUserId.mockResolvedValue({
+      id: 1n,
+      userId: 1n,
+      title: '제목',
+      content: '[]',
+      startDate: new Date('2026-03-31T00:00:00.000Z'),
+      endDate: new Date('2026-04-01T00:00:00.000Z'),
+      createdAt: new Date('2026-04-02T10:00:00.000Z'),
+      updatedAt: new Date('2026-04-02T10:00:00.000Z'),
+    });
+
+    const result = await service.getDraft(1, 1);
+
+    expect(repository.findTreeImagesByIds).not.toHaveBeenCalled();
+    expect(result.days).toEqual([
+      {
+        date: '2026-03-31',
+        items: [],
+      },
+    ]);
+  });
+
   it('초안 목록 조회 시 첫 번째 장소 대표 이미지를 thumbnailUrl로 포함한다', async () => {
     repository.findSavedDraftsByUserId.mockResolvedValue([
       {
