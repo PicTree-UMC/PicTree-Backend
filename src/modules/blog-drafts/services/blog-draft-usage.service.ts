@@ -117,7 +117,11 @@ export class BlogDraftUsageService {
   ): [Date, Date] => {
     const subscription = user.currentSubscription;
 
-    if (subscription && subscription.expiresAt > now) {
+    if (
+      subscription &&
+      subscription.expiresAt > now &&
+      this.resolvePlanCode(user, now) !== 'FREE'
+    ) {
       return this.resolvePaidUsageWindow(subscription.startedAt, now);
     }
 
