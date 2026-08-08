@@ -80,21 +80,9 @@ export class BlogDraftContentService {
     try {
       const parsed = JSON.parse(content) as unknown;
 
-      if (!Array.isArray(parsed)) {
-        return [this.createFallbackStoredDraftDay(content)];
-      }
-
-      if (parsed.length === 0) {
-        return [];
-      }
-
-      const days = this.parseStoredDraftDays(parsed);
-
-      return days.length > 0
-        ? days
-        : [this.createFallbackStoredDraftDay(content)];
+      return Array.isArray(parsed) ? this.parseStoredDraftDays(parsed) : [];
     } catch {
-      return [this.createFallbackStoredDraftDay(content)];
+      return [];
     }
   };
 
@@ -106,23 +94,19 @@ export class BlogDraftContentService {
   };
 
   private parseStoredDraftDays = (parsed: unknown[]): StoredBlogDraftDay[] => {
-    if (parsed.every((item) => this.isStoredDraftDayLike(item))) {
-      return parsed
-        .map((day) => {
-          const items = day.items
-            .map((item) => this.parseStoredDraftItem(item))
-            .filter((item): item is BlogDraftItem => item !== null);
-
-          return items.length > 0 ? { date: day.date, items } : null;
-        })
-        .filter((day): day is StoredBlogDraftDay => day !== null);
+    if (!parsed.every((item) => this.isStoredDraftDayLike(item))) {
+      return [];
     }
 
-    const legacyItems = parsed
-      .map((item) => this.parseStoredDraftItem(item))
-      .filter((item): item is BlogDraftItem => item !== null);
+    return parsed
+      .map((day) => {
+        const items = day.items
+          .map((item) => this.parseStoredDraftItem(item))
+          .filter((item): item is BlogDraftItem => item !== null);
 
-    return legacyItems.length > 0 ? [{ date: '', items: legacyItems }] : [];
+        return items.length > 0 ? { date: day.date, items } : null;
+      })
+      .filter((day): day is StoredBlogDraftDay => day !== null);
   };
 
   private parseStoredDraftItem = (item: unknown): BlogDraftItem | null => {
@@ -155,13 +139,6 @@ export class BlogDraftContentService {
 
     return typeof draftDay.date === 'string' && Array.isArray(draftDay.items);
   };
-
-  private createFallbackStoredDraftDay = (
-    content: string,
-  ): StoredBlogDraftDay => ({
-    date: '',
-    items: [{ treeId: null, placeName: '여행 기록', content }],
-  });
 
   private isDraftItemLike = (
     item: unknown,
