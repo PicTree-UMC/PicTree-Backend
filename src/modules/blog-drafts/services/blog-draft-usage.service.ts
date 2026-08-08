@@ -8,6 +8,7 @@ import {
 import { BLOG_DRAFT_LIMIT } from '../blog-drafts.constant';
 import { BlogDraftsRepository } from '../blog-drafts.repository';
 import {
+  BlogDraftUsagePolicy,
   BlogDraftUsageSummary,
   BlogDraftUserRecord,
 } from '../blog-drafts.types';
@@ -21,23 +22,18 @@ export class BlogDraftUsageService {
     user: BlogDraftUserRecord,
     now: Date = new Date(),
   ): Promise<BlogDraftUsageSummary> => {
-    const [periodStartAt, periodEndAt] = this.resolveUsageWindow(user, now);
+    const policy = this.resolveUsagePolicy(user, now);
     const usedCount =
       await this.blogDraftsRepository.countGeneratedDraftsInRange(
         userId,
-        periodStartAt,
-        periodEndAt,
+        policy.periodStartAt,
+        policy.periodEndAt,
       );
-    const plan = this.resolvePlanCode(user, now);
-    const limit = this.resolveMonthlyLimit(user, now);
 
     return {
-      plan,
-      limit,
+      ...policy,
       usedCount,
-      remainingCount: Math.max(limit - usedCount, 0),
-      periodStartAt,
-      periodEndAt,
+      remainingCount: Math.max(policy.limit - usedCount, 0),
     };
   };
 
@@ -46,15 +42,14 @@ export class BlogDraftUsageService {
     user: BlogDraftUserRecord,
   ): Promise<void> => {
     const now = new Date();
-    const [usageStart, usageEnd] = this.resolveUsageWindow(user, now);
+    const policy = this.resolveUsagePolicy(user, now);
     const used = await this.blogDraftsRepository.countGeneratedDraftsInRange(
       userId,
-      usageStart,
-      usageEnd,
+      policy.periodStartAt,
+      policy.periodEndAt,
     );
-    const limit = this.resolveMonthlyLimit(user, now);
 
-    if (used >= limit) {
+    if (used >= policy.limit) {
       throw new AppException(ErrorCode.BLOG_DRAFT_LIMIT_EXCEEDED);
     }
   };
@@ -64,15 +59,14 @@ export class BlogDraftUsageService {
     user: BlogDraftUserRecord,
     now: Date,
   ): Promise<void> => {
-    const [usageStart, usageEnd] = this.resolveUsageWindow(user, now);
-    const limit = this.resolveMonthlyLimit(user, now);
+    const policy = this.resolveUsagePolicy(user, now);
 
     try {
       await this.blogDraftsRepository.consumeUsageWithinLimit(
         BigInt(userId),
-        usageStart,
-        usageEnd,
-        limit,
+        policy.periodStartAt,
+        policy.periodEndAt,
+        policy.limit,
       );
     } catch (error) {
       if (
@@ -86,11 +80,27 @@ export class BlogDraftUsageService {
     }
   };
 
-  private resolveMonthlyLimit = (
+  private resolveUsagePolicy = (
     user: BlogDraftUserRecord,
     now: Date,
-  ): number => {
-    switch (this.resolvePlanCode(user, now)) {
+  ): BlogDraftUsagePolicy => {
+    const plan = this.resolvePlanCode(user, now);
+    const [periodStartAt, periodEndAt] = this.resolveUsageWindow(
+      user,
+      now,
+      plan,
+    );
+
+    return {
+      plan,
+      limit: this.resolveMonthlyLimit(plan),
+      periodStartAt,
+      periodEndAt,
+    };
+  };
+
+  private resolveMonthlyLimit = (plan: string): number => {
+    switch (plan) {
       case 'PLUS':
         return BLOG_DRAFT_LIMIT.PLUS;
       case 'PRO':
@@ -125,14 +135,11 @@ export class BlogDraftUsageService {
   private resolveUsageWindow = (
     user: BlogDraftUserRecord,
     now: Date,
+    plan: string,
   ): [Date, Date] => {
     const subscription = user.currentSubscription;
 
-    if (
-      subscription &&
-      subscription.expiresAt > now &&
-      this.resolvePlanCode(user, now) !== 'FREE'
-    ) {
+    if (subscription && subscription.expiresAt > now && plan !== 'FREE') {
       return this.resolvePaidUsageWindow(subscription.startedAt, now);
     }
 
