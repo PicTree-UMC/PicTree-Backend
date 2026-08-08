@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
+import { formatKstDateTime } from '../../common/utils/kst-date.util';
 import { BLOG_DRAFT_MAX_TREE_COUNT } from './blog-drafts.constant';
 import {
   BlogDraftDetailResponseDto,
   BlogDraftListResponseDto,
+  BlogDraftUsageResponseDto,
   GeneratedBlogDraftResponseDto,
   SavedBlogDraftResponseDto,
 } from './dto/blog-draft-response.dto';
@@ -126,6 +128,20 @@ export class BlogDraftsService {
       userId,
       drafts,
     );
+  };
+
+  getUsage = async (userId: number): Promise<BlogDraftUsageResponseDto> => {
+    const user = await this.getAvailableUserOrThrow(userId);
+    const usage = await this.blogDraftUsageService.getUsage(userId, user);
+
+    return {
+      plan: usage.plan,
+      limit: usage.limit,
+      usedCount: usage.usedCount,
+      remainingCount: usage.remainingCount,
+      periodStartAt: formatKstDateTime(usage.periodStartAt),
+      periodEndAt: formatKstDateTime(usage.periodEndAt),
+    };
   };
 
   getDraft = async (

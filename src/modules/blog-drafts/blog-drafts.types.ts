@@ -32,6 +32,15 @@ export interface BlogDraftUserRecord {
   } | null;
 }
 
+export interface BlogDraftUsageSummary {
+  plan: string;
+  limit: number;
+  usedCount: number;
+  remainingCount: number;
+  periodStartAt: Date;
+  periodEndAt: Date;
+}
+
 export interface BlogDraftSourceTreeImageRecord {
   id: bigint;
   imageUrl: string;
