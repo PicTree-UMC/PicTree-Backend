@@ -19,6 +19,7 @@ import {
   TreeResponseDto,
   TreeSummaryResponseDto,
 } from './dto/tree-response.dto';
+import { TreeSummaryStatsResponseDto } from './dto/tree-summary-stats-response.dto';
 import { UpdateTreeRequestDto } from './dto/update-tree-request.dto';
 import {
   AD_INTERVAL,
@@ -88,6 +89,21 @@ export class TreesService {
       size,
       total,
       totalPages: Math.ceil(total / size),
+    };
+  };
+
+  getSummaryStats = async (
+    userId: number,
+  ): Promise<TreeSummaryStatsResponseDto> => {
+    const [treeCount, imageUsage] = await Promise.all([
+      this.treesRepository.countTreesByUserId(userId),
+      this.treesRepository.aggregateImageUsageByUserId(userId),
+    ]);
+
+    return {
+      treeCount,
+      imageCount: imageUsage.imageCount,
+      usedBytes: imageUsage.usedBytes,
     };
   };
 

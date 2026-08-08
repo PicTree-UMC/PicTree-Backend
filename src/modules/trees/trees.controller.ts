@@ -29,6 +29,7 @@ import {
   CreateTreeResponseDto,
   TreeResponseDto,
 } from './dto/tree-response.dto';
+import { TreeSummaryStatsResponseDto } from './dto/tree-summary-stats-response.dto';
 import { UpdateTreeRequestDto } from './dto/update-tree-request.dto';
 import {
   ApiCreateTree,
@@ -37,6 +38,7 @@ import {
   ApiGetNearbyTrees,
   ApiGetMyTrees,
   ApiGetTree,
+  ApiGetTreeSummaryStats,
   ApiToggleFavoriteTree,
   ApiUpdateTree,
 } from './trees.swagger';
@@ -98,6 +100,17 @@ export class TreesController {
     const data = await this.treesService.getFavoriteTrees(currentUser.userId);
 
     return ApiResponse.success(SuccessCode.FAVORITE_LIST_RETRIEVED, data);
+  }
+
+  // ':treeId' 보다 위에 두어야 'summary' 가 나무 ID 로 해석되지 않는다.
+  @Get('summary')
+  @ApiGetTreeSummaryStats()
+  async getSummaryStats(
+    @CurrentUser() currentUser: JwtPayload,
+  ): Promise<ApiResponse<TreeSummaryStatsResponseDto>> {
+    const data = await this.treesService.getSummaryStats(currentUser.userId);
+
+    return ApiResponse.success(SuccessCode.OK, data);
   }
 
   @Get(':treeId')

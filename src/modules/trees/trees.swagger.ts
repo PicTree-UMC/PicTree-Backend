@@ -261,6 +261,31 @@ export const ApiToggleFavoriteTree = () =>
     }),
   );
 
+export const ApiGetTreeSummaryStats = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '나무·사진 통계 조회',
+      description:
+        '마이페이지용. 심은 나무 수, 전체 사진 수, 사진 저장 용량(byte)을 반환합니다. 삭제된 나무와 그 사진은 제외됩니다.',
+    }),
+    protectedTreeResponses(),
+    ApiOkResponse({
+      description: '통계 조회 성공',
+      schema: {
+        example: {
+          success: true,
+          code: 'COMMON200',
+          message: '요청이 성공했습니다.',
+          data: {
+            treeCount: 2,
+            imageCount: 2,
+            usedBytes: 33382,
+          },
+        },
+      },
+    }),
+  );
+
 export const ApiDeleteTree = () =>
   applyDecorators(
     ApiOperation({

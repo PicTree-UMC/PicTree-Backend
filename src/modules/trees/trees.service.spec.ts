@@ -77,6 +77,7 @@ describe('TreesService', () => {
       softDeleteTree: jest.fn(),
       countTreesByUserId: jest.fn(),
       findUserPlanCode: jest.fn(),
+      aggregateImageUsageByUserId: jest.fn(),
     } as unknown as jest.Mocked<TreesRepository>;
 
     s3Service = {
@@ -204,6 +205,38 @@ describe('TreesService', () => {
         1,
         expect.objectContaining({ name: '새 이름' }),
       );
+    });
+  });
+
+  describe('getSummaryStats', () => {
+    it('나무 수·사진 수·저장 용량을 반환한다', async () => {
+      repository.countTreesByUserId.mockResolvedValue(2);
+      repository.aggregateImageUsageByUserId.mockResolvedValue({
+        imageCount: 2,
+        usedBytes: 33382,
+      });
+
+      const result = await service.getSummaryStats(10);
+
+      expect(repository.countTreesByUserId).toHaveBeenCalledWith(10);
+      expect(repository.aggregateImageUsageByUserId).toHaveBeenCalledWith(10);
+      expect(result).toEqual({
+        treeCount: 2,
+        imageCount: 2,
+        usedBytes: 33382,
+      });
+    });
+
+    it('사진이 없으면 개수와 용량이 0 이다', async () => {
+      repository.countTreesByUserId.mockResolvedValue(1);
+      repository.aggregateImageUsageByUserId.mockResolvedValue({
+        imageCount: 0,
+        usedBytes: 0,
+      });
+
+      const result = await service.getSummaryStats(10);
+
+      expect(result).toEqual({ treeCount: 1, imageCount: 0, usedBytes: 0 });
     });
   });
 

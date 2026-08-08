@@ -197,6 +197,27 @@ export class TreesRepository {
     });
   };
 
+  // 마이페이지 통계용: 살아있는 나무에 속한 사진의 개수와 총 용량
+  aggregateImageUsageByUserId = async (
+    userId: number,
+  ): Promise<{ imageCount: number; usedBytes: number }> => {
+    const result = await this.prisma.treeImage.aggregate({
+      where: {
+        tree: {
+          userId: BigInt(userId),
+          deletedAt: null,
+        },
+      },
+      _count: { _all: true },
+      _sum: { fileSize: true },
+    });
+
+    return {
+      imageCount: result._count._all,
+      usedBytes: Number(result._sum.fileSize ?? 0n),
+    };
+  };
+
   findUserPlanCode = async (userId: number): Promise<string> => {
     const user = await this.prisma.user.findUnique({
       where: {
