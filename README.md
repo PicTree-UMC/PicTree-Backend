@@ -79,7 +79,7 @@
 <img width="4056" height="1968" alt="PicTree drawio" src="https://github.com/user-attachments/assets/4f186b55-022f-4c31-964e-f8e8a98d9116" />
 
 ## 🗄 ERD
-<img width="1940" height="877" alt="PicTree" src="https://github.com/user-attachments/assets/a7a3d094-1c97-4e1f-8b6d-91f37b0088f5" />
+<img width="1847" height="932" alt="PicTree" src="https://github.com/user-attachments/assets/82fbd989-3e02-4629-97d3-f8e04a8c46e0" />
 
 ## 📖 API Documentation
 
