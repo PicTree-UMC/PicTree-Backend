@@ -142,21 +142,9 @@ export class BlogDraftResponseBuilderService {
     fallbackDate: string,
     contextByTreeId: Map<number, BlogDraftTreeContext>,
   ): BlogDraftDayResponseDto[] => {
-    if (days.some((day) => !day.date)) {
-      return this.groupDraftItemsByDate(
-        this.blogDraftContentService
-          .flattenStoredDraftDays(days)
-          .map((item) =>
-            this.toBlogDraftDetailItemResponseDto(item, contextByTreeId),
-          ),
-        contextByTreeId,
-        fallbackDate,
-      );
-    }
-
     const responseDays = days
       .map((day) => ({
-        date: day.date || fallbackDate,
+        date: day.date,
         items: day.items.map((item) =>
           this.toBlogDraftDetailItemResponseDto(item, contextByTreeId),
         ),
