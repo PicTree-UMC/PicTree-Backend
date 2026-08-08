@@ -78,6 +78,42 @@ export const ApiGetBlogDrafts = () =>
     }),
   );
 
+export const ApiGetBlogDraftUsage = () =>
+  applyDecorators(
+    ApiOperation({ summary: 'AI 블로그 사용량 조회' }),
+    protectedResponses(),
+    ApiForbiddenResponse({
+      description: '이용할 수 없는 계정',
+      schema: {
+        example: failResponse('USER403', '이용할 수 없는 계정입니다.'),
+      },
+    }),
+    ApiNotFoundResponse({
+      description: '사용자를 찾을 수 없음',
+      schema: {
+        example: failResponse('USER404', '사용자를 찾을 수 없습니다.'),
+      },
+    }),
+    ApiOkResponse({
+      description: 'AI 블로그 사용량 조회 성공',
+      schema: {
+        example: {
+          success: true,
+          code: 'BLOG200-4',
+          message: 'AI 블로그 사용량 조회가 완료되었습니다.',
+          data: {
+            plan: 'FREE',
+            limit: 1,
+            usedCount: 0,
+            remainingCount: 1,
+            periodStartAt: '2026-08-01T00:00:00',
+            periodEndAt: '2026-09-01T00:00:00',
+          },
+        },
+      },
+    }),
+  );
+
 export const ApiGenerateBlogDraft = () =>
   applyDecorators(
     ApiOperation({ summary: 'AI 블로그 초안 생성' }),

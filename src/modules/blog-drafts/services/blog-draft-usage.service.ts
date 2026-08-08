@@ -7,26 +7,49 @@ import {
 } from '../../../common/utils/kst-date.util';
 import { BLOG_DRAFT_LIMIT } from '../blog-drafts.constant';
 import { BlogDraftsRepository } from '../blog-drafts.repository';
-import { BlogDraftUserRecord } from '../blog-drafts.types';
+import {
+  BlogDraftUsagePolicy,
+  BlogDraftUsageSummary,
+  BlogDraftUserRecord,
+} from '../blog-drafts.types';
 
 @Injectable()
 export class BlogDraftUsageService {
   constructor(private readonly blogDraftsRepository: BlogDraftsRepository) {}
+
+  getUsage = async (
+    userId: number,
+    user: BlogDraftUserRecord,
+    now: Date = new Date(),
+  ): Promise<BlogDraftUsageSummary> => {
+    const policy = this.resolveUsagePolicy(user, now);
+    const usedCount =
+      await this.blogDraftsRepository.countGeneratedDraftsInRange(
+        userId,
+        policy.periodStartAt,
+        policy.periodEndAt,
+      );
+
+    return {
+      ...policy,
+      usedCount,
+      remainingCount: Math.max(policy.limit - usedCount, 0),
+    };
+  };
 
   validateMonthlyLimit = async (
     userId: number,
     user: BlogDraftUserRecord,
   ): Promise<void> => {
     const now = new Date();
-    const [usageStart, usageEnd] = this.resolveUsageWindow(user, now);
+    const policy = this.resolveUsagePolicy(user, now);
     const used = await this.blogDraftsRepository.countGeneratedDraftsInRange(
       userId,
-      usageStart,
-      usageEnd,
+      policy.periodStartAt,
+      policy.periodEndAt,
     );
-    const limit = this.resolveMonthlyLimit(user, now);
 
-    if (used >= limit) {
+    if (used >= policy.limit) {
       throw new AppException(ErrorCode.BLOG_DRAFT_LIMIT_EXCEEDED);
     }
   };
@@ -36,15 +59,14 @@ export class BlogDraftUsageService {
     user: BlogDraftUserRecord,
     now: Date,
   ): Promise<void> => {
-    const [usageStart, usageEnd] = this.resolveUsageWindow(user, now);
-    const limit = this.resolveMonthlyLimit(user, now);
+    const policy = this.resolveUsagePolicy(user, now);
 
     try {
       await this.blogDraftsRepository.consumeUsageWithinLimit(
         BigInt(userId),
-        usageStart,
-        usageEnd,
-        limit,
+        policy.periodStartAt,
+        policy.periodEndAt,
+        policy.limit,
       );
     } catch (error) {
       if (
@@ -58,38 +80,67 @@ export class BlogDraftUsageService {
     }
   };
 
-  private resolveMonthlyLimit = (
+  private resolveUsagePolicy = (
     user: BlogDraftUserRecord,
     now: Date,
-  ): number => {
-    const planCode = user.currentSubscription?.subscriptionPlan.code;
+  ): BlogDraftUsagePolicy => {
+    const plan = this.resolvePlanCode(user, now);
+    const [periodStartAt, periodEndAt] = this.resolveUsageWindow(
+      user,
+      now,
+      plan,
+    );
 
-    if (user.currentSubscription && user.currentSubscription.expiresAt > now) {
-      switch (planCode) {
-        case 'PLUS':
-          return BLOG_DRAFT_LIMIT.PLUS;
-        case 'PRO':
-          return BLOG_DRAFT_LIMIT.PRO;
-        case 'MAX':
-          return BLOG_DRAFT_LIMIT.MAX;
-        case 'FREE':
-        default:
-          return BLOG_DRAFT_LIMIT.FREE;
-      }
+    return {
+      plan,
+      limit: this.resolveMonthlyLimit(plan),
+      periodStartAt,
+      periodEndAt,
+    };
+  };
+
+  private resolveMonthlyLimit = (plan: string): number => {
+    switch (plan) {
+      case 'PLUS':
+        return BLOG_DRAFT_LIMIT.PLUS;
+      case 'PRO':
+        return BLOG_DRAFT_LIMIT.PRO;
+      case 'MAX':
+        return BLOG_DRAFT_LIMIT.MAX;
+      case 'FREE':
+      default:
+        return BLOG_DRAFT_LIMIT.FREE;
+    }
+  };
+
+  private resolvePlanCode = (user: BlogDraftUserRecord, now: Date): string => {
+    if (
+      !user.currentSubscription ||
+      user.currentSubscription.expiresAt <= now
+    ) {
+      return 'FREE';
     }
 
-    return BLOG_DRAFT_LIMIT.FREE;
+    switch (user.currentSubscription.subscriptionPlan.code) {
+      case 'PLUS':
+      case 'PRO':
+      case 'MAX':
+        return user.currentSubscription.subscriptionPlan.code;
+      case 'FREE':
+      default:
+        return 'FREE';
+    }
   };
 
   private resolveUsageWindow = (
     user: BlogDraftUserRecord,
     now: Date,
+    plan: string,
   ): [Date, Date] => {
-    if (user.currentSubscription && user.currentSubscription.expiresAt > now) {
-      return this.resolvePaidUsageWindow(
-        user.currentSubscription.startedAt,
-        now,
-      );
+    const subscription = user.currentSubscription;
+
+    if (subscription && subscription.expiresAt > now && plan !== 'FREE') {
+      return this.resolvePaidUsageWindow(subscription.startedAt, now);
     }
 
     return this.resolveFreeUsageWindow(now);

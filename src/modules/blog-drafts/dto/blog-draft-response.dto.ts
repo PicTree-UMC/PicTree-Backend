@@ -90,6 +90,36 @@ export class BlogDraftListResponseDto {
   drafts!: BlogDraftSummaryResponseDto[];
 }
 
+export class BlogDraftUsageResponseDto {
+  @ApiProperty({
+    example: 'FREE',
+    enum: ['FREE', 'PLUS', 'PRO', 'MAX'],
+    description: '현재 적용 중인 요금제',
+  })
+  plan!: string;
+
+  @ApiProperty({ example: 1, description: '현재 이용 기간의 생성 한도' })
+  limit!: number;
+
+  @ApiProperty({ example: 0, description: '현재 이용 기간에 사용한 횟수' })
+  usedCount!: number;
+
+  @ApiProperty({ example: 1, description: '현재 이용 기간에 남은 생성 횟수' })
+  remainingCount!: number;
+
+  @ApiProperty({
+    example: '2026-08-01T00:00:00',
+    description: '사용량 집계 시작 시각 (KST, 포함)',
+  })
+  periodStartAt!: string;
+
+  @ApiProperty({
+    example: '2026-09-01T00:00:00',
+    description: '사용량 집계 종료 시각 (KST, 미포함)',
+  })
+  periodEndAt!: string;
+}
+
 export class SavedBlogDraftResponseDto {
   @ApiProperty({ example: 1, description: '저장된 초안 ID' })
   draftId!: number;

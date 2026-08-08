@@ -97,6 +97,119 @@ describe('BlogDraftsService', () => {
     ).rejects.toBeInstanceOf(AppException);
   });
 
+  it('무료 플랜의 AI 블로그 사용량을 조회한다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: null,
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(0);
+
+    const result = await service.getUsage(1);
+
+    expect(repository.countGeneratedDraftsInRange).toHaveBeenCalledWith(
+      1,
+      new Date('2026-06-30T15:00:00.000Z'),
+      new Date('2026-07-31T15:00:00.000Z'),
+    );
+    expect(result).toEqual({
+      plan: 'FREE',
+      limit: 1,
+      usedCount: 0,
+      remainingCount: 1,
+      periodStartAt: '2026-07-01T00:00:00',
+      periodEndAt: '2026-08-01T00:00:00',
+    });
+  });
+
+  it('FREE 구독 레코드가 있어도 KST 매월 1일 기준으로 사용량을 조회한다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: {
+        startedAt: new Date('2026-07-10T00:00:00.000Z'),
+        expiresAt: new Date('2026-08-26T00:00:00.000Z'),
+        subscriptionPlan: {
+          code: 'FREE',
+        },
+      },
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(0);
+
+    const result = await service.getUsage(1);
+
+    expect(repository.countGeneratedDraftsInRange).toHaveBeenCalledWith(
+      1,
+      new Date('2026-06-30T15:00:00.000Z'),
+      new Date('2026-07-31T15:00:00.000Z'),
+    );
+    expect(result).toEqual({
+      plan: 'FREE',
+      limit: 1,
+      usedCount: 0,
+      remainingCount: 1,
+      periodStartAt: '2026-07-01T00:00:00',
+      periodEndAt: '2026-08-01T00:00:00',
+    });
+  });
+
+  it('알 수 없는 플랜 코드는 FREE 플랜으로 정규화해 사용량을 조회한다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: {
+        startedAt: new Date('2026-07-10T00:00:00.000Z'),
+        expiresAt: new Date('2026-08-26T00:00:00.000Z'),
+        subscriptionPlan: {
+          code: 'UNKNOWN',
+        },
+      },
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(0);
+
+    const result = await service.getUsage(1);
+
+    expect(result).toEqual({
+      plan: 'FREE',
+      limit: 1,
+      usedCount: 0,
+      remainingCount: 1,
+      periodStartAt: '2026-07-01T00:00:00',
+      periodEndAt: '2026-08-01T00:00:00',
+    });
+  });
+
+  it('유료 플랜의 AI 블로그 사용량을 결제 기간 기준으로 조회한다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: {
+        startedAt: new Date('2026-07-10T00:00:00.000Z'),
+        expiresAt: new Date('2026-08-10T00:00:00.000Z'),
+        subscriptionPlan: {
+          code: 'PLUS',
+        },
+      },
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(2);
+
+    const result = await service.getUsage(1);
+
+    expect(repository.countGeneratedDraftsInRange).toHaveBeenCalledWith(
+      1,
+      new Date('2026-07-09T15:00:00.000Z'),
+      new Date('2026-08-09T15:00:00.000Z'),
+    );
+    expect(result).toEqual({
+      plan: 'PLUS',
+      limit: 5,
+      usedCount: 2,
+      remainingCount: 3,
+      periodStartAt: '2026-07-10T00:00:00',
+      periodEndAt: '2026-08-10T00:00:00',
+    });
+  });
+
   it('plus 사용자의 월간 생성 한도를 초과하면 예외를 던진다', async () => {
     repository.findUserById.mockResolvedValue({
       id: 1n,

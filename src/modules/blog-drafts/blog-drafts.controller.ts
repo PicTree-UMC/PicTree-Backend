@@ -17,6 +17,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import {
   BlogDraftDetailResponseDto,
   BlogDraftListResponseDto,
+  BlogDraftUsageResponseDto,
   GeneratedBlogDraftResponseDto,
   SavedBlogDraftResponseDto,
 } from './dto/blog-draft-response.dto';
@@ -28,6 +29,7 @@ import {
   ApiGenerateBlogDraft,
   ApiGetBlogDraft,
   ApiGetBlogDrafts,
+  ApiGetBlogDraftUsage,
   ApiSaveBlogDraft,
 } from './blog-drafts.swagger';
 
@@ -45,6 +47,16 @@ export class BlogDraftsController {
     const data = await this.blogDraftsService.getDrafts(currentUser.userId);
 
     return ApiResponse.success(SuccessCode.BLOG_DRAFT_RETRIEVED, data);
+  }
+
+  @Get('usage')
+  @ApiGetBlogDraftUsage()
+  async getUsage(
+    @CurrentUser() currentUser: JwtPayload,
+  ): Promise<ApiResponse<BlogDraftUsageResponseDto>> {
+    const data = await this.blogDraftsService.getUsage(currentUser.userId);
+
+    return ApiResponse.success(SuccessCode.BLOG_DRAFT_USAGE_RETRIEVED, data);
   }
 
   @Post('generate')

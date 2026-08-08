@@ -109,6 +109,11 @@ export const SuccessCode = {
     code: 'BLOG200-3',
     message: 'AI 블로그 초안이 삭제되었습니다.',
   },
+  BLOG_DRAFT_USAGE_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'BLOG200-4',
+    message: 'AI 블로그 사용량 조회가 완료되었습니다.',
+  },
 } as const;
 
 export type SuccessCodeType = (typeof SuccessCode)[keyof typeof SuccessCode];
