@@ -104,11 +104,22 @@ export class BlogDraftUsageService {
   };
 
   private resolvePlanCode = (user: BlogDraftUserRecord, now: Date): string => {
-    if (user.currentSubscription && user.currentSubscription.expiresAt > now) {
-      return user.currentSubscription.subscriptionPlan.code;
+    if (
+      !user.currentSubscription ||
+      user.currentSubscription.expiresAt <= now
+    ) {
+      return 'FREE';
     }
 
-    return 'FREE';
+    switch (user.currentSubscription.subscriptionPlan.code) {
+      case 'PLUS':
+      case 'PRO':
+      case 'MAX':
+        return user.currentSubscription.subscriptionPlan.code;
+      case 'FREE':
+      default:
+        return 'FREE';
+    }
   };
 
   private resolveUsageWindow = (

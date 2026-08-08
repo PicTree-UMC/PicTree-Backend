@@ -153,6 +153,32 @@ describe('BlogDraftsService', () => {
     });
   });
 
+  it('알 수 없는 플랜 코드는 FREE 플랜으로 정규화해 사용량을 조회한다', async () => {
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: {
+        startedAt: new Date('2026-07-10T00:00:00.000Z'),
+        expiresAt: new Date('2026-08-26T00:00:00.000Z'),
+        subscriptionPlan: {
+          code: 'UNKNOWN',
+        },
+      },
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(0);
+
+    const result = await service.getUsage(1);
+
+    expect(result).toEqual({
+      plan: 'FREE',
+      limit: 1,
+      usedCount: 0,
+      remainingCount: 1,
+      periodStartAt: '2026-07-01T00:00:00',
+      periodEndAt: '2026-08-01T00:00:00',
+    });
+  });
+
   it('유료 플랜의 AI 블로그 사용량을 결제 기간 기준으로 조회한다', async () => {
     repository.findUserById.mockResolvedValue({
       id: 1n,
