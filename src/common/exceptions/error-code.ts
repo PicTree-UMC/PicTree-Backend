@@ -284,6 +284,11 @@ export const ErrorCode = {
     code: 'TREE404',
     message: '존재하지 않는 나무입니다.',
   },
+  TREE_DAILY_LIMIT_EXCEEDED: {
+    status: HttpStatus.TOO_MANY_REQUESTS,
+    code: 'TREE429',
+    message: '하루에 등록할 수 있는 나무 개수를 초과했습니다.',
+  },
 
   // Route
   ROUTE_INVALID_REQUEST: {

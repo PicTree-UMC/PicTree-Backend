@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code';
 import { S3Service } from '../../common/s3/s3.service';
-import { formatKstDate } from '../../common/utils/kst-date.util';
+import {
+  formatKstDate,
+  getKstDayRange,
+} from '../../common/utils/kst-date.util';
 import { CreateTreeRequestDto } from './dto/create-tree-request.dto';
 import { GetNearbyTreesQueryDto } from './dto/get-nearby-trees-query.dto';
 import {
@@ -23,6 +26,7 @@ import { TreeSummaryStatsResponseDto } from './dto/tree-summary-stats-response.d
 import { UpdateTreeRequestDto } from './dto/update-tree-request.dto';
 import {
   AD_INTERVAL,
+  DAILY_TREE_LIMIT,
   DEFAULT_TREE_IMAGE,
   FREE_PLAN_CODE,
   NEARBY_TREE_RADIUS_M,
@@ -49,6 +53,8 @@ export class TreesService {
     userId: number,
     createTreeRequestDto: CreateTreeRequestDto,
   ): Promise<CreateTreeResponseDto> => {
+    await this.ensureDailyLimitNotExceeded(userId);
+
     const tree = await this.treesRepository.createTree({
       userId,
       name: createTreeRequestDto.name,
@@ -224,6 +230,22 @@ export class TreesService {
       treeId: Number(updated.id),
       isFavorite: updated.isFavorite,
     };
+  };
+
+  // 하루(KST 자정 기준)에 등록할 수 있는 나무 개수를 넘었는지 확인한다.
+  private ensureDailyLimitNotExceeded = async (
+    userId: number,
+  ): Promise<void> => {
+    const { start, end } = getKstDayRange(new Date());
+    const todayCount = await this.treesRepository.countTreesCreatedBetween(
+      userId,
+      start,
+      end,
+    );
+
+    if (todayCount >= DAILY_TREE_LIMIT) {
+      throw new AppException(ErrorCode.TREE_DAILY_LIMIT_EXCEEDED);
+    }
   };
 
   private resolveAdRequired = async (userId: number): Promise<boolean> => {

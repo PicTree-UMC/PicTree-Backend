@@ -197,6 +197,22 @@ export class TreesRepository {
     });
   };
 
+  // 하루 등록 제한 검사용: KST 기준 [start, end) 구간에 등록된 나무 수
+  // 삭제한 나무는 제외해, 지운 만큼 같은 날 다시 등록할 수 있게 한다.
+  countTreesCreatedBetween = (
+    userId: number,
+    start: Date,
+    end: Date,
+  ): Promise<number> => {
+    return this.prisma.tree.count({
+      where: {
+        userId: BigInt(userId),
+        deletedAt: null,
+        createdAt: { gte: start, lt: end },
+      },
+    });
+  };
+
   // 마이페이지 통계용: 살아있는 나무에 속한 사진의 개수와 총 용량
   aggregateImageUsageByUserId = async (
     userId: number,

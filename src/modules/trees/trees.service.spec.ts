@@ -78,6 +78,7 @@ describe('TreesService', () => {
       countTreesByUserId: jest.fn(),
       findUserPlanCode: jest.fn(),
       aggregateImageUsageByUserId: jest.fn(),
+      countTreesCreatedBetween: jest.fn(),
     } as unknown as jest.Mocked<TreesRepository>;
 
     s3Service = {
@@ -93,9 +94,47 @@ describe('TreesService', () => {
     service = new TreesService(repository, s3Service);
   });
 
+  describe('createTree - 하루 등록 제한', () => {
+    it('하루 한도(20개)에 도달하면 TREE429 를 던진다', async () => {
+      repository.countTreesCreatedBetween.mockResolvedValue(20);
+
+      const error = await catchAppError(service.createTree(10, createDto));
+
+      expect(error.getResponse()).toMatchObject({ code: 'TREE429' });
+      expect(repository.createTree).not.toHaveBeenCalled();
+    });
+
+    it('한도 미만이면 정상 등록한다', async () => {
+      repository.countTreesCreatedBetween.mockResolvedValue(19);
+      repository.createTree.mockResolvedValue(tree);
+      repository.countTreesByUserId.mockResolvedValue(1);
+      repository.findUserPlanCode.mockResolvedValue('FREE');
+
+      const result = await service.createTree(10, createDto);
+
+      expect(result.treeId).toBe(1);
+    });
+
+    it('KST 하루 구간으로 당일 등록 수를 센다', async () => {
+      repository.countTreesCreatedBetween.mockResolvedValue(0);
+      repository.createTree.mockResolvedValue(tree);
+      repository.countTreesByUserId.mockResolvedValue(1);
+      repository.findUserPlanCode.mockResolvedValue('FREE');
+
+      await service.createTree(10, createDto);
+
+      const [userId, start, end] =
+        repository.countTreesCreatedBetween.mock.calls[0];
+      expect(userId).toBe(10);
+      // KST 자정 경계이므로 구간 길이는 정확히 24시간이다.
+      expect(end.getTime() - start.getTime()).toBe(24 * 60 * 60 * 1000);
+    });
+  });
+
   describe('createTree - adRequired', () => {
     beforeEach(() => {
       repository.createTree.mockResolvedValue(tree);
+      repository.countTreesCreatedBetween.mockResolvedValue(0);
     });
 
     it('무료 플랜에서 나무 개수가 광고 주기의 배수면 adRequired 가 true 다', async () => {
