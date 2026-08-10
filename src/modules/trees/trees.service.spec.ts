@@ -78,6 +78,7 @@ describe('TreesService', () => {
       countTreesByUserId: jest.fn(),
       findUserPlanCode: jest.fn(),
       aggregateImageUsageByUserId: jest.fn(),
+      countTreesCreatedBetween: jest.fn(),
     } as unknown as jest.Mocked<TreesRepository>;
 
     s3Service = {
@@ -93,9 +94,57 @@ describe('TreesService', () => {
     service = new TreesService(repository, s3Service);
   });
 
+  describe('createTree - 하루 등록 제한', () => {
+    it('하루 한도(20개)에 도달하면 TREE429 를 던진다', async () => {
+      repository.countTreesCreatedBetween.mockResolvedValue(20);
+
+      const error = await catchAppError(service.createTree(10, createDto));
+
+      expect(error.getResponse()).toMatchObject({ code: 'TREE429' });
+      expect(repository.createTree).not.toHaveBeenCalled();
+    });
+
+    it('한도 미만이면 정상 등록한다', async () => {
+      repository.countTreesCreatedBetween.mockResolvedValue(19);
+      repository.createTree.mockResolvedValue(tree);
+      repository.countTreesByUserId.mockResolvedValue(1);
+      repository.findUserPlanCode.mockResolvedValue('FREE');
+
+      const result = await service.createTree(10, createDto);
+
+      expect(result.treeId).toBe(1);
+    });
+
+    it('KST 하루 구간으로 당일 등록 수를 센다', async () => {
+      // UTC 2026-01-01 05:00 = KST 2026-01-01 14:00.
+      // UTC 기준으로 구간을 잡으면 start 가 2026-01-01T00:00Z 가 되므로,
+      // KST 자정(= 전날 15:00Z)을 검증하면 두 기준을 확실히 구분할 수 있다.
+      jest.useFakeTimers().setSystemTime(new Date('2026-01-01T05:00:00.000Z'));
+
+      try {
+        repository.countTreesCreatedBetween.mockResolvedValue(0);
+        repository.createTree.mockResolvedValue(tree);
+        repository.countTreesByUserId.mockResolvedValue(1);
+        repository.findUserPlanCode.mockResolvedValue('FREE');
+
+        await service.createTree(10, createDto);
+
+        const [userId, start, end] =
+          repository.countTreesCreatedBetween.mock.calls[0];
+        expect(userId).toBe(10);
+        expect(start).toEqual(new Date('2025-12-31T15:00:00.000Z'));
+        expect(end).toEqual(new Date('2026-01-01T15:00:00.000Z'));
+        expect(end.getTime() - start.getTime()).toBe(24 * 60 * 60 * 1000);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+  });
+
   describe('createTree - adRequired', () => {
     beforeEach(() => {
       repository.createTree.mockResolvedValue(tree);
+      repository.countTreesCreatedBetween.mockResolvedValue(0);
     });
 
     it('무료 플랜에서 나무 개수가 광고 주기의 배수면 adRequired 가 true 다', async () => {

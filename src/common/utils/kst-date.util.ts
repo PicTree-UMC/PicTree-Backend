@@ -52,6 +52,16 @@ export const parseKstDateStart = (dateText: string): Date | null => {
   return date;
 };
 
+// 주어진 시각이 속한 KST 하루의 시작(자정)과 다음 날 시작을 돌려준다.
+// 하루 단위 집계는 [start, end) 로 비교한다.
+export const getKstDayRange = (date: Date): { start: Date; end: Date } => {
+  const { year, monthIndex, day } = toKstDateParts(date);
+  const start = new Date(Date.UTC(year, monthIndex, day) - KST_OFFSET_MS);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+
+  return { start, end };
+};
+
 export const createKstMonthStart = (year: number, month: number): Date => {
   return createKstMonthlyAnchor(year, month - 1, 1);
 };

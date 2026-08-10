@@ -1,6 +1,7 @@
 import { applyDecorators } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiTooManyRequestsResponse,
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
@@ -14,6 +15,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateTreeRequestDto } from './dto/create-tree-request.dto';
 import { UpdateTreeRequestDto } from './dto/update-tree-request.dto';
+import { DAILY_TREE_LIMIT } from './trees.constant';
 
 const failResponse = (code: string, message: string) => ({
   success: false,
@@ -57,9 +59,21 @@ const treeIdParam = () =>
 
 export const ApiCreateTree = () =>
   applyDecorators(
-    ApiOperation({ summary: '나무 등록' }),
+    ApiOperation({
+      summary: '나무 등록',
+      description: `하루(KST 자정 기준)에 최대 ${DAILY_TREE_LIMIT}개까지 등록할 수 있습니다. 삭제한 나무는 개수에서 제외됩니다.`,
+    }),
     protectedTreeResponses(),
     ApiBody({ type: CreateTreeRequestDto }),
+    ApiTooManyRequestsResponse({
+      description: `하루 등록 한도(${DAILY_TREE_LIMIT}개) 초과`,
+      schema: {
+        example: failResponse(
+          'TREE429',
+          '하루에 등록할 수 있는 나무 개수를 초과했습니다.',
+        ),
+      },
+    }),
     ApiCreatedResponse({
       description: '나무 등록 성공',
       schema: {
