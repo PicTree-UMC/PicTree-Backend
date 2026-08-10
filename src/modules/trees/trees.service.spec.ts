@@ -116,18 +116,28 @@ describe('TreesService', () => {
     });
 
     it('KST 하루 구간으로 당일 등록 수를 센다', async () => {
-      repository.countTreesCreatedBetween.mockResolvedValue(0);
-      repository.createTree.mockResolvedValue(tree);
-      repository.countTreesByUserId.mockResolvedValue(1);
-      repository.findUserPlanCode.mockResolvedValue('FREE');
+      // UTC 2026-01-01 05:00 = KST 2026-01-01 14:00.
+      // UTC 기준으로 구간을 잡으면 start 가 2026-01-01T00:00Z 가 되므로,
+      // KST 자정(= 전날 15:00Z)을 검증하면 두 기준을 확실히 구분할 수 있다.
+      jest.useFakeTimers().setSystemTime(new Date('2026-01-01T05:00:00.000Z'));
 
-      await service.createTree(10, createDto);
+      try {
+        repository.countTreesCreatedBetween.mockResolvedValue(0);
+        repository.createTree.mockResolvedValue(tree);
+        repository.countTreesByUserId.mockResolvedValue(1);
+        repository.findUserPlanCode.mockResolvedValue('FREE');
 
-      const [userId, start, end] =
-        repository.countTreesCreatedBetween.mock.calls[0];
-      expect(userId).toBe(10);
-      // KST 자정 경계이므로 구간 길이는 정확히 24시간이다.
-      expect(end.getTime() - start.getTime()).toBe(24 * 60 * 60 * 1000);
+        await service.createTree(10, createDto);
+
+        const [userId, start, end] =
+          repository.countTreesCreatedBetween.mock.calls[0];
+        expect(userId).toBe(10);
+        expect(start).toEqual(new Date('2025-12-31T15:00:00.000Z'));
+        expect(end).toEqual(new Date('2026-01-01T15:00:00.000Z'));
+        expect(end.getTime() - start.getTime()).toBe(24 * 60 * 60 * 1000);
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 
