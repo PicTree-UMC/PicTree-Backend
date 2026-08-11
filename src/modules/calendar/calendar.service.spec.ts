@@ -13,7 +13,7 @@ describe('CalendarService', () => {
     service = new CalendarService(repository);
   });
 
-  it('월 전체 날짜를 채우고 날짜별 나무 개수로 level을 계산한다', async () => {
+  it('월 전체 날짜를 채우고 날짜별 나무 개수와 level을 계산한다', async () => {
     repository.findCreatedDatesByUserAndRange.mockResolvedValue([
       { createdAt: new Date('2026-04-01T09:00:00.000Z') },
       { createdAt: new Date('2026-04-01T10:00:00.000Z') },
@@ -39,11 +39,31 @@ describe('CalendarService', () => {
     expect(result.year).toBe(2026);
     expect(result.month).toBe(4);
     expect(result.days).toHaveLength(30);
-    expect(result.days[0]).toEqual({ date: '2026-04-01', level: 3 });
-    expect(result.days[1]).toEqual({ date: '2026-04-02', level: 2 });
-    expect(result.days[2]).toEqual({ date: '2026-04-03', level: 1 });
-    expect(result.days[3]).toEqual({ date: '2026-04-04', level: 4 });
-    expect(result.days[4]).toEqual({ date: '2026-04-05', level: 0 });
+    expect(result.days[0]).toEqual({
+      date: '2026-04-01',
+      count: 4,
+      level: 3,
+    });
+    expect(result.days[1]).toEqual({
+      date: '2026-04-02',
+      count: 2,
+      level: 2,
+    });
+    expect(result.days[2]).toEqual({
+      date: '2026-04-03',
+      count: 1,
+      level: 1,
+    });
+    expect(result.days[3]).toEqual({
+      date: '2026-04-04',
+      count: 5,
+      level: 4,
+    });
+    expect(result.days[4]).toEqual({
+      date: '2026-04-05',
+      count: 0,
+      level: 0,
+    });
   });
 
   it('KST 월 경계에 맞춰 생성일을 집계한다', async () => {
@@ -54,8 +74,16 @@ describe('CalendarService', () => {
 
     const result = await service.getCalendar(1, { year: 2026, month: 4 });
 
-    expect(result.days[0]).toEqual({ date: '2026-04-01', level: 1 });
-    expect(result.days[29]).toEqual({ date: '2026-04-30', level: 1 });
+    expect(result.days[0]).toEqual({
+      date: '2026-04-01',
+      count: 1,
+      level: 1,
+    });
+    expect(result.days[29]).toEqual({
+      date: '2026-04-30',
+      count: 1,
+      level: 1,
+    });
   });
 
   it('KST 새벽 기록을 전날이 아닌 같은 날짜로 집계한다', async () => {
@@ -67,7 +95,15 @@ describe('CalendarService', () => {
 
     const result = await service.getCalendar(1, { year: 2026, month: 7 });
 
-    expect(result.days[24]).toEqual({ date: '2026-07-25', level: 0 });
-    expect(result.days[25]).toEqual({ date: '2026-07-26', level: 3 });
+    expect(result.days[24]).toEqual({
+      date: '2026-07-25',
+      count: 0,
+      level: 0,
+    });
+    expect(result.days[25]).toEqual({
+      date: '2026-07-26',
+      count: 3,
+      level: 3,
+    });
   });
 });

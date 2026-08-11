@@ -52,6 +52,7 @@ export class CalendarService {
 
       return {
         date,
+        count,
         level: this.resolveLevel(count),
       };
     });
