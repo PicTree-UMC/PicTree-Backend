@@ -29,8 +29,8 @@ export const ApiGetCalendar = () =>
             year: 2026,
             month: 4,
             days: [
-              { date: '2026-04-01', level: 3 },
-              { date: '2026-04-02', level: 0 },
+              { date: '2026-04-01', count: 4, level: 3 },
+              { date: '2026-04-02', count: 0, level: 0 },
             ],
           },
         },
