@@ -13,6 +13,7 @@ import {
   ApiQuery,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { SuccessCode } from '../../common/responses/success-code';
 import { CancelPaymentRequestDto } from './dto/cancel-payment-request.dto';
 import { ConfirmPaymentRequestDto } from './dto/confirm-payment-request.dto';
 import { CreatePaymentOrderRequestDto } from './dto/create-payment-order-request.dto';
@@ -33,8 +34,8 @@ export const ApiCreatePaymentOrder = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.PAYMENT_ORDER_CREATED.code,
+          message: SuccessCode.PAYMENT_ORDER_CREATED.message,
           data: {
             orderId: 'ORDER_1_lzk6q9x7_a1b2c3d4',
             orderName: '플러스 플랜',
@@ -80,8 +81,8 @@ export const ApiConfirmPayment = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.PAYMENT_CONFIRMED.code,
+          message: SuccessCode.PAYMENT_CONFIRMED.message,
           data: {
             paymentId: 1,
             orderId: 'ORDER_1_lzk6q9x7_a1b2c3d4',
@@ -157,8 +158,8 @@ export const ApiGetPayments = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.PAYMENT_LIST_RETRIEVED.code,
+          message: SuccessCode.PAYMENT_LIST_RETRIEVED.message,
           data: {
             items: [
               {
@@ -201,8 +202,8 @@ export const ApiGetPayment = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.PAYMENT_RETRIEVED.code,
+          message: SuccessCode.PAYMENT_RETRIEVED.message,
           data: {
             paymentId: 1,
             orderId: 'ORDER_1_lzk6q9x7_a1b2c3d4',

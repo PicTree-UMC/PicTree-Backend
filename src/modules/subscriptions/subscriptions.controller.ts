@@ -43,7 +43,7 @@ export class SubscriptionsController {
       currentUser.userId,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.SUBSCRIPTION_RETRIEVED, data);
   }
 
   @Post()

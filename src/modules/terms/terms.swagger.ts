@@ -10,6 +10,7 @@ import {
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { SuccessCode } from '../../common/responses/success-code';
 import { AgreeTermsRequestDto } from './dto/agree-terms-request.dto';
 
 const failResponse = (code: string, message: string) => ({
@@ -26,8 +27,8 @@ export const ApiGetTerms = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.TERMS_RETRIEVED.code,
+          message: SuccessCode.TERMS_RETRIEVED.message,
           data: [
             {
               id: 1,
@@ -73,8 +74,8 @@ export const ApiAgreeTerms = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.TERMS_AGREEMENT_SAVED.code,
+          message: SuccessCode.TERMS_AGREEMENT_SAVED.message,
           data: {
             agreedTermIds: [1, 2, 3],
             agreedAt: '2026-07-16T00:00:00.000Z',

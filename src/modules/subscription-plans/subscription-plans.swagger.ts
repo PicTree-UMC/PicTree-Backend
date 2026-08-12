@@ -4,6 +4,7 @@ import {
   ApiOkResponse,
   ApiOperation,
 } from '@nestjs/swagger';
+import { SuccessCode } from '../../common/responses/success-code';
 
 const failResponse = (code: string, message: string) => ({
   success: false,
@@ -19,8 +20,8 @@ export const ApiGetSubscriptionPlans = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.SUBSCRIPTION_PLAN_LIST_RETRIEVED.code,
+          message: SuccessCode.SUBSCRIPTION_PLAN_LIST_RETRIEVED.message,
           data: [
             {
               id: 1,

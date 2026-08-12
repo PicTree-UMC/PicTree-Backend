@@ -40,7 +40,7 @@ export class UsersController {
   ): Promise<ApiResponse<UserResponseDto>> {
     const data = await this.usersService.getMe(currentUser.userId);
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.USER_RETRIEVED, data);
   }
 
   @Patch('me')
@@ -54,7 +54,7 @@ export class UsersController {
       updateUserRequestDto,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.USER_UPDATED, data);
   }
 
   @Delete('me')
@@ -71,6 +71,6 @@ export class UsersController {
       this.authTokenService.getClearRefreshTokenCookieOptions(),
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.USER_WITHDRAWN, data);
   }
 }

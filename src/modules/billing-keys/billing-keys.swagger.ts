@@ -12,6 +12,7 @@ import {
   ApiParam,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { SuccessCode } from '../../common/responses/success-code';
 import { CreateBillingKeyRequestDto } from './dto/create-billing-key-request.dto';
 
 const failResponse = (code: string, message: string) => ({
@@ -49,8 +50,8 @@ export const ApiGetBillingCustomerKey = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.BILLING_CUSTOMER_KEY_RETRIEVED.code,
+          message: SuccessCode.BILLING_CUSTOMER_KEY_RETRIEVED.message,
           data: {
             customerKey: 'BILLING_4f75b7d3d2b7b37b8c4e...',
           },
@@ -113,8 +114,8 @@ export const ApiGetBillingKeys = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.BILLING_KEY_LIST_RETRIEVED.code,
+          message: SuccessCode.BILLING_KEY_LIST_RETRIEVED.message,
           data: [billingKeyExample],
         },
       },

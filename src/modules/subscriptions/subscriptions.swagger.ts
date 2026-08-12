@@ -76,8 +76,8 @@ export const ApiGetMySubscription = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.SUBSCRIPTION_RETRIEVED.code,
+          message: SuccessCode.SUBSCRIPTION_RETRIEVED.message,
           data: activeSubscriptionExample,
         },
       },

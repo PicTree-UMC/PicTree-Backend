@@ -35,6 +35,6 @@ export class TermsAgreementsController {
       agreeTermsRequestDto,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.TERMS_AGREEMENT_SAVED, data);
   }
 }

@@ -20,6 +20,9 @@ export class SubscriptionPlansController {
   > {
     const data = await this.subscriptionPlansService.getSubscriptionPlans();
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(
+      SuccessCode.SUBSCRIPTION_PLAN_LIST_RETRIEVED,
+      data,
+    );
   }
 }

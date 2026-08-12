@@ -35,6 +35,6 @@ export class PaymentOrdersController {
       createPaymentOrderRequestDto,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.PAYMENT_ORDER_CREATED, data);
   }
 }
