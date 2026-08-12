@@ -1,0 +1,229 @@
+import { applyDecorators } from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import { CreateRouteRequestDto } from './dto/create-route-request.dto';
+import { UpdateRouteRequestDto } from './dto/update-route-request.dto';
+
+const failResponse = (code: string, message: string) => ({
+  success: false,
+  code,
+  message,
+});
+
+const protectedRouteResponses = () =>
+  applyDecorators(
+    ApiBearerAuth(),
+    ApiUnauthorizedResponse({
+      description: 'Access Token 없음 또는 유효하지 않음',
+      schema: {
+        example: failResponse('AUTH401', '유효하지 않은 Access Token입니다.'),
+      },
+    }),
+    ApiInternalServerErrorResponse({
+      description: '서버 내부 오류',
+      schema: {
+        example: failResponse('COMMON500', '서버 내부 오류입니다.'),
+      },
+    }),
+  );
+
+const routeResourceResponses = () =>
+  applyDecorators(
+    ApiForbiddenResponse({
+      description: '타인의 동선 접근',
+      schema: { example: failResponse('ROUTE403', '접근 권한이 없습니다.') },
+    }),
+    ApiNotFoundResponse({
+      description: '존재하지 않는 동선',
+      schema: {
+        example: failResponse('ROUTE404', '존재하지 않는 동선입니다.'),
+      },
+    }),
+  );
+
+const routeIdParam = () =>
+  ApiParam({ name: 'routeId', example: 1, description: '동선 ID' });
+
+export const ApiCreateRoute = () =>
+  applyDecorators(
+    ApiOperation({ summary: '동선 기록 생성' }),
+    protectedRouteResponses(),
+    ApiBody({ type: CreateRouteRequestDto }),
+    ApiCreatedResponse({
+      description: '동선 저장 성공',
+      schema: {
+        example: {
+          success: true,
+          code: 'ROUTE201',
+          message: '동선이 저장되었습니다.',
+          data: { routeId: 1 },
+        },
+      },
+    }),
+    ApiBadRequestResponse({
+      description:
+        '요청 값 오류 (노드 누락, 존재하지 않거나 타인 소유의 나무 등)',
+      schema: {
+        example: failResponse('ROUTE400', '동선 요청 값이 올바르지 않습니다.'),
+      },
+    }),
+  );
+
+export const ApiGetMyRoutes = () =>
+  applyDecorators(
+    ApiOperation({ summary: '내 동선 목록 조회' }),
+    protectedRouteResponses(),
+    ApiOkResponse({
+      description: '동선 목록 조회 성공',
+      schema: {
+        example: {
+          success: true,
+          code: 'ROUTE200-1',
+          message: '동선 목록 조회가 완료되었습니다.',
+          data: {
+            items: [
+              {
+                routeId: 1,
+                routeName: '아침 산책',
+                recordDates: ['2026-03-31', '2026-04-01'],
+                placeCount: 2,
+                places: [
+                  { name: '포그레인 공원', mood: '😀' },
+                  { name: '오아시스 만난 곳', mood: '😍' },
+                ],
+                createdAt: '2026-07-19T07:00:00.000Z',
+              },
+            ],
+            page: 1,
+            size: 20,
+            total: 1,
+            totalPages: 1,
+          },
+        },
+      },
+    }),
+  );
+
+export const ApiGetRoute = () =>
+  applyDecorators(
+    ApiOperation({ summary: '동선 상세 조회' }),
+    protectedRouteResponses(),
+    routeIdParam(),
+    routeResourceResponses(),
+    ApiOkResponse({
+      description: '동선 상세 조회 성공',
+      schema: {
+        example: {
+          success: true,
+          code: 'ROUTE200-2',
+          message: '동선 조회가 완료되었습니다.',
+          data: {
+            routeId: 1,
+            routeName: '아침 산책',
+            createdAt: '2026-07-19T07:00:00.000Z',
+            points: [
+              {
+                treeId: 1,
+                name: '오아시스 만난 곳',
+                mood: '😍',
+                description: '갤러거 형제 자만추',
+                latitude: 37.5665,
+                longitude: 126.978,
+                date: '2026-04-01',
+                sequence: 0,
+              },
+            ],
+          },
+        },
+      },
+    }),
+  );
+
+export const ApiGetRouteImages = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '동선 사진 앨범 조회',
+      description:
+        '동선에 속한 장소들의 대표 사진을 방문 순서로 반환한다. 사진 없는 장소는 imageUrl=null (프론트에서 로고 표시).',
+    }),
+    protectedRouteResponses(),
+    routeIdParam(),
+    routeResourceResponses(),
+    ApiOkResponse({
+      description: '동선 사진 앨범 조회 성공',
+      schema: {
+        example: {
+          success: true,
+          code: 'ROUTE200-5',
+          message: '동선 사진 조회가 완료되었습니다.',
+          data: {
+            images: [
+              {
+                treeId: 1,
+                name: '오아시스 만난 곳',
+                imageUrl:
+                  'https://pictree-images-prod.s3.ap-northeast-2.amazonaws.com/...',
+              },
+              { treeId: 2, name: '쇼핑', imageUrl: null },
+            ],
+          },
+        },
+      },
+    }),
+  );
+
+export const ApiUpdateRoute = () =>
+  applyDecorators(
+    ApiOperation({ summary: '동선 이름 수정' }),
+    protectedRouteResponses(),
+    routeIdParam(),
+    routeResourceResponses(),
+    ApiBody({ type: UpdateRouteRequestDto }),
+    ApiOkResponse({
+      description: '동선 수정 성공',
+      schema: {
+        example: {
+          success: true,
+          code: 'ROUTE200-3',
+          message: '동선이 수정되었습니다.',
+          data: null,
+        },
+      },
+    }),
+    ApiBadRequestResponse({
+      description: '수정 요청 값 오류 또는 수정할 값 없음',
+      schema: {
+        example: failResponse('ROUTE400', '동선 요청 값이 올바르지 않습니다.'),
+      },
+    }),
+  );
+
+export const ApiDeleteRoute = () =>
+  applyDecorators(
+    ApiOperation({ summary: '동선 삭제' }),
+    protectedRouteResponses(),
+    routeIdParam(),
+    routeResourceResponses(),
+    ApiOkResponse({
+      description: '동선 삭제 성공 (노드도 함께 삭제)',
+      schema: {
+        example: {
+          success: true,
+          code: 'ROUTE200-4',
+          message: '동선이 삭제되었습니다.',
+          data: null,
+        },
+      },
+    }),
+  );
