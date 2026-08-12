@@ -70,7 +70,7 @@ export class TreeImagesController {
       uploadTreeImageRequestDto.timelineRecordId,
     );
 
-    return ApiResponse.success(SuccessCode.CREATED, data);
+    return ApiResponse.success(SuccessCode.TREE_IMAGE_UPLOADED, data);
   }
 
   @Get()
@@ -86,7 +86,7 @@ export class TreeImagesController {
       getTreeImagesQueryDto.timelineRecordId,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.TREE_IMAGE_LIST_RETRIEVED, data);
   }
 
   @Delete(':imageId')
@@ -102,6 +102,6 @@ export class TreeImagesController {
       imageId,
     );
 
-    return ApiResponse.success(SuccessCode.OK, null);
+    return ApiResponse.success(SuccessCode.TREE_IMAGE_DELETED, null);
   }
 }

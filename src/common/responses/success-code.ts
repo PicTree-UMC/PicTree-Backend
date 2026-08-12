@@ -64,6 +64,92 @@ export const SuccessCode = {
     message: '예약된 구독 플랜 변경이 취소되었습니다.',
   },
 
+  // Tree
+  TREE_CREATED: {
+    status: HttpStatus.CREATED,
+    code: 'TREE201',
+    message: '나무가 등록되었습니다.',
+  },
+  TREE_LIST_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'TREE200-1',
+    message: '나무 목록 조회가 완료되었습니다.',
+  },
+  TREE_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'TREE200-2',
+    message: '나무 조회가 완료되었습니다.',
+  },
+  TREE_UPDATED: {
+    status: HttpStatus.OK,
+    code: 'TREE200-3',
+    message: '나무 정보가 수정되었습니다.',
+  },
+  TREE_DELETED: {
+    status: HttpStatus.OK,
+    code: 'TREE200-4',
+    message: '나무가 삭제되었습니다.',
+  },
+  TREE_NEARBY_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'TREE200-5',
+    message: '주변 나무 조회가 완료되었습니다.',
+  },
+  TREE_SUMMARY_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'TREE200-6',
+    message: '나무 통계 조회가 완료되었습니다.',
+  },
+
+  // Tree Image
+  TREE_IMAGE_UPLOADED: {
+    status: HttpStatus.CREATED,
+    code: 'TREE_IMAGE201',
+    message: '사진이 업로드되었습니다.',
+  },
+  TREE_IMAGE_LIST_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'TREE_IMAGE200-1',
+    message: '사진 목록 조회가 완료되었습니다.',
+  },
+  TREE_IMAGE_DELETED: {
+    status: HttpStatus.OK,
+    code: 'TREE_IMAGE200-2',
+    message: '사진이 삭제되었습니다.',
+  },
+
+  // Route
+  ROUTE_CREATED: {
+    status: HttpStatus.CREATED,
+    code: 'ROUTE201',
+    message: '동선이 저장되었습니다.',
+  },
+  ROUTE_LIST_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'ROUTE200-1',
+    message: '동선 목록 조회가 완료되었습니다.',
+  },
+  ROUTE_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'ROUTE200-2',
+    message: '동선 조회가 완료되었습니다.',
+  },
+  ROUTE_UPDATED: {
+    status: HttpStatus.OK,
+    code: 'ROUTE200-3',
+    message: '동선이 수정되었습니다.',
+  },
+  ROUTE_DELETED: {
+    status: HttpStatus.OK,
+    code: 'ROUTE200-4',
+    message: '동선이 삭제되었습니다.',
+  },
+  ROUTE_IMAGES_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'ROUTE200-5',
+    message: '동선 사진 조회가 완료되었습니다.',
+  },
+
   // Favorite
   FAVORITE_LIST_RETRIEVED: {
     status: HttpStatus.OK,

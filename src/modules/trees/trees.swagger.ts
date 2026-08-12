@@ -79,8 +79,8 @@ export const ApiCreateTree = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON201',
-          message: '생성되었습니다.',
+          code: 'TREE201',
+          message: '나무가 등록되었습니다.',
           data: { treeId: 1, adRequired: true },
         },
       },
@@ -100,8 +100,8 @@ export const ApiGetMyTrees = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'TREE200-1',
+          message: '나무 목록 조회가 완료되었습니다.',
           data: {
             items: [
               {
@@ -166,8 +166,8 @@ export const ApiGetTree = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'TREE200-2',
+          message: '나무 조회가 완료되었습니다.',
           data: {
             treeId: 1,
             name: '우리 동네 벚나무',
@@ -205,8 +205,8 @@ export const ApiGetNearbyTrees = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'TREE200-5',
+          message: '주변 나무 조회가 완료되었습니다.',
           data: [
             {
               treeId: 1,
@@ -239,8 +239,8 @@ export const ApiUpdateTree = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'TREE200-3',
+          message: '나무 정보가 수정되었습니다.',
           data: null,
         },
       },
@@ -288,8 +288,8 @@ export const ApiGetTreeSummaryStats = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'TREE200-6',
+          message: '나무 통계 조회가 완료되었습니다.',
           data: {
             treeCount: 2,
             imageCount: 2,
@@ -315,8 +315,8 @@ export const ApiDeleteTree = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'TREE200-4',
+          message: '나무가 삭제되었습니다.',
           data: null,
         },
       },

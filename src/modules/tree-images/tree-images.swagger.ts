@@ -90,8 +90,8 @@ export const ApiUploadTreeImage = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON201',
-          message: '생성되었습니다.',
+          code: 'TREE_IMAGE201',
+          message: '사진이 업로드되었습니다.',
           data: { image: imageExample },
         },
       },
@@ -136,8 +136,8 @@ export const ApiGetTreeImages = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'TREE_IMAGE200-1',
+          message: '사진 목록 조회가 완료되었습니다.',
           data: { images: [imageExample] },
         },
       },
@@ -155,8 +155,8 @@ export const ApiDeleteTreeImage = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'TREE_IMAGE200-2',
+          message: '사진이 삭제되었습니다.',
           data: null,
         },
       },

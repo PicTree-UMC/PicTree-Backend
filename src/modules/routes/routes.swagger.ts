@@ -65,8 +65,8 @@ export const ApiCreateRoute = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON201',
-          message: '생성되었습니다.',
+          code: 'ROUTE201',
+          message: '동선이 저장되었습니다.',
           data: { routeId: 1 },
         },
       },
@@ -89,8 +89,8 @@ export const ApiGetMyRoutes = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'ROUTE200-1',
+          message: '동선 목록 조회가 완료되었습니다.',
           data: {
             items: [
               {
@@ -126,8 +126,8 @@ export const ApiGetRoute = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'ROUTE200-2',
+          message: '동선 조회가 완료되었습니다.',
           data: {
             routeId: 1,
             routeName: '아침 산책',
@@ -165,8 +165,8 @@ export const ApiGetRouteImages = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'ROUTE200-5',
+          message: '동선 사진 조회가 완료되었습니다.',
           data: {
             images: [
               {
@@ -195,8 +195,8 @@ export const ApiUpdateRoute = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'ROUTE200-3',
+          message: '동선이 수정되었습니다.',
           data: null,
         },
       },
@@ -220,8 +220,8 @@ export const ApiDeleteRoute = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'ROUTE200-4',
+          message: '동선이 삭제되었습니다.',
           data: null,
         },
       },

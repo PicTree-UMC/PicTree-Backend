@@ -52,7 +52,7 @@ export class RoutesController {
       createRouteRequestDto,
     );
 
-    return ApiResponse.success(SuccessCode.CREATED, data);
+    return ApiResponse.success(SuccessCode.ROUTE_CREATED, data);
   }
 
   @Get()
@@ -66,7 +66,7 @@ export class RoutesController {
       getRoutesQueryDto,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.ROUTE_LIST_RETRIEVED, data);
   }
 
   @Get(':routeId')
@@ -77,7 +77,7 @@ export class RoutesController {
   ): Promise<ApiResponse<RouteResponseDto>> {
     const data = await this.routesService.getRoute(currentUser.userId, routeId);
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.ROUTE_RETRIEVED, data);
   }
 
   @Get(':routeId/images')
@@ -91,7 +91,7 @@ export class RoutesController {
       routeId,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.ROUTE_IMAGES_RETRIEVED, data);
   }
 
   @Patch(':routeId')
@@ -107,7 +107,7 @@ export class RoutesController {
       updateRouteRequestDto,
     );
 
-    return ApiResponse.success(SuccessCode.OK, null);
+    return ApiResponse.success(SuccessCode.ROUTE_UPDATED, null);
   }
 
   @Delete(':routeId')
@@ -118,6 +118,6 @@ export class RoutesController {
   ): Promise<ApiResponse<null>> {
     await this.routesService.deleteRoute(currentUser.userId, routeId);
 
-    return ApiResponse.success(SuccessCode.OK, null);
+    return ApiResponse.success(SuccessCode.ROUTE_DELETED, null);
   }
 }
