@@ -122,60 +122,6 @@ export const ApiTokenRefresh = () =>
     }),
   );
 
-export const ApiDevLogin = () =>
-  applyDecorators(
-    ApiOperation({ summary: '개발용 임시 로그인' }),
-    ApiOkResponse({
-      description: '개발용 로그인 성공',
-      schema: {
-        example: {
-          success: true,
-          code: SuccessCode.AUTH_DEV_LOGIN_COMPLETED.code,
-          message: SuccessCode.AUTH_DEV_LOGIN_COMPLETED.message,
-          data: {
-            isNewUser: false,
-            isRecovered: false,
-            needTermsAgreement: false,
-            needProfileSetup: false,
-            accessToken: '서비스 JWT Access Token',
-            expiresIn: 3600,
-            user: {
-              id: 1,
-              email: 'user@example.com',
-              nickname: '테스트유저',
-              profileImageUrl: null,
-              currentPlan: 'FREE',
-            },
-          },
-        },
-      },
-    }),
-    ApiBadRequestResponse({
-      description: '요청값 오류',
-      schema: {
-        example: failResponse('COMMON400', '잘못된 요청입니다.'),
-      },
-    }),
-    ApiForbiddenResponse({
-      description: '이용 불가능한 계정',
-      schema: {
-        example: failResponse('USER403', '이용할 수 없는 계정입니다.'),
-      },
-    }),
-    ApiUnauthorizedResponse({
-      description: '인증 실패',
-      schema: {
-        example: failResponse('AUTH401', '유효하지 않은 Access Token입니다.'),
-      },
-    }),
-    ApiInternalServerErrorResponse({
-      description: '서버 내부 오류',
-      schema: {
-        example: failResponse('COMMON500', '서버 내부 오류입니다.'),
-      },
-    }),
-  );
-
 export const ApiLogout = () =>
   applyDecorators(
     ApiOperation({ summary: '로그아웃' }),
