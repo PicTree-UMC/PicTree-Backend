@@ -29,6 +29,7 @@ export class GenerateBlogDraftRequestDto {
 
   @ApiProperty({
     example: [1, 2, 3],
+    maxItems: BLOG_DRAFT_MAX_TREE_COUNT,
     description: `선택한 장소 ID 목록 (최대 ${BLOG_DRAFT_MAX_TREE_COUNT}개)`,
   })
   @IsArray()

@@ -13,6 +13,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { DATE_ONLY_REGEX } from '../../../common/constants/date-regex.constant';
+import { BLOG_DRAFT_MAX_TREE_COUNT } from '../blog-drafts.constant';
 
 export class SaveBlogDraftItemRequestDto {
   @ApiProperty({ example: 1, description: '연결된 나무 ID' })
@@ -56,7 +57,7 @@ export class SaveBlogDraftDayRequestDto {
   })
   @IsArray()
   @ArrayMinSize(1)
-  @ArrayMaxSize(15)
+  @ArrayMaxSize(BLOG_DRAFT_MAX_TREE_COUNT)
   @ValidateNested({ each: true })
   @Type(() => SaveBlogDraftItemRequestDto)
   items!: SaveBlogDraftItemRequestDto[];

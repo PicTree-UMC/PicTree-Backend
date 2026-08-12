@@ -58,12 +58,12 @@ describe('BlogDraftsService', () => {
     jest.useRealTimers();
   });
 
-  it('초안 생성 장소가 15개를 초과하면 BLOG400-1 예외를 던진다', async () => {
+  it('초안 생성 장소가 20개를 초과하면 BLOG400-1 예외를 던진다', async () => {
     try {
       await service.generateDraft(1, {
         startDate: '2026-03-31',
         endDate: '2026-04-01',
-        treeIds: Array.from({ length: 16 }, (_, index) => index + 1),
+        treeIds: Array.from({ length: 21 }, (_, index) => index + 1),
         tone: BlogDraftTone.RECORD,
       });
       throw new Error('Expected AppException');
@@ -77,6 +77,58 @@ describe('BlogDraftsService', () => {
     expect(repository.findUserById).not.toHaveBeenCalled();
     expect(repository.findGenerateSource).not.toHaveBeenCalled();
     expect(openAiService.generate).not.toHaveBeenCalled();
+  });
+
+  it('초안 생성 장소가 정확히 20개면 정상적으로 생성한다', async () => {
+    const treeIds = Array.from({ length: 20 }, (_, index) => index + 1);
+    const trees = treeIds.map((treeId) => ({
+      id: BigInt(treeId),
+      name: `장소 ${treeId}`,
+      description: null,
+      address: null,
+      mood: '😍',
+      defaultImage: 'DEFAULT_1',
+      createdAt: new Date('2026-03-31T10:00:00.000Z'),
+      images: [],
+    }));
+    const items = treeIds.map((treeId) => ({
+      placeName: `장소 ${treeId}`,
+      content: `장소 ${treeId}에서의 기록`,
+    }));
+
+    repository.findUserById.mockResolvedValue({
+      id: 1n,
+      status: 'ACTIVE',
+      currentSubscription: null,
+    });
+    repository.countGeneratedDraftsInRange.mockResolvedValue(0);
+    repository.findGenerateSource.mockResolvedValue({
+      trees,
+      timelines: [],
+    });
+    openAiService.generate.mockResolvedValue({
+      title: '스무 곳을 둘러본 하루',
+      items,
+    });
+    repository.consumeUsageWithinLimit.mockResolvedValue();
+
+    const result = await service.generateDraft(1, {
+      startDate: '2026-03-31',
+      endDate: '2026-04-01',
+      treeIds,
+      tone: BlogDraftTone.RECORD,
+    });
+
+    expect(repository.findGenerateSource).toHaveBeenCalledWith(
+      1,
+      new Date('2026-03-30T15:00:00.000Z'),
+      new Date('2026-04-01T15:00:00.000Z'),
+      treeIds,
+    );
+    expect(openAiService.generate).toHaveBeenCalled();
+    expect(repository.consumeUsageWithinLimit).toHaveBeenCalled();
+    expect(result.title).toBe('스무 곳을 둘러본 하루');
+    expect(result.days[0].items).toHaveLength(20);
   });
 
   it('무료 사용자의 월간 생성 한도를 초과하면 예외를 던진다', async () => {
