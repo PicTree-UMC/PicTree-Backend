@@ -29,12 +29,6 @@ export const SuccessCode = {
     code: 'AUTH200-3',
     message: '로그아웃이 완료되었습니다.',
   },
-  AUTH_DEV_LOGIN_COMPLETED: {
-    status: HttpStatus.OK,
-    code: 'AUTH200-4',
-    message: '개발용 로그인이 완료되었습니다.',
-  },
-
   // User
   USER_RETRIEVED: {
     status: HttpStatus.OK,
