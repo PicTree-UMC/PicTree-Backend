@@ -13,6 +13,57 @@ export const SuccessCode = {
     message: '생성되었습니다.',
   },
 
+  // Auth
+  AUTH_SOCIAL_LOGIN_COMPLETED: {
+    status: HttpStatus.OK,
+    code: 'AUTH200-1',
+    message: '소셜 로그인이 완료되었습니다.',
+  },
+  AUTH_TOKEN_REFRESHED: {
+    status: HttpStatus.OK,
+    code: 'AUTH200-2',
+    message: 'Access Token이 재발급되었습니다.',
+  },
+  AUTH_LOGOUT_COMPLETED: {
+    status: HttpStatus.OK,
+    code: 'AUTH200-3',
+    message: '로그아웃이 완료되었습니다.',
+  },
+  AUTH_DEV_LOGIN_COMPLETED: {
+    status: HttpStatus.OK,
+    code: 'AUTH200-4',
+    message: '개발용 로그인이 완료되었습니다.',
+  },
+
+  // User
+  USER_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'USER200-1',
+    message: '내 정보 조회가 완료되었습니다.',
+  },
+  USER_UPDATED: {
+    status: HttpStatus.OK,
+    code: 'USER200-2',
+    message: '내 정보가 수정되었습니다.',
+  },
+  USER_WITHDRAWN: {
+    status: HttpStatus.OK,
+    code: 'USER200-3',
+    message: '회원 탈퇴가 완료되었습니다.',
+  },
+
+  // Terms
+  TERMS_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'TERMS200-1',
+    message: '약관 목록 조회가 완료되었습니다.',
+  },
+  TERMS_AGREEMENT_SAVED: {
+    status: HttpStatus.OK,
+    code: 'TERMS200-2',
+    message: '약관 동의가 저장되었습니다.',
+  },
+
   // Payment
   PAYMENT_CANCELED: {
     status: HttpStatus.OK,
@@ -23,6 +74,26 @@ export const SuccessCode = {
     status: HttpStatus.OK,
     code: 'PAYMENT200',
     message: '결제 웹훅을 처리했습니다.',
+  },
+  PAYMENT_ORDER_CREATED: {
+    status: HttpStatus.OK,
+    code: 'PAYMENT200-1',
+    message: '결제 주문이 생성되었습니다.',
+  },
+  PAYMENT_CONFIRMED: {
+    status: HttpStatus.OK,
+    code: 'PAYMENT200-2',
+    message: '결제 승인이 완료되었습니다.',
+  },
+  PAYMENT_LIST_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'PAYMENT200-3',
+    message: '결제 내역 조회가 완료되었습니다.',
+  },
+  PAYMENT_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'PAYMENT200-4',
+    message: '결제 상세 조회가 완료되었습니다.',
   },
 
   // Billing Key
@@ -35,6 +106,23 @@ export const SuccessCode = {
     status: HttpStatus.OK,
     code: 'BILLING_KEY200',
     message: '자동결제 수단이 삭제되었습니다.',
+  },
+  BILLING_CUSTOMER_KEY_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'BILLING_KEY200-1',
+    message: '자동결제 customerKey 조회가 완료되었습니다.',
+  },
+  BILLING_KEY_LIST_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'BILLING_KEY200-2',
+    message: '자동결제 수단 조회가 완료되었습니다.',
+  },
+
+  // Subscription Plan
+  SUBSCRIPTION_PLAN_LIST_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'SUBSCRIPTION_PLAN200',
+    message: '구독 요금제 목록 조회가 완료되었습니다.',
   },
 
   // Subscription
@@ -62,6 +150,11 @@ export const SuccessCode = {
     status: HttpStatus.OK,
     code: 'SUBSCRIPTION200',
     message: '예약된 구독 플랜 변경이 취소되었습니다.',
+  },
+  SUBSCRIPTION_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'SUBSCRIPTION200-1',
+    message: '내 구독 조회가 완료되었습니다.',
   },
 
   // Tree

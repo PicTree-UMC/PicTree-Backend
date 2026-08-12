@@ -39,7 +39,10 @@ export class BillingKeysController {
   ): ApiResponse<BillingCustomerKeyResponseDto> {
     const data = this.billingKeysService.getCustomerKey(currentUser.userId);
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(
+      SuccessCode.BILLING_CUSTOMER_KEY_RETRIEVED,
+      data,
+    );
   }
 
   @Post()
@@ -65,7 +68,7 @@ export class BillingKeysController {
       currentUser.userId,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.BILLING_KEY_LIST_RETRIEVED, data);
   }
 
   @Delete(':billingKeyId')

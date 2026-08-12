@@ -48,7 +48,7 @@ export class PaymentsController {
       confirmPaymentRequestDto,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.PAYMENT_CONFIRMED, data);
   }
 
   @Get()
@@ -62,7 +62,7 @@ export class PaymentsController {
       getPaymentsQueryDto,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.PAYMENT_LIST_RETRIEVED, data);
   }
 
   @Get(':paymentId')
@@ -76,7 +76,7 @@ export class PaymentsController {
       paymentId,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.PAYMENT_RETRIEVED, data);
   }
 
   @Post(':paymentId/cancel')

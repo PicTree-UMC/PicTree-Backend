@@ -16,6 +16,6 @@ export class TermsController {
   async getTerms(): Promise<ApiResponse<TermResponseDto[]>> {
     const data = await this.termsService.getTerms();
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.TERMS_RETRIEVED, data);
   }
 }

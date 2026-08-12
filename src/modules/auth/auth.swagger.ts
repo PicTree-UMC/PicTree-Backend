@@ -9,6 +9,7 @@ import {
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { SuccessCode } from '../../common/responses/success-code';
 import { AuthCookie } from './auth.constant';
 
 const failResponse = (code: string, message: string) => ({
@@ -25,8 +26,8 @@ export const ApiSocialLogin = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.AUTH_SOCIAL_LOGIN_COMPLETED.code,
+          message: SuccessCode.AUTH_SOCIAL_LOGIN_COMPLETED.message,
           data: {
             isNewUser: true,
             isRecovered: false,
@@ -92,8 +93,8 @@ export const ApiTokenRefresh = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.AUTH_TOKEN_REFRESHED.code,
+          message: SuccessCode.AUTH_TOKEN_REFRESHED.message,
           data: {
             accessToken: '새로운 서비스 JWT Access Token',
             expiresIn: 3600,
@@ -129,8 +130,8 @@ export const ApiDevLogin = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.AUTH_DEV_LOGIN_COMPLETED.code,
+          message: SuccessCode.AUTH_DEV_LOGIN_COMPLETED.message,
           data: {
             isNewUser: false,
             isRecovered: false,
@@ -184,8 +185,8 @@ export const ApiLogout = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.AUTH_LOGOUT_COMPLETED.code,
+          message: SuccessCode.AUTH_LOGOUT_COMPLETED.message,
           data: null,
         },
       },

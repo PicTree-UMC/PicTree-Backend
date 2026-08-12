@@ -11,6 +11,7 @@ import {
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { SuccessCode } from '../../common/responses/success-code';
 import { UpdateUserRequestDto } from './dto/update-user-request.dto';
 
 const failResponse = (code: string, message: string) => ({
@@ -19,22 +20,17 @@ const failResponse = (code: string, message: string) => ({
   message,
 });
 
-const userResponseExample = {
-  success: true,
-  code: 'COMMON200',
-  message: '요청이 성공했습니다.',
-  data: {
-    id: 1,
-    email: 'user@example.com',
-    nickname: '승범',
-    profileImageUrl: 'https://example.com/profile.jpg',
-    role: 'USER',
-    status: 'ACTIVE',
-    currentPlan: 'FREE',
-    notification: true,
-    createdAt: '2026-07-14T10:00:00.000Z',
-    updatedAt: '2026-07-14T10:10:00.000Z',
-  },
+const userDataExample = {
+  id: 1,
+  email: 'user@example.com',
+  nickname: '승범',
+  profileImageUrl: 'https://example.com/profile.jpg',
+  role: 'USER',
+  status: 'ACTIVE',
+  currentPlan: 'FREE',
+  notification: true,
+  createdAt: '2026-07-14T10:00:00.000Z',
+  updatedAt: '2026-07-14T10:10:00.000Z',
 };
 
 const protectedUserResponses = () =>
@@ -72,7 +68,14 @@ export const ApiGetMe = () =>
     protectedUserResponses(),
     ApiOkResponse({
       description: '내 정보 조회 성공',
-      schema: { example: userResponseExample },
+      schema: {
+        example: {
+          success: true,
+          code: SuccessCode.USER_RETRIEVED.code,
+          message: SuccessCode.USER_RETRIEVED.message,
+          data: userDataExample,
+        },
+      },
     }),
   );
 
@@ -83,7 +86,14 @@ export const ApiUpdateMe = () =>
     ApiBody({ type: UpdateUserRequestDto }),
     ApiOkResponse({
       description: '내 정보 수정 성공',
-      schema: { example: userResponseExample },
+      schema: {
+        example: {
+          success: true,
+          code: SuccessCode.USER_UPDATED.code,
+          message: SuccessCode.USER_UPDATED.message,
+          data: userDataExample,
+        },
+      },
     }),
     ApiBadRequestResponse({
       description: '수정 요청값 오류 또는 수정할 값 없음',
@@ -109,8 +119,8 @@ export const ApiWithdrawMe = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: SuccessCode.USER_WITHDRAWN.code,
+          message: SuccessCode.USER_WITHDRAWN.message,
           data: {
             recoverableUntil: '2026-09-07T10:00:00.000Z',
           },

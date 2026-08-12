@@ -48,7 +48,10 @@ export class AuthController {
       this.authTokenService.getRefreshTokenCookieOptions(),
     );
 
-    return ApiResponse.success(SuccessCode.OK, responseBody);
+    return ApiResponse.success(
+      SuccessCode.AUTH_SOCIAL_LOGIN_COMPLETED,
+      responseBody,
+    );
   }
 
   @Post('dev-login')
@@ -74,7 +77,10 @@ export class AuthController {
       this.authTokenService.getRefreshTokenCookieOptions(),
     );
 
-    return ApiResponse.success(SuccessCode.OK, responseBody);
+    return ApiResponse.success(
+      SuccessCode.AUTH_DEV_LOGIN_COMPLETED,
+      responseBody,
+    );
   }
 
   @Post('token/refresh')
@@ -86,7 +92,7 @@ export class AuthController {
       this.getRefreshTokenFromCookie(request.headers.cookie),
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.AUTH_TOKEN_REFRESHED, data);
   }
 
   @Post('logout')
@@ -101,7 +107,7 @@ export class AuthController {
       this.authTokenService.getClearRefreshTokenCookieOptions(),
     );
 
-    return ApiResponse.success(SuccessCode.OK, null);
+    return ApiResponse.success(SuccessCode.AUTH_LOGOUT_COMPLETED, null);
   }
 
   private getRefreshTokenFromCookie = (
