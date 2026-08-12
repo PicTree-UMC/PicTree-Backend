@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  ArrayMaxSize,
   ArrayMinSize,
   IsEnum,
   IsArray,
@@ -30,11 +29,11 @@ export class GenerateBlogDraftRequestDto {
 
   @ApiProperty({
     example: [1, 2, 3],
+    maxItems: BLOG_DRAFT_MAX_TREE_COUNT,
     description: `선택한 장소 ID 목록 (최대 ${BLOG_DRAFT_MAX_TREE_COUNT}개)`,
   })
   @IsArray()
   @ArrayMinSize(1)
-  @ArrayMaxSize(BLOG_DRAFT_MAX_TREE_COUNT)
   @Type(() => Number)
   @IsInt({ each: true })
   @Min(1, { each: true })
