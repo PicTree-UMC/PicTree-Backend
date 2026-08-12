@@ -61,7 +61,7 @@ export class TreesController {
       createTreeRequestDto,
     );
 
-    return ApiResponse.success(SuccessCode.CREATED, data);
+    return ApiResponse.success(SuccessCode.TREE_CREATED, data);
   }
 
   @Get()
@@ -75,7 +75,7 @@ export class TreesController {
       getTreesQueryDto,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.TREE_LIST_RETRIEVED, data);
   }
 
   @Get('nearby')
@@ -89,7 +89,7 @@ export class TreesController {
       query,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.TREE_NEARBY_RETRIEVED, data);
   }
 
   @Get('favorites')
@@ -110,7 +110,7 @@ export class TreesController {
   ): Promise<ApiResponse<TreeSummaryStatsResponseDto>> {
     const data = await this.treesService.getSummaryStats(currentUser.userId);
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.TREE_SUMMARY_RETRIEVED, data);
   }
 
   @Get(':treeId')
@@ -121,7 +121,7 @@ export class TreesController {
   ): Promise<ApiResponse<TreeResponseDto>> {
     const data = await this.treesService.getTree(currentUser.userId, treeId);
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.TREE_RETRIEVED, data);
   }
 
   @Patch(':treeId')
@@ -137,7 +137,7 @@ export class TreesController {
       updateTreeRequestDto,
     );
 
-    return ApiResponse.success(SuccessCode.OK, null);
+    return ApiResponse.success(SuccessCode.TREE_UPDATED, null);
   }
 
   @Patch(':treeId/favorite')
@@ -162,6 +162,6 @@ export class TreesController {
   ): Promise<ApiResponse<null>> {
     await this.treesService.deleteTree(currentUser.userId, treeId);
 
-    return ApiResponse.success(SuccessCode.OK, null);
+    return ApiResponse.success(SuccessCode.TREE_DELETED, null);
   }
 }
