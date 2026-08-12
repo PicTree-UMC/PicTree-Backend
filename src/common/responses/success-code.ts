@@ -76,6 +76,45 @@ export const SuccessCode = {
     message: '즐겨찾기 상태가 변경되었습니다.',
   },
 
+  // Nearby Alert
+  NEARBY_ALERT_CHECKED: {
+    status: HttpStatus.OK,
+    code: 'NEARBY_ALERT200-1',
+    message: '근처 나무 알림 확인이 완료되었습니다.',
+  },
+  NEARBY_ALERT_LOGS_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'NEARBY_ALERT200-2',
+    message: '근처 나무 알림 기록 조회가 완료되었습니다.',
+  },
+  NEARBY_ALERT_OPENED: {
+    status: HttpStatus.OK,
+    code: 'NEARBY_ALERT200-3',
+    message: '근처 나무 알림 확인 처리가 완료되었습니다.',
+  },
+  NEARBY_ALERT_DELETED: {
+    status: HttpStatus.OK,
+    code: 'NEARBY_ALERT200-4',
+    message: '근처 나무 알림 기록이 삭제되었습니다.',
+  },
+
+  // Push Subscription
+  PUSH_SUBSCRIPTION_REGISTERED: {
+    status: HttpStatus.CREATED,
+    code: 'PUSH_SUBSCRIPTION201-1',
+    message: 'PWA 푸시 구독이 등록되었습니다.',
+  },
+  PUSH_SUBSCRIPTIONS_RETRIEVED: {
+    status: HttpStatus.OK,
+    code: 'PUSH_SUBSCRIPTION200-1',
+    message: 'PWA 푸시 구독 조회가 완료되었습니다.',
+  },
+  PUSH_SUBSCRIPTION_DEACTIVATED: {
+    status: HttpStatus.OK,
+    code: 'PUSH_SUBSCRIPTION200-2',
+    message: 'PWA 푸시 구독이 비활성화되었습니다.',
+  },
+
   // Calendar
   CALENDAR_RETRIEVED: {
     status: HttpStatus.OK,

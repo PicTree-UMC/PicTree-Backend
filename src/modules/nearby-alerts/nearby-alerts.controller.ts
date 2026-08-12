@@ -47,7 +47,7 @@ export class NearbyAlertsController {
       currentUser.userId,
       request,
     );
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.NEARBY_ALERT_CHECKED, data);
   }
 
   @Get('logs')
@@ -60,7 +60,7 @@ export class NearbyAlertsController {
       currentUser.userId,
       query,
     );
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.NEARBY_ALERT_LOGS_RETRIEVED, data);
   }
 
   @Patch('logs/:alertLogId/open')
@@ -73,7 +73,7 @@ export class NearbyAlertsController {
       currentUser.userId,
       alertLogId,
     );
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.NEARBY_ALERT_OPENED, data);
   }
 
   @Delete('logs/:alertLogId')
@@ -83,6 +83,6 @@ export class NearbyAlertsController {
     @Param('alertLogId', ParseIntPipe) alertLogId: number,
   ): Promise<ApiResponse<null>> {
     await this.nearbyAlertsService.delete(currentUser.userId, alertLogId);
-    return ApiResponse.success(SuccessCode.OK, null);
+    return ApiResponse.success(SuccessCode.NEARBY_ALERT_DELETED, null);
   }
 }
