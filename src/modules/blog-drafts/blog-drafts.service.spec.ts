@@ -58,12 +58,12 @@ describe('BlogDraftsService', () => {
     jest.useRealTimers();
   });
 
-  it('초안 생성 장소가 15개를 초과하면 BLOG400-1 예외를 던진다', async () => {
+  it('초안 생성 장소가 20개를 초과하면 BLOG400-1 예외를 던진다', async () => {
     try {
       await service.generateDraft(1, {
         startDate: '2026-03-31',
         endDate: '2026-04-01',
-        treeIds: Array.from({ length: 16 }, (_, index) => index + 1),
+        treeIds: Array.from({ length: 21 }, (_, index) => index + 1),
         tone: BlogDraftTone.RECORD,
       });
       throw new Error('Expected AppException');

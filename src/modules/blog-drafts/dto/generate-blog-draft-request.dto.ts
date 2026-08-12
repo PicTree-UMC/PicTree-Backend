@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   IsEnum,
   IsArray,
@@ -33,6 +34,7 @@ export class GenerateBlogDraftRequestDto {
   })
   @IsArray()
   @ArrayMinSize(1)
+  @ArrayMaxSize(BLOG_DRAFT_MAX_TREE_COUNT)
   @Type(() => Number)
   @IsInt({ each: true })
   @Min(1, { each: true })
