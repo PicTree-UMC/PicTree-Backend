@@ -1,9 +1,9 @@
 name: CI
 
-# develop 으로 향하는 PR 의 코드를 빌드/린트로 검증합니다.
+# develop/main 으로 향하는 PR 의 코드를 빌드/린트로 검증합니다.
 on:
   pull_request:
-    branches: [develop]
+    branches: [develop, main]
 
 # 최소 권한만 부여합니다.
 permissions:

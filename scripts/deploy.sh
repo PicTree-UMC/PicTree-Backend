@@ -3,15 +3,15 @@
 # EC2 배포 스크립트
 #
 # 사용법:
-#   ./scripts/deploy.sh            # develop 브랜치 배포 (기본값)
-#   ./scripts/deploy.sh main       # 특정 브랜치 배포
+#   ./scripts/deploy.sh            # main 브랜치 배포 (기본값)
+#   ./scripts/deploy.sh develop    # 특정 브랜치 배포
 #
 # 새 이미지 빌드 후 Prisma 마이그레이션을 적용하고 애플리케이션을 교체합니다.
 # 마이그레이션이 실패하면 기존 컨테이너는 계속 실행됩니다.
 #
 set -euo pipefail
 
-BRANCH="${1:-develop}"
+BRANCH="${1:-main}"
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IMAGE_NAME="pictree-backend"
 CONTAINER_NAME="pictree-app"

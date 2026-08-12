@@ -1,9 +1,9 @@
 name: Deploy
 
-# develop 에 반영되면 EC2 에 자동 배포합니다.
+# main 에 반영되면 EC2 에 자동 배포합니다.
 on:
   push:
-    branches: [develop]
+    branches: [main]
 
 # 최소 권한만 부여합니다.
 permissions:
@@ -11,7 +11,7 @@ permissions:
 
 # 동시에 여러 배포가 겹치지 않도록 직렬화합니다.
 concurrency:
-  group: deploy-develop
+  group: deploy-main
   cancel-in-progress: false
 
 jobs:
@@ -29,4 +29,4 @@ jobs:
           script: |
             set -e
             cd ~/PicTree-Backend
-            ./scripts/deploy.sh develop
+            ./scripts/deploy.sh main
