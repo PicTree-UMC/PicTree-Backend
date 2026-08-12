@@ -52,8 +52,8 @@ export const ApiRegisterPushSubscription = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON201',
-          message: '생성되었습니다.',
+          code: 'PUSH_SUBSCRIPTION201-1',
+          message: 'PWA 푸시 구독이 등록되었습니다.',
           data: subscriptionExample,
         },
       },
@@ -71,8 +71,8 @@ export const ApiGetMyPushSubscriptions = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'PUSH_SUBSCRIPTION200-1',
+          message: 'PWA 푸시 구독 조회가 완료되었습니다.',
           data: [subscriptionExample],
         },
       },
@@ -88,8 +88,8 @@ export const ApiDeactivatePushSubscription = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'PUSH_SUBSCRIPTION200-2',
+          message: 'PWA 푸시 구독이 비활성화되었습니다.',
           data: null,
         },
       },

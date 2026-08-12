@@ -42,7 +42,7 @@ export class PushSubscriptionsController {
       request,
     );
 
-    return ApiResponse.success(SuccessCode.CREATED, data);
+    return ApiResponse.success(SuccessCode.PUSH_SUBSCRIPTION_REGISTERED, data);
   }
 
   @Get('me')
@@ -54,7 +54,7 @@ export class PushSubscriptionsController {
       currentUser.userId,
     );
 
-    return ApiResponse.success(SuccessCode.OK, data);
+    return ApiResponse.success(SuccessCode.PUSH_SUBSCRIPTIONS_RETRIEVED, data);
   }
 
   @Patch(':subscriptionId/deactivate')
@@ -68,6 +68,6 @@ export class PushSubscriptionsController {
       subscriptionId,
     );
 
-    return ApiResponse.success(SuccessCode.OK, null);
+    return ApiResponse.success(SuccessCode.PUSH_SUBSCRIPTION_DEACTIVATED, null);
   }
 }

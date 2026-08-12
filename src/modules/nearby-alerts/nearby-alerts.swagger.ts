@@ -57,8 +57,8 @@ export const ApiCheckNearbyAlerts = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'NEARBY_ALERT200-1',
+          message: '근처 나무 알림 확인이 완료되었습니다.',
           data: { nearbyCount: 2, sentCount: 1 },
         },
       },
@@ -77,8 +77,8 @@ export const ApiGetNearbyAlertLogs = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'NEARBY_ALERT200-2',
+          message: '근처 나무 알림 기록 조회가 완료되었습니다.',
           data: {
             items: [alertLogExample],
             page: 1,
@@ -102,8 +102,8 @@ export const ApiOpenNearbyAlertLog = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'NEARBY_ALERT200-3',
+          message: '근처 나무 알림 확인 처리가 완료되었습니다.',
           data: {
             ...alertLogExample,
             status: 'OPENED',
@@ -132,8 +132,8 @@ export const ApiDeleteNearbyAlertLog = () =>
       schema: {
         example: {
           success: true,
-          code: 'COMMON200',
-          message: '요청이 성공했습니다.',
+          code: 'NEARBY_ALERT200-4',
+          message: '근처 나무 알림 기록이 삭제되었습니다.',
           data: null,
         },
       },
