@@ -13,6 +13,7 @@ import {
   ApiParam,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { BLOG_DRAFT_LIMIT } from './blog-drafts.constant';
 import { GenerateBlogDraftRequestDto } from './dto/generate-blog-draft-request.dto';
 import { SaveBlogDraftRequestDto } from './dto/save-blog-draft-request.dto';
 
@@ -103,9 +104,9 @@ export const ApiGetBlogDraftUsage = () =>
           message: 'AI 블로그 사용량 조회가 완료되었습니다.',
           data: {
             plan: 'FREE',
-            limit: 1,
+            limit: BLOG_DRAFT_LIMIT.FREE,
             usedCount: 0,
-            remainingCount: 1,
+            remainingCount: BLOG_DRAFT_LIMIT.FREE,
             periodStartAt: '2026-08-01T00:00:00',
             periodEndAt: '2026-09-01T00:00:00',
           },
