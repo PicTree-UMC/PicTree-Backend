@@ -1,8 +1,8 @@
 export const BLOG_DRAFT_LIMIT = {
-  FREE: 1,
-  PLUS: 5,
-  PRO: 20,
-  MAX: 50,
+  FREE: 10,
+  PLUS: 50,
+  PRO: 200,
+  MAX: 500,
 } as const;
 
 export const BLOG_DRAFT_MODEL = 'gpt-5.6-luna';
