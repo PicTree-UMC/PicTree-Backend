@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { BLOG_DRAFT_LIMIT } from '../blog-drafts.constant';
 
 export class BlogDraftDetailItemResponseDto {
   @ApiProperty({ example: 1, nullable: true, description: '연결된 나무 ID' })
@@ -98,13 +99,19 @@ export class BlogDraftUsageResponseDto {
   })
   plan!: string;
 
-  @ApiProperty({ example: 1, description: '현재 이용 기간의 생성 한도' })
+  @ApiProperty({
+    example: BLOG_DRAFT_LIMIT.FREE,
+    description: '현재 이용 기간의 생성 한도',
+  })
   limit!: number;
 
   @ApiProperty({ example: 0, description: '현재 이용 기간에 사용한 횟수' })
   usedCount!: number;
 
-  @ApiProperty({ example: 1, description: '현재 이용 기간에 남은 생성 횟수' })
+  @ApiProperty({
+    example: BLOG_DRAFT_LIMIT.FREE,
+    description: '현재 이용 기간에 남은 생성 횟수',
+  })
   remainingCount!: number;
 
   @ApiProperty({

@@ -137,7 +137,7 @@ describe('BlogDraftsService', () => {
       status: 'ACTIVE',
       currentSubscription: null,
     });
-    repository.countGeneratedDraftsInRange.mockResolvedValue(1);
+    repository.countGeneratedDraftsInRange.mockResolvedValue(10);
 
     await expect(
       service.generateDraft(1, {
@@ -166,9 +166,9 @@ describe('BlogDraftsService', () => {
     );
     expect(result).toEqual({
       plan: 'FREE',
-      limit: 1,
+      limit: 10,
       usedCount: 0,
-      remainingCount: 1,
+      remainingCount: 10,
       periodStartAt: '2026-07-01T00:00:00',
       periodEndAt: '2026-08-01T00:00:00',
     });
@@ -197,9 +197,9 @@ describe('BlogDraftsService', () => {
     );
     expect(result).toEqual({
       plan: 'FREE',
-      limit: 1,
+      limit: 10,
       usedCount: 0,
-      remainingCount: 1,
+      remainingCount: 10,
       periodStartAt: '2026-07-01T00:00:00',
       periodEndAt: '2026-08-01T00:00:00',
     });
@@ -223,9 +223,9 @@ describe('BlogDraftsService', () => {
 
     expect(result).toEqual({
       plan: 'FREE',
-      limit: 1,
+      limit: 10,
       usedCount: 0,
-      remainingCount: 1,
+      remainingCount: 10,
       periodStartAt: '2026-07-01T00:00:00',
       periodEndAt: '2026-08-01T00:00:00',
     });
@@ -254,9 +254,9 @@ describe('BlogDraftsService', () => {
     );
     expect(result).toEqual({
       plan: 'PLUS',
-      limit: 5,
+      limit: 50,
       usedCount: 2,
-      remainingCount: 3,
+      remainingCount: 48,
       periodStartAt: '2026-07-10T00:00:00',
       periodEndAt: '2026-08-10T00:00:00',
     });
@@ -274,7 +274,7 @@ describe('BlogDraftsService', () => {
         },
       },
     });
-    repository.countGeneratedDraftsInRange.mockResolvedValue(5);
+    repository.countGeneratedDraftsInRange.mockResolvedValue(50);
 
     await expect(
       service.generateDraft(1, {
@@ -298,7 +298,7 @@ describe('BlogDraftsService', () => {
         },
       },
     });
-    repository.countGeneratedDraftsInRange.mockResolvedValue(20);
+    repository.countGeneratedDraftsInRange.mockResolvedValue(200);
 
     await expect(
       service.generateDraft(1, {
@@ -322,7 +322,7 @@ describe('BlogDraftsService', () => {
         },
       },
     });
-    repository.countGeneratedDraftsInRange.mockResolvedValue(50);
+    repository.countGeneratedDraftsInRange.mockResolvedValue(500);
 
     await expect(
       service.generateDraft(1, {
@@ -346,7 +346,7 @@ describe('BlogDraftsService', () => {
         },
       },
     });
-    repository.countGeneratedDraftsInRange.mockResolvedValue(1);
+    repository.countGeneratedDraftsInRange.mockResolvedValue(10);
 
     await expect(
       service.generateDraft(1, {
